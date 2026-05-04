@@ -1027,6 +1027,9 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -1299,7 +1302,10 @@ function rollActiveDefense(team) {
     }
     const foulOnDefLabel = foulOnDef;
     const foulPlayer = foulOnDef ? p.name : (G.handlePlayer?.name||'handler');
-    const rollTeam = foulOnDef ? G.teams[offTeamRAD2].name : G.teams[team].name;
+    // rollTeam = opponent of fouled player = the one who rolls foul check
+    // foulOnDef: fouled=handler(offTeamRAD2), roller=defender(team)
+    // !foulOnDef: fouled=defender(team), roller=handler(offTeamRAD2)
+    const rollTeam = foulOnDef ? G.teams[team].name : G.teams[offTeamRAD2].name;
     return ` · <span style="color:var(--accent)">Possible foul on <b>${foulPlayer}</b> — ${rollTeam}: roll Foul Check</span>`;
   })():'';
   if(r===1){
@@ -1313,7 +1319,9 @@ function rollActiveDefense(team) {
     const fb=d(4);
     G.fastBreak = { team: offTeam, movesLeft: fb, joiners: [] };
     resolveHustleJoinFastBreak(offTeam);
-    G.pendingFoulOn = { playerId: p.id, playerName: p.name, team }; G.foulCheckPending=true;
+    // Crit fail: defender fouled handler. Fouled=handler(offTeam), roller=defender's opp
+    var offTeamCF = team==='a'?'b':'a';
+    if(G.handlePlayer){ G.pendingFoulOn={playerId:G.handlePlayer.id,playerName:G.handlePlayer.name,team:offTeamCF,_foulerPid:p.id,_foulerTeam:team}; G.foulCheckPending=true; }
     addLog(`🛡 DEF (${p.name}): DEF ${dv.DEF}, d30→${r} → SR <b>${sr}</b> 💀 CRIT FAIL — Foul check on ${p.name} · Fast break: d4→${fb} free move${fb>1?'s':''}`,'l-fo');
     addLog(`⚡ FAST BREAK: ${G.teams[offTeam].name} gets ${fb} free move${fb>1?'s':''} (handle free, hold dribble free, open shot)`,'l-ev');
     notify(`Fast break! ${fb} free move${fb>1?'s':''}!`,'score');
@@ -3682,7 +3690,10 @@ function act(a) {
           G.shotJustScored = true;
           score(nat1OffTeam, G.shotActive?.type==='3pt'?3:2);
           // Foul check on blocker (p) — shooting foul = and-1
-          G.pendingFoulOn = {playerId:p.id, playerName:p.name, team:G.myTeam, _shootingFoul:true, _ftCount:1, _foulerPid:p.id, _foulerTeam:G.myTeam};
+          // Blocker may have fouled shooter. Fouled=shooter(offTeam), roller=blocker's opp
+          var offTeamAB=G.myTeam==='a'?'b':'a';
+          G.pendingFoulOn = {playerId:nat1Shooter?.id||p.id, playerName:nat1Shooter?.name||p.name,
+            team:offTeamAB, _shootingFoul:true, _ftCount:1, _foulerPid:p.id, _foulerTeam:G.myTeam};
           G.foulCheckPending = true;
         } else if(blockWins && !shotMissed){
           // Block SR > Shot SR — store for BD calc, proceed to BD (not auto-block)
@@ -3703,8 +3714,13 @@ function act(a) {
             G.pendingShot = null;
           }
         } else if(r===30 && !shotMissed){
-          // Block nat 30 = defender crit fail → foul check on DEFENDER
-          G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam}; G.foulCheckPending=true;
+          // Block nat30: blocker crit fail — blocker fouled shooter
+          // Fouled=shooter(offTeam), roller=shooter's opp=blocker's team
+          var offTeamBN30=G.myTeam==='a'?'b':'a';
+          var shooterBN30=G.pendingShot?.player;
+          if(shooterBN30){ G.pendingFoulOn={playerId:shooterBN30.id,playerName:shooterBN30.name,team:offTeamBN30,_foulerPid:p.id,_foulerTeam:G.myTeam}; }
+          else { G.pendingFoulOn={playerId:p.id,playerName:p.name,team:offTeamBN30}; }
+          G.foulCheckPending=true;
           addLog(`🛡 BLOCK (${p.name}): 💀 NATURAL 30 — <b style="color:var(--red)">CRIT FAIL</b> · Foul check on ${p.name} (defender) · Shooter may go to line`, 'l-fo');
           notify('Block nat 30 — foul check on defender!','foul');
           G.pendingOpenShot={defTeam:G.myTeam,offTeam:G.myTeam==='a'?'b':'a',bd:5};
@@ -4890,7 +4906,17 @@ function resolveHandleContest() {
       setActiveAndBall(defTeamR,di,pairedDef.id);
     }
     addLog('STOLEN by '+(pairedDef?pairedDef.name:'Defender'),'l-fo');notify('STOLEN!','foul');
-    if(!autoFoul&&Math.abs(srOff-srDef)<=3&&pairedDef){G.pendingFoulOn={playerId:pairedDef.id,playerName:pairedDef.name,team:defTeamR};G.foulCheckPending=true;}
+    // Within3: lower SR = fouler. pairedDef(stealer) vs handler(off)
+    // defWon=stealer wins: stealer higher SR, handler lower = handler possible fouler
+    //   fouled=stealer(defTeamR), roller=handler's team(handlerTeam)
+    // !defWon: handler higher SR, stealer lower = stealer possible fouler
+    //   fouled=handler(handlerTeam), roller=stealer's team(defTeamR)
+    if(!autoFoul&&Math.abs(srOff-srDef)<=3&&pairedDef){
+      var handlerTeamRHC=defTeamR==='a'?'b':'a';
+      if(defWon){ G.pendingFoulOn={playerId:pairedDef.id,playerName:pairedDef.name,team:defTeamR,_chargeCandidate:true}; }
+      else { G.pendingFoulOn={playerId:handler.id,playerName:handler.name,team:handlerTeamRHC,_foulerPid:pairedDef.id,_foulerTeam:defTeamR}; }
+      G.foulCheckPending=true;
+    }
   } else {
     addLog('Ball retained — no advance','l-ev');notify('Ball retained','score');
     if(!autoFoul&&Math.abs(srOff-srDef)<=3&&pairedDef){G.pendingFoulOn={playerId:pairedDef.id,playerName:pairedDef.name,team:defTeamR};G.foulCheckPending=true;}
@@ -6094,6 +6120,9 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
+
 
 
 
