@@ -1058,6 +1058,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2105,13 +2106,22 @@ function hostGame() {
   document.getElementById('wait-status').textContent = 'Starting room...';
   document.getElementById('btn-start').disabled = true;
   if(peer){ try{peer.destroy();}catch(e){} peer=null; peerConn=null; }
-  var peerCfg = { debug:0, config:{ iceServers:[{urls:'stun:stun.l.google.com:19302'}] } };
+  var peerCfg = {
+    host: '0.peerjs.com', port: 443, path: '/', secure: true,
+    debug: 1,
+    config: { iceServers: [
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'}
+    ]}
+  };
   peer = new Peer('pr-' + G.roomCode, peerCfg);
   peer.on('open', function(){
     document.getElementById('wait-status').textContent = 'Room open! Share code:';
     document.getElementById('url-box').textContent = G.roomCode;
   });
   peer.on('connection', function(conn){
+    console.log('PeerJS: incoming connection from', conn.peer);
+    document.getElementById('wait-status').textContent = 'Guest connecting...';
     peerConn = conn;
     conn.on('open', function(){
       var gname = conn.metadata || 'Opponent';
@@ -2127,11 +2137,15 @@ function hostGame() {
     conn.on('close', function(){ notify('Opponent disconnected','foul'); G.isConnected=false; });
   });
   peer.on('error', function(e){
-    document.getElementById('wait-status').textContent = 'Error - local mode only';
-    try{ bc_chan=new BroadcastChannel('bbfresh_'+G.roomCode); }catch(err){}
-    if(bc_chan){
-      bc_chan.onmessage=function(ev){ handlePeerMessage(ev.data); };
-      document.getElementById('url-box').textContent=G.roomCode+' (local)';
+    var msg = 'Error: '+e.type;
+    document.getElementById('wait-status').textContent = msg;
+    document.getElementById('url-box').textContent = 'Failed — try refreshing';
+    console.error('PeerJS host error:', e);
+    // If peer ID taken, try with a different suffix
+    if(e.type==='unavailable-id'){
+      G.roomCode = Math.random().toString(36).substr(2,6).toUpperCase();
+      document.getElementById('wait-status').textContent = 'ID taken, retrying with new code...';
+      setTimeout(hostGame, 500);
     }
   });
 }
@@ -2150,11 +2164,20 @@ function joinGame() {
   document.getElementById('wait-status').textContent='Connecting to '+G.roomCode+'...';
   document.getElementById('btn-start').disabled=true;
   if(peer){ try{peer.destroy();}catch(e){} peer=null; peerConn=null; }
-  var peerCfgJ = { debug:0, config:{ iceServers:[{urls:'stun:stun.l.google.com:19302'}] } };
+  var peerCfgJ = {
+    host: '0.peerjs.com', port: 443, path: '/', secure: true,
+    debug: 1,
+    config: { iceServers: [
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'}
+    ]}
+  };
   peer = new Peer(undefined, peerCfgJ);
   peer.on('open', function(){
+    console.log('PeerJS: connecting to pr-'+G.roomCode);
     peerConn = peer.connect('pr-'+G.roomCode, {metadata:jname, reliable:true});
     peerConn.on('open', function(){
+      console.log('PeerJS: connection open');
       document.getElementById('wait-status').textContent='✅ Connected! Ready to start.';
       document.getElementById('btn-start').disabled = false;
       G.isConnected = true;
@@ -6372,6 +6395,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
