@@ -1100,6 +1100,8 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2822,7 +2824,7 @@ function handleRemote(ev) {
 function applyStateSync(state) {
   if(!state) return;
   if(state.score) { G.score.a=state.score.a; G.score.b=state.score.b; syncScoreboard(); }
-  if(state.clocks) { G.clocks=state.clocks; syncClocks(); renderPips(); }
+  if(state.clocks) { G.clocks.bc=state.clocks.bc; G.clocks.sh=state.clocks.sh; syncClocks(); renderPips(); }
   if(state.tokPos) {
     G.tokPos=state.tokPos;
     Object.keys(state.tokPos).forEach(function(tid){
@@ -2830,8 +2832,51 @@ function applyStateSync(state) {
       if(el) el.setAttribute('transform','translate('+state.tokPos[tid].x+','+state.tokPos[tid].y+')');
     });
   }
-  if(state.ballTok) G.ballTok=state.ballTok;
+  if(state.ballTok) {
+    G.ballTok=state.ballTok;
+    if(state.ballTok) moveBallToToken(state.ballTok.team, state.ballTok.idx);
+  }
   if(state.possession) G.possession=state.possession;
+  if(state.modalClosed) {
+    // Remote resolved a modal - close ours too
+    G.modalRequired=null;
+    closeModal();
+  }
+  // Sync log entries from remote
+  if(state.log && state.log.length) {
+    G._suppressLogBcast=true;
+    state.log.forEach(function(entry){
+      // Only add if not already in log
+      if(!G.log.find(function(e){return e.msg===entry.msg&&e.ts===entry.ts;})){
+        G.log.unshift(entry);
+      }
+    });
+    G._suppressLogBcast=false;
+    var logHTML=G.log.slice(0,120).map(renderLogEntry).join('');
+    ['lglog-full','rglog-full'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.innerHTML=logHTML;
+    });
+  }
+  buildAPSel();
+  refreshTeamPanel();
+}
+
+
+function broadcastGameState() {
+  if(!ablyChannel && !bc_chan) return;
+  var state = {
+    score: {a:G.score.a, b:G.score.b},
+    clocks: {bc:G.clocks.bc, sh:G.clocks.sh},
+    possession: G.possession,
+    myTeam: G.myTeam,
+    ballTok: G.ballTok,
+    tokPos: G.tokPos,
+    log: G.log.slice(0,5), // last 5 log entries
+    modalClosed: true // signal to remote to close their modal
+  };
+  var msg = {type:'state_sync', state:state, _from:G._ablyMyId};
+  if(ablyChannel) ablyChannel.publish('msg', msg);
+  else if(bc_chan) bc_chan.postMessage(msg);
 }
 
 function broadcastStateSync() {
@@ -2880,7 +2925,9 @@ function setLastAction(team, label, roll) {
 
 function act(a) {
   // Soft lock: foul check must be resolved before most actions
-  if(G.gameOver){ notify('Game over!','foul'); return; }
+  if(G.gameOver){ notify('Game over!','foul'); return; 
+  // Broadcast game state to remote after action
+  if(ablyChannel||bc_chan) setTimeout(broadcastGameState, 100);}
   const FC_EXEMPT = ['to_f','to_20','inbound','tipoff','free','chooseLookZone'];
   if(G.foulCheckPending && !FC_EXEMPT.includes(a)) {
     notify('⚖️ Resolve foul check first — DICE tab → ROLL FOUL CHECK', 'foul');
@@ -4071,6 +4118,7 @@ function doInbound(team,pid,x,y){
   G.lastAction=null; G.lookBothFailed=false; G.modalRequired=null; G.shotActive=null; G.shotJustScored=false; G._wasInBackCourt={a:true,b:true}; G._inboundPass=true; G._lookFoulPending=null; // fresh possession
   addLog(`📋 INBOUND: ${pl.name} (${G.teams[team].name}) at half court sideline`,'l-ev');
   notify(pl.name+' inbounds','score');
+  setTimeout(broadcastGameState, 150);
 }
 
 function doBCInbound(team, pid, x, y) {
@@ -6478,6 +6526,8 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
 
 
 
