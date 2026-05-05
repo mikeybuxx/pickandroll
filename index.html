@@ -1062,6 +1062,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2128,11 +2129,12 @@ function hostGame() {
     document.getElementById('wait-status').textContent = 'Room open! Share code:';
     document.getElementById('url-box').textContent = G.roomCode;
   });
-  peer.on('connection', function(conn){
-    console.log('PeerJS: incoming connection from', conn.peer, 'reliable:', conn.reliable);
+    peer.on('connection', function(conn){
+    console.log('PeerJS: incoming connection, open?', conn.open);
     document.getElementById('wait-status').textContent = 'Guest connecting...';
     peerConn = conn;
-    conn.on('open', function(){
+    function onConnOpen(){
+      console.log('PeerJS: host conn OPEN!');
       var gname = conn.metadata || 'Opponent';
       document.getElementById('slot-guest').textContent = gname + ' (Opponent)';
       document.getElementById('guest-dot').classList.add('on');
@@ -2141,11 +2143,11 @@ function hostGame() {
       G.isConnected = true;
       conn.send({ type:'welcome', name:hname, team:G.teams.a });
       addLog('🟢 ' + gname + ' connected!', 'l-ev');
-    });
+    }
     conn.on('data', handlePeerMessage);
     conn.on('close', function(){ notify('Opponent disconnected','foul'); G.isConnected=false; });
-    conn.on('error', function(e){ console.error('PeerJS conn error on host:', e); });
-    conn.on('iceStateChanged', function(s){ console.log('ICE state:', s); });
+    conn.on('error', function(e){ console.error('Host conn error:', e.type); });
+    if(conn.open){ onConnOpen(); } else { conn.on('open', onConnOpen); }
   });
   peer.on('error', function(e){
     console.error('PeerJS host error:', e.type, e);
@@ -2191,16 +2193,17 @@ function joinGame() {
   peer.on('open', function(){
     console.log('PeerJS guest open, connecting to pr-'+G.roomCode);
     peerConn = peer.connect('pr-'+G.roomCode, {metadata:jname, reliable:true});
-    peerConn.on('open', function(){
-      console.log('PeerJS: data channel open with host');
+    function onGuestOpen(){
+      console.log('PeerJS: GUEST conn open!');
       document.getElementById('wait-status').textContent='✅ Connected! Ready to start.';
       document.getElementById('btn-start').disabled = false;
       G.isConnected = true;
-      addLog('🟢 Connected to host!', 'l-ev');
-    });
+      addLog('🟢 Connected!', 'l-ev');
+    }
     peerConn.on('data', handlePeerMessage);
     peerConn.on('close', function(){ notify('Host disconnected','foul'); G.isConnected=false; });
-    peerConn.on('error', function(e){ notify('Connection error','foul'); });
+    peerConn.on('error', function(e){ console.error('Guest err:',e.type); notify('Error:'+e.type,'foul'); });
+    if(peerConn.open){ onGuestOpen(); } else { peerConn.on('open', onGuestOpen); }
   });
   peer.on('error', function(e){
     console.error('PeerJS guest error:', e.type, e);
@@ -6411,6 +6414,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
