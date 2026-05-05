@@ -1060,6 +1060,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2118,12 +2119,13 @@ function hostGame() {
     ]}
   };
   peer = new Peer('pr-' + G.roomCode, peerCfg);
-  peer.on('open', function(){
+  peer.on('open', function(id){
+    console.log('Host peer open with ID:', id);
     document.getElementById('wait-status').textContent = 'Room open! Share code:';
     document.getElementById('url-box').textContent = G.roomCode;
   });
   peer.on('connection', function(conn){
-    console.log('PeerJS: incoming connection from', conn.peer);
+    console.log('PeerJS: incoming connection from', conn.peer, 'reliable:', conn.reliable);
     document.getElementById('wait-status').textContent = 'Guest connecting...';
     peerConn = conn;
     conn.on('open', function(){
@@ -2140,6 +2142,7 @@ function hostGame() {
     conn.on('close', function(){ notify('Opponent disconnected','foul'); G.isConnected=false; });
   });
   peer.on('error', function(e){
+    console.error('PeerJS host error:', e.type, e);
     var msg = 'Error: '+e.type;
     document.getElementById('wait-status').textContent = msg;
     document.getElementById('url-box').textContent = 'Failed — try refreshing';
@@ -2177,10 +2180,10 @@ function joinGame() {
   };
   peer = new Peer(undefined, peerCfgJ);
   peer.on('open', function(){
-    console.log('PeerJS: connecting to pr-'+G.roomCode);
+    console.log('PeerJS guest open, connecting to pr-'+G.roomCode);
     peerConn = peer.connect('pr-'+G.roomCode, {metadata:jname, reliable:true});
     peerConn.on('open', function(){
-      console.log('PeerJS: connection open');
+      console.log('PeerJS: data channel open with host');
       document.getElementById('wait-status').textContent='✅ Connected! Ready to start.';
       document.getElementById('btn-start').disabled = false;
       G.isConnected = true;
@@ -2191,7 +2194,8 @@ function joinGame() {
     peerConn.on('error', function(e){ notify('Connection error','foul'); });
   });
   peer.on('error', function(e){
-    document.getElementById('wait-status').textContent='Error - trying local...';
+    console.error('PeerJS guest error:', e.type, e);
+    document.getElementById('wait-status').textContent='Error: '+e.type+' - trying local...';
     try{ bc_chan=new BroadcastChannel('bbfresh_'+G.roomCode); }catch(err){}
     if(bc_chan){
       bc_chan.postMessage({type:'join',name:jname});
@@ -6398,6 +6402,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
