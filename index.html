@@ -1064,6 +1064,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -1126,9 +1127,10 @@ let G = {
 };
 
 let bc_chan = null;
+let ablyClient = null;
+let ablyChannel = null;
+const ABLY_KEY = '8vlRjw.pH4dmw:xvTOn2GkiRGn8TGDUil62kT55O3ZbU3KdG97JvxAdTU';
 console.log('Pick & Roll JS loaded. PeerJS available:', typeof Peer !== 'undefined');
-let peer = null;
-let peerConn = null;
 
 // ════════════════════════════════════════════
 //  UTILITIES
@@ -6329,6 +6331,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
