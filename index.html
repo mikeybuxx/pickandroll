@@ -1098,6 +1098,8 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -1163,6 +1165,7 @@ let bc_chan = null;
 let ablyClient = null;
 let ablyChannel = null;
 const ABLY_KEY = '8vlRjw.pH4dmw:xvTOn2GkiRGn8TGDUil62kT55O3ZbU3KdG97JvxAdTU';
+G._ablyMyId = null; // set when host/join pressed
 console.log('Pick & Roll JS loaded. PeerJS available:', typeof Peer !== 'undefined');
 
 // ════════════════════════════════════════════
@@ -1603,6 +1606,12 @@ function addLog(msg, cls='') {
       `<div class="minilog-entry">${e.msg}</div>`
     ).join('');
   });
+  // Broadcast log entry to remote player
+  if(!G._suppressLogBcast && (ablyChannel || bc_chan)) {
+    const logMsg = { type:'log_entry', msg, cls, _from:G._ablyMyId };
+    if(ablyChannel) ablyChannel.publish('msg', logMsg);
+    else if(bc_chan) bc_chan.postMessage(logMsg);
+  }
 }
 
 // ════════════════════════════════════════════
@@ -2173,6 +2182,16 @@ function handlePeerMessage(m) {
   }
   if(m.type==='game_event') handleRemote(m.ev);
   if(m.type==='tok_move') applyTokMove(m);
+  if(m.type==='log_entry'){
+    G._suppressLogBcast = true;
+    addLog(m.msg, m.cls||'');
+    G._suppressLogBcast = false;
+  }
+  if(m.type==='score_update'){
+    G.score.a = m.scoreA; G.score.b = m.scoreB;
+    syncScoreboard();
+  }
+  if(m.type==='state_sync') applyStateSync(m.state);
 }
 
 function hostGame() {
@@ -2200,7 +2219,7 @@ function hostGame() {
   ablyClient.connection.on('connected', function() {
     ablyChannel = ablyClient.channels.get('pr-' + G.roomCode);
     ablyChannel.subscribe('msg', function(msg) {
-      if(msg.data && msg.data._from === G._ablyMyId) return;
+      if(msg.data && msg.data._from && G._ablyMyId && msg.data._from === G._ablyMyId) return;
       handlePeerMessage(msg.data);
     });
     document.getElementById('wait-status').textContent = 'Room open! Share code:';
@@ -2237,7 +2256,7 @@ function joinGame() {
   ablyClient.connection.on('connected', function() {
     ablyChannel = ablyClient.channels.get('pr-' + G.roomCode);
     ablyChannel.subscribe('msg', function(msg) {
-      if(msg.data && msg.data._from === G._ablyMyId) return;
+      if(msg.data && msg.data._from && G._ablyMyId && msg.data._from === G._ablyMyId) return;
       handlePeerMessage(msg.data);
     });
     // Announce presence to host
@@ -2782,7 +2801,11 @@ function makeDraggable(el, id, team) {
         if(otherEl) otherEl.setAttribute('transform','translate('+nx+','+ny+')');
       }
     });
-    var _tm={type:'tok_move',id,x:tp.x,y:tp.y,_from:G._ablyMyId}; if(ablyChannel){ablyChannel.publish('msg',_tm);}else if(bc_chan){bc_chan.postMessage(_tm);}
+    if(ablyChannel||bc_chan){
+    var _tm={type:'tok_move',id,x:tp.x,y:tp.y,_from:G._ablyMyId||'unknown'};
+    if(ablyChannel) ablyChannel.publish('msg',_tm);
+    else if(bc_chan) bc_chan.postMessage(_tm);
+  }
   }
 
   el.addEventListener('mousedown', onDown);
@@ -2793,6 +2816,35 @@ function handleRemote(ev) {
   if(!ev) return;
   if(ev.type==='score'){ G.score[ev.team]+=ev.pts; syncScoreboard(); addLog('<b>'+G.teams[ev.team].name+'</b> +'+ev.pts,'l-sc'); }
   if(ev.type==='log') addLog(ev.msg, ev.cls||'l-ev');
+}
+
+
+function applyStateSync(state) {
+  if(!state) return;
+  if(state.score) { G.score.a=state.score.a; G.score.b=state.score.b; syncScoreboard(); }
+  if(state.clocks) { G.clocks=state.clocks; syncClocks(); renderPips(); }
+  if(state.tokPos) {
+    G.tokPos=state.tokPos;
+    Object.keys(state.tokPos).forEach(function(tid){
+      var el=document.getElementById(tid);
+      if(el) el.setAttribute('transform','translate('+state.tokPos[tid].x+','+state.tokPos[tid].y+')');
+    });
+  }
+  if(state.ballTok) G.ballTok=state.ballTok;
+  if(state.possession) G.possession=state.possession;
+}
+
+function broadcastStateSync() {
+  var state = {
+    score: {a:G.score.a, b:G.score.b},
+    clocks: G.clocks,
+    tokPos: G.tokPos,
+    ballTok: G.ballTok,
+    possession: G.possession
+  };
+  var msg = {type:'state_sync', state, _from:G._ablyMyId};
+  if(ablyChannel) ablyChannel.publish('msg', msg);
+  else if(bc_chan) bc_chan.postMessage(msg);
 }
 
 function applyTokMove(m) {
@@ -6426,6 +6478,8 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
 
 
 
