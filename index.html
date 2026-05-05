@@ -1057,6 +1057,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2142,6 +2143,7 @@ function joinGame() {
   G.role='guest'; G.myTeam='b'; G.roomCode=code.toUpperCase();
   var jname = document.getElementById('coach-name').value || 'Guest';
   document.getElementById('wait-box').style.display='block';
+  document.getElementById('slot-host').textContent='Waiting for host...';
   document.getElementById('slot-guest').textContent=jname+' (You)';
   document.getElementById('guest-dot').classList.add('on');
   document.getElementById('url-box').textContent=G.roomCode;
@@ -2170,33 +2172,7 @@ function joinGame() {
       bc_chan.onmessage=function(ev){ handlePeerMessage(ev.data); };
     }
   });
-}function joinGame() {
-  let code = document.getElementById('join-code').value.trim();
-  if (!code) { notify('Enter a room code or URL!'); return; }
-  if (code.includes('?room=')) code = code.split('?room=')[1].split('&')[0];
-  G.role = 'guest'; G.myTeam = 'b'; G.roomCode = code.toUpperCase();
-  const name = document.getElementById('coach-name').value || 'Guest';
-  document.getElementById('wait-box').style.display = 'block';
-  document.getElementById('slot-guest').textContent = name + ' (You)';
-  document.getElementById('guest-dot').classList.add('on');
-  document.getElementById('url-box').textContent = G.roomCode;
-  document.getElementById('wait-status').textContent = 'Connecting to room ' + G.roomCode + '...';
-  try { bc_chan = new BroadcastChannel('bbfresh_' + G.roomCode); } catch(e) { bc_chan = null; console.warn('BroadcastChannel not supported'); }
-  bc_chan.postMessage({ type:'join', name });
-  bc_chan.onmessage = e => {
-    const m = e.data;
-    if (m.type==='welcome') {
-      document.getElementById('slot-host').textContent = m.name + ' (Host)';
-      document.getElementById('wait-status').textContent = '✅ Connected to ' + m.name + '!';
-      G.teams.a = m.team; G.isConnected = true;
-      document.getElementById('btn-start').disabled = false;
-    }
-    if (m.type==='team_update') { G.teams.a = m.team; refreshTeamPanel(); }
-    if (m.type==='game_event') handleRemote(m.ev);
-    if (m.type==='game_start') startLocal();
-    if (m.type==='tok_move') applyTokMove(m);
-  };
-}
+}// duplicate joinGame removed
 
 function handleRemote(ev) {
   if (ev.type==='score') { G.score[ev.team]+=ev.pts; syncScoreboard(); addLog(`🏀 <b>${G.teams[ev.team].name}</b> +${ev.pts}`, 'l-sc'); }
@@ -6396,6 +6372,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
