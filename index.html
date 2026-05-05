@@ -826,8 +826,9 @@ input::placeholder{color:var(--text3);}
         
         
         </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script>
+
 
 
 
@@ -2084,7 +2085,7 @@ function goBuilder() {
   renderPList(); renderPForm(); show('builder');
 }
 function backLobby() {
-  var _tu={type:'team_update',team:G.teams[G.myTeam]}; if(peerConn&&peerConn.open){peerConn.send(_tu);}else if(bc_chan){bc_chan.postMessage(_tu);}
+  var _tu={type:'team_update',team:G.teams[G.myTeam]}; if(ablyChannel){ablyChannel.publish('msg',_tu);}else if(bc_chan){bc_chan.postMessage(_tu);}
   show('lobby');
   const wb = document.getElementById('wait-box');
   if(wb) wb.style.display = G.roomCode ? 'block' : 'none';
@@ -2100,75 +2101,40 @@ function saveBack() { backLobby(); }
 //  MULTIPLAYER — BroadcastChannel (same browser, cross-tab)
 // ════════════════════════════════════════════
 function hostGame() {
-  console.log('hostGame called. Peer lib:', typeof Peer);
+  console.log('hostGame called. Ably:', typeof Ably);
   G.role = 'host'; G.myTeam = 'a';
   G.roomCode = Math.random().toString(36).substr(2,6).toUpperCase();
   var hname = document.getElementById('coach-name').value || 'Host';
   document.getElementById('wait-box').style.display = 'block';
   document.getElementById('slot-host').textContent = hname + ' (You)';
-  document.getElementById('slot-guest').textContent = 'Waiting...';
+  document.getElementById('slot-guest').textContent = 'Waiting for guest...';
   document.getElementById('guest-dot').classList.remove('on');
   document.getElementById('url-box').textContent = 'Connecting...';
-  document.getElementById('wait-status').textContent = 'Starting room...';
+  document.getElementById('wait-status').textContent = 'Setting up room...';
   document.getElementById('btn-start').disabled = true;
-  if(peer){ try{peer.destroy();}catch(e){} peer=null; peerConn=null; }
-  var peerCfg = {
-    host: '0.peerjs.com', port: 443, path: '/', secure: true,
-    debug: 1,
-    config: { iceServers: [
-      {urls:'stun:stun.l.google.com:19302'},
-      {urls:'stun:stun1.l.google.com:19302'},
-      {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
-      {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
-      {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
-    ]}
-  };
-  peer = new Peer('pr-' + G.roomCode, peerCfg);
-  peer.on('open', function(id){
-    console.log('Host peer open with ID:', id);
+
+  if(ablyClient) { try{ablyClient.close();}catch(e){} ablyClient=null; ablyChannel=null; }
+
+  ablyClient = new Ably.Realtime({ key: ABLY_KEY, clientId: 'host-'+G.roomCode });
+  ablyClient.connection.on('connected', function() {
+    ablyChannel = ablyClient.channels.get('pr-' + G.roomCode);
+    ablyChannel.subscribe('msg', function(msg) {
+      handlePeerMessage(msg.data);
+    });
     document.getElementById('wait-status').textContent = 'Room open! Share code:';
     document.getElementById('url-box').textContent = G.roomCode;
+    addLog('\u{1f310} Room open — code: ' + G.roomCode, 'l-ev');
   });
-    peer.on('connection', function(conn){
-    console.log('PeerJS: incoming connection, open?', conn.open);
-    document.getElementById('wait-status').textContent = 'Guest connecting...';
-    peerConn = conn;
-    function onConnOpen(){
-      console.log('PeerJS: host conn OPEN!');
-      var gname = conn.metadata || 'Opponent';
-      document.getElementById('slot-guest').textContent = gname + ' (Opponent)';
-      document.getElementById('guest-dot').classList.add('on');
-      document.getElementById('wait-status').textContent = '✅ ' + gname + ' joined!';
-      document.getElementById('btn-start').disabled = false;
-      G.isConnected = true;
-      conn.send({ type:'welcome', name:hname, team:G.teams.a });
-      addLog('🟢 ' + gname + ' connected!', 'l-ev');
-    }
-    conn.on('data', handlePeerMessage);
-    conn.on('close', function(){ notify('Opponent disconnected','foul'); G.isConnected=false; });
-    conn.on('error', function(e){ console.error('Host conn error:', e.type); });
-    if(conn.open){ onConnOpen(); } else { conn.on('open', onConnOpen); }
-  });
-  peer.on('error', function(e){
-    console.error('PeerJS host error:', e.type, e);
-    var msg = 'Error: '+e.type;
-    document.getElementById('wait-status').textContent = msg;
-    document.getElementById('url-box').textContent = 'Failed — try refreshing';
-    console.error('PeerJS host error:', e);
-    // If peer ID taken, try with a different suffix
-    if(e.type==='unavailable-id'){
-      G.roomCode = Math.random().toString(36).substr(2,6).toUpperCase();
-      document.getElementById('wait-status').textContent = 'ID taken, retrying with new code...';
-      setTimeout(hostGame, 500);
-    }
+  ablyClient.connection.on('failed', function(e) {
+    document.getElementById('wait-status').textContent = 'Connection failed: ' + e.reason;
+    console.error('Ably connection failed:', e);
   });
 }
 
 function joinGame() {
-  var code = (document.getElementById('join-code').value||'').trim();
-  if (!code) { notify('Enter a room code!'); return; }
-  if (code.includes('?room=')) code = code.split('?room=')[1].split('&')[0];
-  G.role='guest'; G.myTeam='b'; G.roomCode=code.toUpperCase();
+  var code = (document.getElementById('join-code').value||'').trim().toUpperCase();
+  if(!code){ notify('Enter a room code!'); return; }
+  G.role='guest'; G.myTeam='b'; G.roomCode=code;
   var jname = document.getElementById('coach-name').value || 'Guest';
   document.getElementById('wait-box').style.display='block';
   document.getElementById('slot-host').textContent='Waiting for host...';
@@ -2177,80 +2143,29 @@ function joinGame() {
   document.getElementById('url-box').textContent=G.roomCode;
   document.getElementById('wait-status').textContent='Connecting to '+G.roomCode+'...';
   document.getElementById('btn-start').disabled=true;
-  if(peer){ try{peer.destroy();}catch(e){} peer=null; peerConn=null; }
-  var peerCfgJ = {
-    host: '0.peerjs.com', port: 443, path: '/', secure: true,
-    debug: 1,
-    config: { iceServers: [
-      {urls:'stun:stun.l.google.com:19302'},
-      {urls:'stun:stun1.l.google.com:19302'},
-      {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
-      {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
-      {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
-    ]}
-  };
-  peer = new Peer(undefined, peerCfgJ);
-  peer.on('open', function(){
-    console.log('PeerJS guest open, connecting to pr-'+G.roomCode);
-    peerConn = peer.connect('pr-'+G.roomCode, {metadata:jname, reliable:true});
-    function onGuestOpen(){
-      console.log('PeerJS: GUEST conn open!');
-      document.getElementById('wait-status').textContent='✅ Connected! Ready to start.';
-      document.getElementById('btn-start').disabled = false;
-      G.isConnected = true;
-      addLog('🟢 Connected!', 'l-ev');
-    }
-    peerConn.on('data', handlePeerMessage);
-    peerConn.on('close', function(){ notify('Host disconnected','foul'); G.isConnected=false; });
-    peerConn.on('error', function(e){ console.error('Guest err:',e.type); notify('Error:'+e.type,'foul'); });
-    if(peerConn.open){ onGuestOpen(); } else { peerConn.on('open', onGuestOpen); }
+
+  if(ablyClient){ try{ablyClient.close();}catch(e){} ablyClient=null; ablyChannel=null; }
+
+  ablyClient = new Ably.Realtime({ key: ABLY_KEY, clientId: 'guest-'+Date.now() });
+  ablyClient.connection.on('connected', function() {
+    ablyChannel = ablyClient.channels.get('pr-' + G.roomCode);
+    ablyChannel.subscribe('msg', function(msg) {
+      handlePeerMessage(msg.data);
+    });
+    // Announce presence to host
+    ablyChannel.publish('msg', { type:'guest_joined', name:jname });
+    document.getElementById('wait-status').textContent='Connected! Waiting for host to confirm...';
+    addLog('\u{1f310} Connected to room '+G.roomCode, 'l-ev');
   });
-  peer.on('error', function(e){
-    console.error('PeerJS guest error:', e.type, e);
-    document.getElementById('wait-status').textContent='Error: '+e.type+' - trying local...';
-    try{ bc_chan=new BroadcastChannel('bbfresh_'+G.roomCode); }catch(err){}
-    if(bc_chan){
-      bc_chan.postMessage({type:'join',name:jname});
-      bc_chan.onmessage=function(ev){ handlePeerMessage(ev.data); };
-    }
+  ablyClient.connection.on('failed', function(e){
+    document.getElementById('wait-status').textContent='Failed: '+e.reason;
+    console.error('Ably join failed:', e);
   });
-}// duplicate joinGame removed
-
-function handleRemote(ev) {
-  if (ev.type==='score') { G.score[ev.team]+=ev.pts; syncScoreboard(); addLog(`🏀 <b>${G.teams[ev.team].name}</b> +${ev.pts}`, 'l-sc'); }
-  if (ev.type==='log') addLog(ev.msg, ev.cls||'');
 }
 
-function handlePeerMessage(m) {
-  if (m.type==='welcome') {
-    var hn = m.name||'Host';
-    document.getElementById('slot-host').textContent = hn + ' (Host)';
-    document.getElementById('wait-status').textContent = '✅ Connected to ' + hn + '!';
-    if(m.team) { G.teams.a = m.team; }
-    G.isConnected = true;
-    document.getElementById('btn-start').disabled = false;
-    addLog('🟢 Welcome received — START GAME enabled!', 'l-ev');
-  }
-  if (m.type==='team_update') {
-    if(G.myTeam==='a') G.teams.b = m.team; else G.teams.a = m.team;
-    refreshTeamPanel();
-  }
-  if (m.type==='game_event') handleRemote(m.ev);
-  if (m.type==='tok_move') applyTokMove(m);
-}
-
-function bcast(ev) {
-  const msg = { type:'game_event', ev };
-  if (peerConn && peerConn.open) { peerConn.send(msg); }
-  else if (bc_chan) { bc_chan.postMessage(msg); }
-}
-function copyLink() {
-  navigator.clipboard.writeText(document.getElementById('url-box').textContent)
-    .then(()=>notify('Link copied!')).catch(()=>notify('Copy the link manually'));
-}
 function cancelLobby() {
-  if(peerConn){try{peerConn.close();}catch(e){}peerConn=null;}
-  if(peer){try{peer.destroy();}catch(e){}peer=null;}
+  if(ablyChannel){try{ablyChannel.unsubscribe();}catch(e){}ablyChannel=null;}
+  if(ablyClient){try{ablyClient.close();}catch(e){}ablyClient=null;}
   if(bc_chan){try{bc_chan.close();}catch(e){}bc_chan=null;}
   G.isConnected=false;
   if (bc_chan) { bc_chan.close(); bc_chan = null; }
@@ -2776,7 +2691,7 @@ function makeDraggable(el, id, team) {
         if(otherEl) otherEl.setAttribute('transform','translate('+nx+','+ny+')');
       }
     });
-    var _tm={type:'tok_move',id,x:tp.x,y:tp.y}; if(peerConn&&peerConn.open){peerConn.send(_tm);}else if(bc_chan){bc_chan.postMessage(_tm);}
+    var _tm={type:'tok_move',id,x:tp.x,y:tp.y}; if(ablyChannel){ablyChannel.publish('msg',_tm);}else if(bc_chan){bc_chan.postMessage(_tm);}
   }
 
   el.addEventListener('mousedown', onDown);
@@ -6414,6 +6329,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
