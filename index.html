@@ -1061,6 +1061,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2115,7 +2116,10 @@ function hostGame() {
     debug: 1,
     config: { iceServers: [
       {urls:'stun:stun.l.google.com:19302'},
-      {urls:'stun:stun1.l.google.com:19302'}
+      {urls:'stun:stun1.l.google.com:19302'},
+      {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+      {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+      {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
     ]}
   };
   peer = new Peer('pr-' + G.roomCode, peerCfg);
@@ -2140,6 +2144,8 @@ function hostGame() {
     });
     conn.on('data', handlePeerMessage);
     conn.on('close', function(){ notify('Opponent disconnected','foul'); G.isConnected=false; });
+    conn.on('error', function(e){ console.error('PeerJS conn error on host:', e); });
+    conn.on('iceStateChanged', function(s){ console.log('ICE state:', s); });
   });
   peer.on('error', function(e){
     console.error('PeerJS host error:', e.type, e);
@@ -2175,7 +2181,10 @@ function joinGame() {
     debug: 1,
     config: { iceServers: [
       {urls:'stun:stun.l.google.com:19302'},
-      {urls:'stun:stun1.l.google.com:19302'}
+      {urls:'stun:stun1.l.google.com:19302'},
+      {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+      {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+      {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
     ]}
   };
   peer = new Peer(undefined, peerCfgJ);
@@ -6402,6 +6411,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
