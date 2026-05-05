@@ -1065,6 +1065,10 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2102,6 +2106,39 @@ function saveBack() { backLobby(); }
 // ════════════════════════════════════════════
 //  MULTIPLAYER — BroadcastChannel (same browser, cross-tab)
 // ════════════════════════════════════════════
+function handlePeerMessage(m) {
+  if(!m) return;
+  // Host receives guest_joined
+  if(m.type==='guest_joined' && G.role==='host'){
+    var gname = m.name||'Guest';
+    document.getElementById('slot-guest').textContent = gname+' (Opponent)';
+    document.getElementById('guest-dot').classList.add('on');
+    document.getElementById('wait-status').textContent = '\u2705 '+gname+' joined!';
+    document.getElementById('btn-start').disabled = false;
+    G.isConnected = true;
+    var hname = document.getElementById('coach-name').value||'Host';
+    if(ablyChannel) ablyChannel.publish('msg',{type:'welcome',name:hname,team:G.teams.a});
+    addLog('\U0001f7e2 '+gname+' connected!','l-ev');
+    return;
+  }
+  if(m.type==='welcome'){
+    var hn=m.name||'Host';
+    document.getElementById('slot-host').textContent=hn+' (Host)';
+    document.getElementById('wait-status').textContent='\u2705 Connected to '+hn+'!';
+    if(m.team) G.teams.a=m.team;
+    G.isConnected=true;
+    document.getElementById('btn-start').disabled=false;
+    addLog('\U0001f7e2 Welcome received!','l-ev');
+    return;
+  }
+  if(m.type==='team_update'){
+    if(G.myTeam==='a') G.teams.b=m.team; else G.teams.a=m.team;
+    refreshTeamPanel(); return;
+  }
+  if(m.type==='game_event') handleRemote(m.ev);
+  if(m.type==='tok_move') applyTokMove(m);
+}
+
 function hostGame() {
   console.log('hostGame called. Ably:', typeof Ably);
   G.role = 'host'; G.myTeam = 'a';
@@ -2120,9 +2157,7 @@ function hostGame() {
   ablyClient = new Ably.Realtime({ key: ABLY_KEY, clientId: 'host-'+G.roomCode });
   ablyClient.connection.on('connected', function() {
     ablyChannel = ablyClient.channels.get('pr-' + G.roomCode);
-    ablyChannel.subscribe('msg', function(msg) {
-      handlePeerMessage(msg.data);
-    });
+    ablyChannel.subscribe('msg', function(msg) { handlePeerMessage(msg.data); });
     document.getElementById('wait-status').textContent = 'Room open! Share code:';
     document.getElementById('url-box').textContent = G.roomCode;
     addLog('\u{1f310} Room open — code: ' + G.roomCode, 'l-ev');
@@ -2151,9 +2186,7 @@ function joinGame() {
   ablyClient = new Ably.Realtime({ key: ABLY_KEY, clientId: 'guest-'+Date.now() });
   ablyClient.connection.on('connected', function() {
     ablyChannel = ablyClient.channels.get('pr-' + G.roomCode);
-    ablyChannel.subscribe('msg', function(msg) {
-      handlePeerMessage(msg.data);
-    });
+    ablyChannel.subscribe('msg', function(msg) { handlePeerMessage(msg.data); });
     // Announce presence to host
     ablyChannel.publish('msg', { type:'guest_joined', name:jname });
     document.getElementById('wait-status').textContent='Connected! Waiting for host to confirm...';
@@ -6331,6 +6364,10 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
+
+
 
 
 
