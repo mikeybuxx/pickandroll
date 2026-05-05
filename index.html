@@ -1102,6 +1102,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2833,14 +2834,23 @@ function applyStateSync(state) {
     });
   }
   if(state.ballTok) {
-    G.ballTok=state.ballTok;
-    if(state.ballTok) moveBallToToken(state.ballTok.team, state.ballTok.idx);
+    G.ballTok={team:state.ballTok.team, idx:state.ballTok.idx};
+    // tokPos must be applied first (done above) before moving ball
+    var btid='T-'+state.ballTok.team+'-'+state.ballTok.idx;
+    var bpos=G.tokPos[btid];
+    var ball=document.getElementById('ball-g');
+    if(bpos && ball){
+      var ox=state.ballTok.team==='a'?14:-14;
+      ball.setAttribute('transform','translate('+(bpos.x-450+ox)+','+(bpos.y-260-14)+')');
+    }
   }
   if(state.possession) G.possession=state.possession;
   if(state.modalClosed) {
-    // Remote resolved a modal - close ours too
+    // Remote resolved a modal — clear all modal locks and close
     G.modalRequired=null;
-    closeModal();
+    G.foulCheckPending=false;
+    G.tipoffJumpers=null;
+    document.getElementById('modal-bg').classList.remove('on');
   }
   // Sync log entries from remote
   if(state.log && state.log.length) {
@@ -2857,6 +2867,10 @@ function applyStateSync(state) {
       var el=document.getElementById(id); if(el) el.innerHTML=logHTML;
     });
   }
+  if(state.ap){
+    G.ap={team:state.ap.team, idx:state.ap.idx, id:state.ap.id};
+    hilightAP();
+  }
   buildAPSel();
   refreshTeamPanel();
 }
@@ -2872,7 +2886,8 @@ function broadcastGameState() {
     ballTok: G.ballTok,
     tokPos: G.tokPos,
     log: G.log.slice(0,5), // last 5 log entries
-    modalClosed: true // signal to remote to close their modal
+    modalClosed: true, // signal to remote to close their modal
+    ap: G.ap ? {team:G.ap.team, idx:G.ap.idx, id:G.ap.id} : null
   };
   var msg = {type:'state_sync', state:state, _from:G._ablyMyId};
   if(ablyChannel) ablyChannel.publish('msg', msg);
@@ -6526,6 +6541,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
