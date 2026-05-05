@@ -1059,6 +1059,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -1121,6 +1122,7 @@ let G = {
 };
 
 let bc_chan = null;
+console.log('Pick & Roll JS loaded. PeerJS available:', typeof Peer !== 'undefined');
 let peer = null;
 let peerConn = null;
 
@@ -2095,6 +2097,7 @@ function saveBack() { backLobby(); }
 //  MULTIPLAYER — BroadcastChannel (same browser, cross-tab)
 // ════════════════════════════════════════════
 function hostGame() {
+  console.log('hostGame called. Peer lib:', typeof Peer);
   G.role = 'host'; G.myTeam = 'a';
   G.roomCode = Math.random().toString(36).substr(2,6).toUpperCase();
   var hname = document.getElementById('coach-name').value || 'Host';
@@ -6395,6 +6398,7 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
 
 
 
