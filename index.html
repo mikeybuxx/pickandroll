@@ -826,8 +826,36 @@ input::placeholder{color:var(--text3);}
         
         
         </div>
-<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script>
+// Load Ably with CDN fallbacks
+(function(){
+  function loadScript(src, cb) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = cb;
+    s.onerror = function(){ cb(new Error('failed: '+src)); };
+    document.head.appendChild(s);
+  }
+  var cdns = [
+    'https://cdn.ably.com/lib/ably.min-2.js',
+    'https://unpkg.com/ably@latest/ably.min.js',
+    'https://cdn.jsdelivr.net/npm/ably/ably.min.js'
+  ];
+  var i = 0;
+  function tryNext(err) {
+    if(typeof Ably !== 'undefined') return;
+    if(i >= cdns.length){ console.error('All Ably CDNs failed'); return; }
+    loadScript(cdns[i++], function(e){ if(e instanceof Error) tryNext(); });
+  }
+  tryNext();
+})();
+</script>
+<script>
+
+
+
+
+
 
 
 
@@ -2092,7 +2120,7 @@ function goBuilder() {
   renderPList(); renderPForm(); show('builder');
 }
 function backLobby() {
-  var _tu={type:'team_update',team:G.teams[G.myTeam]}; if(ablyChannel){ablyChannel.publish('msg',_tu);}else if(bc_chan){bc_chan.postMessage(_tu);}
+  var _tu={type:'team_update',team:G.teams[G.myTeam],_from:G._ablyMyId}; if(ablyChannel){ablyChannel.publish('msg',_tu);}else if(bc_chan){bc_chan.postMessage(_tu);}
   show('lobby');
   const wb = document.getElementById('wait-box');
   if(wb) wb.style.display = G.roomCode ? 'block' : 'none';
@@ -2149,6 +2177,11 @@ function handlePeerMessage(m) {
 
 function hostGame() {
   console.log('hostGame called. Ably:', typeof Ably);
+  if(typeof Ably === 'undefined'){
+    notify('Ably not loaded — check network connection','foul');
+    document.getElementById('wait-status').textContent='Ably failed to load. Try refreshing.';
+    return;
+  }
   G.role = 'host'; G.myTeam = 'a';
   G.roomCode = Math.random().toString(36).substr(2,6).toUpperCase();
   var hname = document.getElementById('coach-name').value || 'Host';
@@ -2163,9 +2196,13 @@ function hostGame() {
   if(ablyClient) { try{ablyClient.close();}catch(e){} ablyClient=null; ablyChannel=null; }
 
   ablyClient = new Ably.Realtime({ key: ABLY_KEY, clientId: 'host-'+G.roomCode });
+  G._ablyMyId = 'host-' + G.roomCode;
   ablyClient.connection.on('connected', function() {
     ablyChannel = ablyClient.channels.get('pr-' + G.roomCode);
-    ablyChannel.subscribe('msg', function(msg) { handlePeerMessage(msg.data); });
+    ablyChannel.subscribe('msg', function(msg) {
+      if(msg.data && msg.data._from === G._ablyMyId) return;
+      handlePeerMessage(msg.data);
+    });
     document.getElementById('wait-status').textContent = 'Room open! Share code:';
     document.getElementById('url-box').textContent = G.roomCode;
     addLog('\u{1f310} Room open — code: ' + G.roomCode, 'l-ev');
@@ -2177,6 +2214,10 @@ function hostGame() {
 }
 
 function joinGame() {
+  if(typeof Ably === 'undefined'){
+    notify('Ably not loaded — check network connection','foul');
+    return;
+  }
   var code = (document.getElementById('join-code').value||'').trim().toUpperCase();
   if(!code){ notify('Enter a room code!'); return; }
   G.role='guest'; G.myTeam='b'; G.roomCode=code;
@@ -2191,10 +2232,14 @@ function joinGame() {
 
   if(ablyClient){ try{ablyClient.close();}catch(e){} ablyClient=null; ablyChannel=null; }
 
-  ablyClient = new Ably.Realtime({ key: ABLY_KEY, clientId: 'guest-'+Date.now() });
+  G._ablyMyId = 'guest-' + Date.now();
+  ablyClient = new Ably.Realtime({ key: ABLY_KEY, clientId: G._ablyMyId });
   ablyClient.connection.on('connected', function() {
     ablyChannel = ablyClient.channels.get('pr-' + G.roomCode);
-    ablyChannel.subscribe('msg', function(msg) { handlePeerMessage(msg.data); });
+    ablyChannel.subscribe('msg', function(msg) {
+      if(msg.data && msg.data._from === G._ablyMyId) return;
+      handlePeerMessage(msg.data);
+    });
     // Announce presence to host
     ablyChannel.publish('msg', { type:'guest_joined', name:jname });
     document.getElementById('wait-status').textContent='Connected! Waiting for host to confirm...';
@@ -2737,11 +2782,17 @@ function makeDraggable(el, id, team) {
         if(otherEl) otherEl.setAttribute('transform','translate('+nx+','+ny+')');
       }
     });
-    var _tm={type:'tok_move',id,x:tp.x,y:tp.y}; if(ablyChannel){ablyChannel.publish('msg',_tm);}else if(bc_chan){bc_chan.postMessage(_tm);}
+    var _tm={type:'tok_move',id,x:tp.x,y:tp.y,_from:G._ablyMyId}; if(ablyChannel){ablyChannel.publish('msg',_tm);}else if(bc_chan){bc_chan.postMessage(_tm);}
   }
 
   el.addEventListener('mousedown', onDown);
   el.addEventListener('touchstart', onDown, {passive:false});
+}
+
+function handleRemote(ev) {
+  if(!ev) return;
+  if(ev.type==='score'){ G.score[ev.team]+=ev.pts; syncScoreboard(); addLog('<b>'+G.teams[ev.team].name+'</b> +'+ev.pts,'l-sc'); }
+  if(ev.type==='log') addLog(ev.msg, ev.cls||'l-ev');
 }
 
 function applyTokMove(m) {
@@ -6375,6 +6426,11 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
+
+
+
 
 
 
