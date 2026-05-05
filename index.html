@@ -288,6 +288,14 @@ input::placeholder{color:var(--text3);}
 .lt-saved-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;margin-bottom:4px;cursor:pointer;}
 .lt-saved-row:hover{border-color:var(--accent);}
 
+.pair-row{padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:12px;margin-bottom:5px;font-family:'Oswald',sans-serif;transition:border-color .15s,background .15s;}
+.pair-row:hover{border-color:var(--accent);}
+.pair-row.pair-sel-def{border-color:var(--red);background:rgba(220,80,50,0.12);color:var(--red);}
+.pair-row.pair-sel-off{border-color:var(--green);background:rgba(62,200,122,0.12);color:var(--green);}
+.pair-row.pair-done{border-color:var(--border2);opacity:0.55;}
+.pair-row.pair-matched{border-color:var(--accent);background:rgba(240,192,64,0.1);}
+.pair-badge{font-size:9px;letter-spacing:1px;padding:1px 5px;border-radius:2px;margin-left:6px;vertical-align:middle;}
+
 </style>
 </head>
 <body>
@@ -576,6 +584,8 @@ input::placeholder{color:var(--text3);}
         <div class="agroup"><div class="agroup-title">Coach</div><div class="agrid">
           <button class="abtn" onclick="setDefenseStrategy('man','a')">MAN 2 MAN</button>
           <button class="abtn" onclick="setDefenseStrategy('zone','a')">ZONE DEF</button>
+          <button class="abtn span2" onclick="openManPairModal('a')">SET MAN2MAN</button>
+          <button class="abtn red span2" onclick="intentionalFoul('a')">INT FOUL</button>
         </div></div>
         <div class="agroup"><div class="agroup-title">Game</div><div class="agrid">
           <button class="abtn" onclick="actTeam('a','tipoff')">TIP-OFF</button>
@@ -755,6 +765,8 @@ input::placeholder{color:var(--text3);}
         <div class="agroup"><div class="agroup-title">Coach</div><div class="agrid">
           <button class="abtn" onclick="setDefenseStrategy('man','b')">MAN 2 MAN</button>
           <button class="abtn" onclick="setDefenseStrategy('zone','b')">ZONE DEF</button>
+          <button class="abtn span2" onclick="openManPairModal('b')">SET MAN2MAN</button>
+          <button class="abtn red span2" onclick="intentionalFoul('b')">INT FOUL</button>
         </div></div>
         <div class="agroup"><div class="agroup-title">Game</div><div class="agrid">
           <button class="abtn" onclick="actTeam('b','tipoff')">TIP-OFF</button>
@@ -1030,6 +1042,21 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -1075,6 +1102,7 @@ let G = {
   handlePlayer: null,    // player who successfully handled (for foul naming)
   fastBreak: null,       // { team, movesLeft } during fast break
   lookBothFailed: false, // true after both Look(1) and Look All fail
+  _lookFoulPending: null, // deferred look foul — resolved when pass target is chosen
   pendingFoulOn: null,   // { playerId, playerName, team } — named player the foul should go on
   foulCheckPending: false, // soft lock — must resolve foul check before next action
   stateHistory: [],      // array of serialized state snapshots for undo
@@ -1156,6 +1184,12 @@ function resolvePassReceive(team, idx, player, pp) {
     ? G.lookResult.chosenZone : null;
   if(recZone) moveTokenToZone(team, idx, recZone);
   G.lookResult = null;
+  // Resolve deferred look foul — defender fouled this receiver
+  if(G._lookFoulPending){
+    var lf=G._lookFoulPending; G._lookFoulPending=null;
+    // Defender is fouler → team = foulerTeam (blocked), roller = passer's team
+    G.pendingFoulOn={playerId:lf.foulerPid,playerName:lf.foulerName,team:lf.foulerTeam};
+  }
 
   // ALLEY-OOP: PASS specialist passes to SLAM specialist in Zone 1 or 2
   const passer = pp.from;
@@ -1286,26 +1320,29 @@ function rollActiveDefense(team) {
     const defSR=sr, handSR=G.handleSR;
     const offTeamRAD2 = team==='a'?'b':'a';
     const foulOnDef = defSR <= handSR; // defender lower SR = foul on defender
+    // RULE: pendingFoulOn.team = FOULER's team (blocked from rolling)
+    // Opponent of fouler rolls the check
     if(foulOnDef){
-      // Foul ON defender — fouled player is the HANDLER (offense)
-      const fouledPlayer = G.handlePlayer;
-      if(fouledPlayer){
-        G.pendingFoulOn={playerId:fouledPlayer.id,playerName:fouledPlayer.name,
-          team:offTeamRAD2,_foulerPid:p.id,_foulerTeam:team};
+      // Defender has lower SR = DEFENDER is fouler
+      // pendingFoulOn.team = defTeam (defender's team, blocked)
+      // roller = offTeamRAD2 (handler's team)
+      G.pendingFoulOn={playerId:p.id,playerName:p.name,
+        team:team,_foulerPid:p.id,_foulerTeam:team};
+      G.foulCheckPending=true;
+    } else {
+      // Handler has lower SR = HANDLER is fouler
+      // pendingFoulOn.team = offTeamRAD2 (handler's team, blocked)
+      // roller = defTeam (defender's team)
+      var handlerFouler = G.handlePlayer;
+      if(handlerFouler){
+        G.pendingFoulOn={playerId:handlerFouler.id,playerName:handlerFouler.name,
+          team:offTeamRAD2,_chargeCandidate:true};
         G.foulCheckPending=true;
       }
-    } else {
-      // Foul ON handler (offense) — fouled player is the DEFENDER
-      G.pendingFoulOn={playerId:p.id,playerName:p.name,
-        team:team,_chargeCandidate:true};
-      G.foulCheckPending=true;
     }
-    const foulOnDefLabel = foulOnDef;
     const foulPlayer = foulOnDef ? p.name : (G.handlePlayer?.name||'handler');
-    // rollTeam = opponent of fouled player = the one who rolls foul check
-    // foulOnDef: fouled=handler(offTeamRAD2), roller=defender(team)
-    // !foulOnDef: fouled=defender(team), roller=handler(offTeamRAD2)
-    const rollTeam = foulOnDef ? G.teams[team].name : G.teams[offTeamRAD2].name;
+    // roller = opponent of fouler's team
+    const rollTeam = foulOnDef ? G.teams[offTeamRAD2].name : G.teams[team].name;
     return ` · <span style="color:var(--accent)">Possible foul on <b>${foulPlayer}</b> — ${rollTeam}: roll Foul Check</span>`;
   })():'';
   if(r===1){
@@ -2563,8 +2600,20 @@ function mkTok(player, team, idx, pos) {
         ).join(' ');
         // Foul note: on the TARGET player (lowest SR side: if off loses = target may foul, if def loses = defender may foul)
         if(diff<=3){
-          const foulPlayerL1 = srOff < srDef ? {id:player.id,name:player.name,team:team} : (defPlayer?{id:defPlayer.id,name:defPlayer.name,team:defTeam}:null);
-          if(foulPlayerL1) { G.pendingFoulOn={playerId:foulPlayerL1.id,playerName:foulPlayerL1.name,team:foulPlayerL1.team}; G.foulCheckPending=true; }
+          // Lower SR = possible fouler
+          // srOff < srDef: passer lower SR → passer possible fouler → fouled = defender
+          // srDef < srOff: defender lower SR → defender possible fouler → fouled = pass TARGET (receiver)
+          // Pass target not known yet — store pending and resolve when receiver is chosen
+          if(srOff < srDef && defPlayer){
+            // Passer has lower SR = passer is fouler
+            // pendingFoulOn.team = passer's team (team) — blocks passer, opponent (defTeam) rolls
+            G.pendingFoulOn={playerId:player.id,playerName:player.name,team:team,_chargeCandidate:true};
+            G.foulCheckPending=true;
+          } else if(srDef <= srOff && defPlayer){
+            // Defender may have fouled receiver — store flag, resolve when target chosen
+            G._lookFoulPending={foulerPid:defPlayer.id,foulerName:defPlayer.name,foulerTeam:defTeam};
+            G.foulCheckPending=true;
+          }
         }
         const foulOn1 = diff<=3 ? (srOff < srDef ? ` · Possible foul on <b>${player.name}</b>` : ` · Possible foul on <b>${defPlayer?defPlayer.name:'Defender'}</b>`) : '';
         addLog(`👁 LOOK (1): ${lp.player.name} OFF (SR ${srOff}) looking for ${player.name} vs ${defPlayer?defPlayer.name:'Defender'} DEF (SR ${srDef}) — <b style="color:var(--green)">OPEN PASS</b>${foulOn1}<br><span style="font-size:10px;color:var(--text3)">Place ${player.name} in: </span>${zoneBtns}`, 'l-ev');
@@ -2897,10 +2946,28 @@ function act(a) {
       const r=d(30), sr=30-r;
       setLastAction(G.myTeam,'PASS',r);
       if(r===30){
-        addLog(`📮 PASS (${p.name}): rolled 30 — <b>LOOSE BALL / TURNOVER!</b>`, 'l-fo');
-        notify('TURNOVER!','foul');
-        G.stealPassPending=null;
-        clearBallTransform();
+        if(G.stealPassPending){
+          // Steal was declared + passer critically failed = stealer gets ball immediately
+          var sp30=G.stealPassPending; G.stealPassPending=null;
+          var defPs30=G.teams[sp30.defTeam].players.filter(function(px){return px.onCourt;});
+          var di30=defPs30.findIndex(function(px){return px.id===sp30.defPlayer.id;});
+          if(di30>=0){
+            setActiveAndBall(sp30.defTeam,di30,sp30.defPlayer.id);
+            addLog('📮 PASS ('+p.name+'): 💀 CRITICAL FAIL — '+sp30.defPlayer.name+' was in position — STEAL! Ball to '+sp30.defPlayer.name,'l-fo');
+            notify(sp30.defPlayer.name+' intercepts!','foul');
+            showContinueButton(sp30.defTeam);
+          } else {
+            G.stealPassPending=null;
+            addLog('📮 PASS ('+p.name+'): 💀 CRITICAL FAIL — RANDOM HUSTLE','l-fo');
+            startRandomHustle(false);
+          }
+        } else {
+          // No steal declared — loose ball, random hustle
+          addLog('📮 PASS ('+p.name+'): 💀 CRITICAL FAIL — RANDOM HUSTLE — ball loose!','l-fo');
+          notify('Critical fail — random hustle!','foul');
+          G.stealPassPending=null;
+          startRandomHustle(false);
+        }
       } else if(G.stealPassPending) {
         // Steal contest: PAS=30 (sr above) vs ½STL
         const sp=G.stealPassPending;
@@ -3469,10 +3536,15 @@ function act(a) {
         if(autoFoulNow) {
           var hHandler=hf2.player;
           var hHandlerTeam=G.teams.a.players.some(function(px){return px.id===hHandler.id;})?'a':'b';
-          addLog('AUTO FOUL — '+p.name+' committed foul on '+hHandler.name+' (no roll needed)','l-fo');
-          G.pendingFoulOn={playerId:hHandler.id,playerName:hHandler.name,team:hHandlerTeam};
-          commitFoul(G.myTeam, p.id);
+          var stealer=hf2.defPlayer; // use defPlayer directly, not getAP() which may be null
+          if(!stealer){ G.handleFailed=null; break; }
+          addLog('⚠️ AUTO FOUL — '+stealer.name+' committed foul on '+hHandler.name+' (no roll needed)','l-fo');
+          G.pendingFoulOn={playerId:hHandler.id,playerName:hHandler.name,team:hHandlerTeam,_foulerPid:stealer.id,_foulerTeam:G.myTeam};
+          commitFoul(G.myTeam, stealer.id);
           G.handleFailed=null;
+          // Clear RECOVER HANDLE prompt from log area
+          var logEl=document.getElementById('log');
+          addLog('❌ RECOVER HANDLE cancelled — auto foul committed','l-fo');
           break;
         }
         addLog('STEAL DRB ('+p.name+'): ½STL='+adj+', d30→'+r+' → SR <b>'+sr+'</b>'+foulNote,'l-ro');
@@ -3616,11 +3688,15 @@ function act(a) {
               addLog('🛡️ Within 3 (shooter wins) — foul check on '+(defP3?.name||'Defender')+' (blocking foul candidate)','l-fo');
             }
           }
-          // Store BD target and prompt DEFENDER to roll BD
-          const bdVal=bdEl?parseInt(bdEl.value)||20:20;
-          if(G.pendingShot) G.pendingShot._bdTarget=bdVal;
-          addLog('🛡️ <span style="color:var(--accent)">'+G.teams[G.myTeam].name+': roll BD ('+bdVal+')</span>','l-ev');
-          notify(G.teams[G.myTeam].name+': roll BD ('+bdVal+')','foul');
+          // Only prompt BD if no foul check pending (within-3 check blocks BD)
+          if(!G.foulCheckPending){
+            const bdVal=bdEl?parseInt(bdEl.value)||20:20;
+            if(G.pendingShot) G.pendingShot._bdTarget=bdVal;
+            addLog('🛡️ <span style="color:var(--accent)">'+G.teams[G.myTeam].name+': roll BD ('+bdVal+')</span>','l-ev');
+            notify(G.teams[G.myTeam].name+': roll BD ('+bdVal+')','foul');
+          } else {
+            addLog('⚖️ Foul check pending — resolve before BD','l-fo');
+          }
         }
       }
       break;
@@ -3910,7 +3986,7 @@ function doInbound(team,pid,x,y){
   const tid='T-'+team+'-'+idx, el=document.getElementById(tid);
   if(el&&G.tokPos[tid]){el.setAttribute('transform',`translate(${x},${y})`);G.tokPos[tid].x=x;G.tokPos[tid].y=y;}
   resetClk(); setActiveAndBall(team,idx,pid); buildAPSel();
-  G.lastAction=null; G.lookBothFailed=false; G.modalRequired=null; G.shotActive=null; G.shotJustScored=false; G._wasInBackCourt={a:true,b:true}; G._inboundPass=true; // fresh possession
+  G.lastAction=null; G.lookBothFailed=false; G.modalRequired=null; G.shotActive=null; G.shotJustScored=false; G._wasInBackCourt={a:true,b:true}; G._inboundPass=true; G._lookFoulPending=null; // fresh possession
   addLog(`📋 INBOUND: ${pl.name} (${G.teams[team].name}) at half court sideline`,'l-ev');
   notify(pl.name+' inbounds','score');
 }
@@ -3928,7 +4004,7 @@ function doBCInbound(team, pid, x, y) {
   }
   G.clocks.bc = 3; G.clocks.sh = 8; syncClocks(); renderPips();
   setActiveAndBall(team, idx, pid); buildAPSel();
-  G.lastAction=null; G.lookBothFailed=false; G.modalRequired=null; G.shotActive=null; G.shotJustScored=false; G._wasInBackCourt={a:true,b:true}; G._inboundPass=true; // fresh possession
+  G.lastAction=null; G.lookBothFailed=false; G.modalRequired=null; G.shotActive=null; G.shotJustScored=false; G._wasInBackCourt={a:true,b:true}; G._inboundPass=true; G._lookFoulPending=null; // fresh possession
   addLog(`📋 INBOUND (${G.teams[team].name}): ${pl.name} inbounds at half court sideline`, 'l-ev');
   notify(pl.name + ' inbounds at half court', 'score');
 }
@@ -4887,6 +4963,24 @@ function resolveHandleContest() {
   G.handleFailed=null;
   if(autoFoul&&pairedDef&&!bothFail){addLog('AUTO FOUL — '+pairedDef.name+' committed foul on '+handler.name,'l-fo');commitFoul(defTeamR,pairedDef.id);}
   if(bothFail){addLog('Both fail — RANDOM HUSTLE','l-fo');startRandomHustle(inBackCourt(handlerTeam));}
+  else if(offFailed && defWon && pairedDef){
+    // Handler failed recovery AND stealer won — stealer gets the ball
+    var dpOF=G.teams[defTeamR].players.filter(function(px){return px.onCourt;});
+    var diOF=dpOF.findIndex(function(px){return px.id===pairedDef.id;});
+    var handlerTidOF='T-'+handlerTeam+'-'+(G.ballTok?G.ballTok.idx:0);
+    var handlerPosOF=G.tokPos[handlerTidOF];
+    if(handlerPosOF){
+      var stealTidOF='T-'+defTeamR+'-'+diOF;
+      var sxOF=handlerPosOF.x+(defTeamR==='a'?-30:30);
+      var syOF=handlerPosOF.y+(diOF%2===0?-20:20);
+      sxOF=Math.max(20,Math.min(880,sxOF)); syOF=Math.max(20,Math.min(500,syOF));
+      var stealElOF=document.getElementById(stealTidOF);
+      if(stealElOF&&G.tokPos[stealTidOF]){stealElOF.setAttribute('transform','translate('+sxOF+','+syOF+')');G.tokPos[stealTidOF].x=sxOF;G.tokPos[stealTidOF].y=syOF;}
+    }
+    setActiveAndBall(defTeamR,diOF,pairedDef.id);
+    addLog('FAILED AGAIN — '+pairedDef.name+' steals! '+handler.name+' loses possession','l-fo');
+    notify(pairedDef.name+' steals!','foul');
+  }
   else if(offFailed){clearBallTransform();addLog('FAILED AGAIN — ball lost! '+handler.name+' loses possession','l-fo');notify('Ball lost','foul');}
   else if(defWon){
     if(pairedDef){
@@ -5879,22 +5973,204 @@ function getZoneForPos(team, x) {
 
 
 function getPairedDefender(offTeam) {
-  // Returns the defender currently paired to the ball carrier
-  // Zone defense: G.ap (updated by checkZoneRepair)
-  // Man defense: defender at same index as ball carrier (ballTok.idx)
   var defTeam = offTeam==='a'?'b':'a';
   var defPs = G.teams[defTeam].players.filter(function(p){return p.onCourt;});
   if(G.defenseStrat==='zone'){
-    // Use G.ap if it's a defender on defTeam
     if(G.ap && G.ap.team===defTeam){
       return defPs.find(function(p){return p.id===G.ap.id;}) || null;
     }
     return null;
   } else {
-    // Man defense: same index as ball carrier
+    // Check explicit manPairings first
+    var ballPs = G.teams[offTeam].players.filter(function(p){return p.onCourt;});
+    var ballP = G.ballTok ? ballPs[G.ballTok.idx] : ballPs[0];
+    if(ballP && G.manPairings){
+      var expl = getManPairedDefenderForOff(ballP.id, defTeam);
+      if(expl) return expl;
+    }
+    // Fall back to index pairing — but skip defenders already manually assigned elsewhere
     var ballIdx = G.ballTok ? G.ballTok.idx : 0;
-    return defPs[ballIdx] || defPs[0];
+    var assignedDefIds = new Set(Object.keys(G.manPairings||{}));
+    var fallback = defPs[ballIdx];
+    // If that defender is manually assigned to someone else, find next unassigned
+    if(fallback && assignedDefIds.has(fallback.id)){
+      fallback = defPs.find(function(d){ return !assignedDefIds.has(d.id); }) || defPs[ballIdx];
+    }
+    return fallback || defPs[0];
   }
+}
+
+
+// ── MAN2MAN PAIRING MODAL ────────────────────────────────────────────────────
+var _pairDefTeam = null;   // team being set as defense
+var _pairSelDef = null;    // selected defender player id
+var _pairSelOff = null;    // selected offensive player id
+var _pairPairs = {};       // { defPid: offPid } in-progress pairings for this session
+
+function openManPairModal(defTeam) {
+  _pairDefTeam = defTeam;
+  _pairSelDef = null;
+  _pairSelOff = null;
+  _pairPairs = Object.assign({}, G.manPairings); // start from existing pairings
+  _renderPairModal();
+  document.getElementById('modal-bg').classList.add('on');
+  G.modalRequired = true;
+}
+
+function _renderPairModal() {
+  var defTeam = _pairDefTeam;
+  var offTeam = defTeam==='a'?'b':'a';
+  var defPs = G.teams[defTeam].players.filter(function(p){return p.onCourt;});
+  var offPs = G.teams[offTeam].players.filter(function(p){return p.onCourt;});
+  var defCol = G.teamColors?.[defTeam] || (defTeam==='a'?'#7ab0ff':'#ff8080');
+  var offCol = G.teamColors?.[offTeam] || (offTeam==='a'?'#7ab0ff':'#ff8080');
+
+  // Build defender rows — highlight selected, show current pairing
+  var defRows = defPs.map(function(p) {
+    var isSel = _pairSelDef === p.id;
+    var pairedOffId = _pairPairs[p.id];
+    var pairedOff = pairedOffId ? offPs.find(function(x){return x.id===pairedOffId;}) : null;
+    var cls = 'pair-row' + (isSel ? ' pair-sel-def' : (pairedOff ? ' pair-matched' : ''));
+    var badge = pairedOff
+      ? '<span class="pair-badge" style="background:rgba(240,192,64,0.2);color:var(--accent)">\u2194 '+pairedOff.name+'</span>'
+      : '<span class="pair-badge" style="background:rgba(255,255,255,0.06);color:var(--text3)">unset</span>';
+    return '<div class="'+cls+'" onclick="pairSelDef(\''+p.id+'\')" data-hover-pid="'+p.id+'" data-hover-team="'+defTeam+'">'
+      + '<b>'+p.name+'</b> <span style="color:var(--text3);font-size:10px">'+p.position+'</span>'
+      + badge + '</div>';
+  }).join('');
+
+  // Build offensive player rows
+  var offRows = offPs.map(function(p) {
+    var isSel = _pairSelOff === p.id;
+    // Check if this player is already paired to someone
+    var pairedDefId = null;
+    Object.keys(_pairPairs).forEach(function(dId){
+      if(_pairPairs[dId]===p.id) pairedDefId=dId;
+    });
+    var pairedDef = pairedDefId ? defPs.find(function(x){return x.id===pairedDefId;}) : null;
+    var cls = 'pair-row' + (isSel ? ' pair-sel-off' : (pairedDef ? ' pair-matched' : ''));
+    var badge = pairedDef
+      ? '<span class="pair-badge" style="background:rgba(240,192,64,0.2);color:var(--accent)">\u2194 '+pairedDef.name+'</span>'
+      : '<span class="pair-badge" style="background:rgba(255,255,255,0.06);color:var(--text3)">unset</span>';
+    return '<div class="'+cls+'" onclick="pairSelOff(\''+p.id+'\')" data-hover-pid="'+p.id+'" data-hover-team="'+offTeam+'">'
+      + '<b>'+p.name+'</b> <span style="color:var(--text3);font-size:10px">'+p.position+'</span>'
+      + badge + '</div>';
+  }).join('');
+
+  var totalPaired = Object.keys(_pairPairs).length;
+  var allPaired = totalPaired >= Math.min(defPs.length, offPs.length);
+
+  document.getElementById('modal-body').innerHTML =
+    '<h2 style="margin-bottom:4px">SET MAN2MAN</h2>'
+    + '<p style="font-size:10px;color:var(--text3);margin-bottom:12px;letter-spacing:1px">Select a defender, then an offensive player to pair them. '+totalPaired+'/'+Math.min(defPs.length,offPs.length)+' paired.</p>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'
+    +   '<div>'
+    +     '<div style="font-size:9px;letter-spacing:3px;color:'+offCol+';margin-bottom:8px">OFFENSE \u2014 '+G.teams[offTeam].name+'</div>'
+    +     offRows
+    +   '</div>'
+    +   '<div>'
+    +     '<div style="font-size:9px;letter-spacing:3px;color:'+defCol+';margin-bottom:8px">DEFENSE \u2014 '+G.teams[defTeam].name+'</div>'
+    +     defRows
+    +   '</div>'
+    + '</div>'
+    + '<div class="modal-actions">'
+    +   '<button class="btn btn-ghost btn-sm" onclick="G.modalRequired=null;closeModal()">CANCEL</button>'
+    +   '<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="pairClearAll()">CLEAR ALL</button>'
+    +   '<button class="btn btn-primary btn-sm" id="pair-set-btn" onclick="pairCommit()" '+(allPaired?'':'')+'>'
+    +     (allPaired ? '\u2714 ALL SET' : 'SET PAIRS')+'</button>'
+    + '</div>';
+
+  // Re-attach hover card listeners
+  document.querySelectorAll('#modal-body .pair-row[data-hover-pid]').forEach(function(el){
+    el.addEventListener('mouseover', function(){
+      showSubHoverCard(el.dataset.hoverPid, el.dataset.hoverTeam, el);
+    });
+    el.addEventListener('mouseout', function(){
+      hideSubHoverCard();
+    });
+  });
+}
+
+function pairSelDef(pid) {
+  _pairSelDef = pid;
+  // If both selected, auto-pair
+  if(_pairSelOff) { _doPair(); return; }
+  _renderPairModal();
+}
+
+function pairSelOff(pid) {
+  _pairSelOff = pid;
+  // If both selected, auto-pair
+  if(_pairSelDef) { _doPair(); return; }
+  _renderPairModal();
+}
+
+function _doPair() {
+  if(!_pairSelDef || !_pairSelOff) return;
+  // Remove any existing pairing for this defender or this offensive player
+  Object.keys(_pairPairs).forEach(function(dId){
+    if(dId===_pairSelDef || _pairPairs[dId]===_pairSelOff) delete _pairPairs[dId];
+  });
+  _pairPairs[_pairSelDef] = _pairSelOff;
+  _pairSelDef = null;
+  _pairSelOff = null;
+  _renderPairModal();
+}
+
+function pairClearAll() {
+  _pairPairs = {};
+  _pairSelDef = null;
+  _pairSelOff = null;
+  _renderPairModal();
+}
+
+function pairCommit() {
+  G.manPairings = Object.assign({}, _pairPairs);
+  // Update token positions: place each defender adjacent to their assigned offensive player
+  var defTeam = _pairDefTeam;
+  var offTeam = defTeam==='a'?'b':'a';
+  var defPs = G.teams[defTeam].players.filter(function(p){return p.onCourt;});
+  var offPs = G.teams[offTeam].players.filter(function(p){return p.onCourt;});
+  var pairCount = 0;
+  Object.keys(G.manPairings).forEach(function(defPid){
+    var offPid = G.manPairings[defPid];
+    var defP = defPs.find(function(p){return p.id===defPid;});
+    var offP = offPs.find(function(p){return p.id===offPid;});
+    if(!defP || !offP) return;
+    var defIdx = defPs.indexOf(defP);
+    var offIdx = offPs.indexOf(offP);
+    var offTid = 'T-'+offTeam+'-'+offIdx;
+    var defTid = 'T-'+defTeam+'-'+defIdx;
+    var offPos = G.tokPos[offTid];
+    if(offPos) {
+      var dx = defTeam==='a' ? -38 : 38;
+      var nx = Math.max(20,Math.min(880,offPos.x+dx));
+      var ny = Math.max(20,Math.min(500,offPos.y));
+      var defEl = document.getElementById(defTid);
+      if(defEl && G.tokPos[defTid]) {
+        defEl.setAttribute('transform','translate('+nx+','+ny+')');
+        G.tokPos[defTid].x=nx; G.tokPos[defTid].y=ny;
+      }
+    }
+    pairCount++;
+  });
+  addLog('\u{1f6e1}\ufe0f MAN2MAN SET: '+pairCount+' matchups assigned ('+G.teams[defTeam].name+' defends)','l-ev');
+  notify('Man2Man pairings set!','score');
+  G.modalRequired = null;
+  closeModal();
+}
+
+// Get the man-paired defender for a given offensive player (by player ID, not index)
+function getManPairedDefenderForOff(offPid, defTeam) {
+  // Check G.manPairings for explicit assignment
+  var defPid = Object.keys(G.manPairings||{}).find(function(dId){
+    return G.manPairings[dId]===offPid;
+  });
+  if(defPid) {
+    var defPs=G.teams[defTeam].players.filter(function(p){return p.onCourt;});
+    return defPs.find(function(p){return p.id===defPid;})||null;
+  }
+  return null;
 }
 
 function placeZoneDefense() {
@@ -6120,6 +6396,21 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
