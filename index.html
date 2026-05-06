@@ -626,6 +626,16 @@ input::placeholder{color:var(--text3);}
         <div class="dsec"><div class="dsec-title">Quick Roll</div>
           <div class="dgrid"><button class="dbtn" onclick="qrTeam('a',3)">d3</button><button class="dbtn" onclick="qrTeam('a',4)">d4</button><button class="dbtn" onclick="qrTeam('a',6)">d6</button><button class="dbtn" onclick="qrTeam('a',10)">d10</button><button class="dbtn" onclick="qrTeam('a',12)">d12</button><button class="dbtn" onclick="qrTeam('a',20)">d20</button><button class="dbtn" onclick="qrTeam('a',30)">d30</button></div>
           <div class="dresult" id="ldr-q"></div>
+        <div class="dsec" style="border-color:rgba(255,100,100,0.3);background:rgba(255,50,50,0.05)">
+          <div class="dsec-title" style="color:rgba(255,120,120,0.8)">&#9881; PLAYTESTING</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="playtestInbound('a')">INBOUND (HOME)</button>
+            <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="playtestInbound('b')">INBOUND (VISITORS)</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="dbtn" style="flex:1;color:rgba(180,180,255,0.9);border-color:rgba(180,180,255,0.3)" onclick="playtestJumpBall()">JUMP BALL</button>
+          </div>
+        </div>
         </div>
       </div>
       </div>
@@ -814,6 +824,16 @@ input::placeholder{color:var(--text3);}
         <div class="dsec"><div class="dsec-title">Quick Roll</div>
           <div class="dgrid"><button class="dbtn" onclick="qrTeam('b',3)">d3</button><button class="dbtn" onclick="qrTeam('b',4)">d4</button><button class="dbtn" onclick="qrTeam('b',6)">d6</button><button class="dbtn" onclick="qrTeam('b',10)">d10</button><button class="dbtn" onclick="qrTeam('b',12)">d12</button><button class="dbtn" onclick="qrTeam('b',20)">d20</button><button class="dbtn" onclick="qrTeam('b',30)">d30</button></div>
           <div class="dresult" id="rdr-q"></div>
+        <div class="dsec" style="border-color:rgba(255,100,100,0.3);background:rgba(255,50,50,0.05)">
+          <div class="dsec-title" style="color:rgba(255,120,120,0.8)">&#9881; PLAYTESTING</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="playtestInbound('a')">INBOUND (HOME)</button>
+            <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="playtestInbound('b')">INBOUND (VISITORS)</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="dbtn" style="flex:1;color:rgba(180,180,255,0.9);border-color:rgba(180,180,255,0.3)" onclick="playtestJumpBall()">JUMP BALL</button>
+          </div>
+        </div>
         </div>
       </div>
       </div>
@@ -855,6 +875,15 @@ input::placeholder{color:var(--text3);}
 })();
 </script>
 <script>
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1296,6 +1325,11 @@ function resolvePassReceive(team, idx, player, pp) {
 
 function chooseLookZone(zone) {
   if (!G.lookResult) return;
+  // Block zone placement if foul check is pending (foul check must resolve first)
+  if(G.foulCheckPending){
+    notify('⚖️ Resolve foul check before placing — DICE tab → ROLL FOUL CHECK','foul');
+    return;
+  }
   const lr = G.lookResult;
   const zoneLabels = { zone1:'Zone 1', zone2:'Zone 2', zone3:'Zone 3', zone4:'Zone 4', back:'Back Court' };
   // Second OFF vs DEF contest to place in specific zone
@@ -1721,7 +1755,7 @@ function rollFoulTeam(team) {
       showContinueButton(pss.team);
     } else {
       // No foul — basket counts
-      scorePoints(pss.team,pss.pts);
+      score(pss.team,pss.pts);
       addLog('💥 DUNK! +'+pss.pts+' ('+G.teams[pss.team].name+') — no charge — basket counts','l-sc');
       notify('DUNK!','score');
       showContinueButton(pss.team);
@@ -1833,9 +1867,13 @@ function rollBDTeam(team) {
   }
   if(G.pendingShot){
     const offTeam=G.pendingShot.defTeam?(G.pendingShot.defTeam==='a'?'b':'a'):(team==='a'?'b':'a');
-    const wasSlam = !!(G.pendingShot._nosBD); // SLAM = no BD roll
-    actTeam(offTeam,'reveal_shot');
-    if(wasSlam) return; // SLAM resolved in reveal_shot — no BD roll
+    const wasSlam = !!(G.pendingShot._nosBD);
+    // Only call reveal_shot if block hasn't been rolled yet
+    // If _blockSR is already set, block was already resolved — just roll BD
+    if(G.pendingShot._blockSR === undefined){
+      actTeam(offTeam,'reveal_shot');
+      if(wasSlam) return;
+    }
   }
   const pfx = team==='a'?'l':'r';
   const t = (G.pendingShot&&G.pendingShot._bdTarget) ? G.pendingShot._bdTarget
@@ -2982,7 +3020,9 @@ function act(a) {
   if(G.gameOver){ notify('Game over!','foul'); return; 
   // Broadcast game state to remote after action
   if(ablyChannel||bc_chan) setTimeout(broadcastGameState, 100);}
-  const FC_EXEMPT = ['to_f','to_20','inbound','tipoff','free','chooseLookZone'];
+  // Clear inbound exemption on any action (look1/hold don't call useMv)
+  if(a!=='inbound'&&a!=='tipoff') G._inboundPass=false;
+  const FC_EXEMPT = ['to_f','to_20','inbound','tipoff','free'];
   if(G.foulCheckPending && !FC_EXEMPT.includes(a)) {
     notify('⚖️ Resolve foul check first — DICE tab → ROLL FOUL CHECK', 'foul');
     addLog(`⚠️ Action blocked — roll <b>Foul Check</b> (DICE tab) first`, 'l-fo');
@@ -3086,8 +3126,8 @@ function act(a) {
         addLog(`👁 LOOK (1) blocked — already looked once and failed · must press LOOK ALL`,'l-ro');
         break;
       }
-      // Move cost: 0 alone, but 1 full move if immediately following another look
-      
+      // Look(1) costs 1 BC move when in back court
+      useMv(1);
       G.lastAction='look1';
       G.lookPending = { player: p, dv, team: G.myTeam };
       const oppTeamL = G.myTeam==='a'?'b':'a';
@@ -3827,7 +3867,7 @@ function act(a) {
             notify('Foul check on '+shooter.name+' — charge waves off basket!','foul');
           } else {
             // Clean dunk
-            scorePoints(offTeam3,2);
+            score(offTeam3,2);
             addLog('💥 DUNK! +2 ('+G.teams[offTeam3].name+') — clean finish','l-sc');
             notify('DUNK!','score');
             showContinueButton(offTeam3);
@@ -4008,10 +4048,14 @@ function act(a) {
           // Store block SR so reveal_shot can calculate adjusted BD
           G.pendingShot._blockSR = sr;
           const defTeamBD = G.myTeam;
-          // BD will be calculated in reveal_shot using SR comparison — pre-fill with base for now
+          // Pre-fill BD with adjusted value accounting for block SR
+          // If shooter SR > block SR, block barely failed — BD is base + difference
+          // If block SR > shooter SR, shouldn't reach here but use base
           const bpfx = defTeamBD==='a'?'l':'r';
           const bdEl = document.getElementById(bpfx+'bd-t');
-          if(bdEl) bdEl.value = base;
+          const adjBDFail = Math.max(1, base + Math.max(0, shotSR - sr));
+          if(bdEl) bdEl.value = adjBDFail;
+          if(G.pendingShot) G.pendingShot._bdTarget = adjBDFail;
           // SLAM with failed block: score immediately, no BD needed
           if(G.pendingShot && G.pendingShot._nosBD) {
             const ps3=G.pendingShot; G.pendingShot=null;
@@ -4026,7 +4070,7 @@ function act(a) {
               addLog('⚖️ Foul check on '+shooterSlF.name+' — DICE tab → ROLL FOUL CHECK — charge = no basket','l-fo');
               notify('Foul check on '+shooterSlF.name+' — charge waves off basket!','foul');
             } else {
-              scorePoints(offTeamSlF,2);
+              score(offTeamSlF,2);
               addLog('💥 DUNK! +2 ('+G.teams[offTeamSlF].name+') — block failed — clean finish','l-sc');
               notify('DUNK!','score');
               showContinueButton(offTeamSlF);
@@ -4476,6 +4520,70 @@ function pnrPassToRoller(screenerIdx,screenerId){
   addLog('📮 PASS TO ROLLER — '+screener.name+' catches in Zone 2 — open — defender -8 BLK','l-ev');
   notify(screener.name+' catches in Zone 2!','score');
   G._pnrBlockPenalty=-8;
+}
+
+
+function playtestInbound(team) {
+  // Reset game state to fresh inbound for selected team
+  G.foulCheckPending = false;
+  G.pendingFoulOn = null;
+  G.pendingShot = null;
+  G.shotActive = null;
+  G.shotJustScored = false;
+  G.passPending = null;
+  G.stealPassPending = null;
+  G.lookPending = null;
+  G.lookResult = null;
+  G.handleFailed = null;
+  G.handleSR = null;
+  G.critStopPending = null;
+  G.pendingSwat = null;
+  G.pendingOpenShot = null;
+  G.pendingFT = null;
+  G.pendingReboundAfterFoul = false;
+  G.reboundPending = null;
+  G.modalRequired = null;
+  G._pnrPending = null;
+  document.getElementById('modal-bg').classList.remove('on');
+  document.querySelectorAll('.tok').forEach(function(el){
+    el.classList.remove('look-target','look-origin','look-locked');
+  });
+  // Pick first on-court player to inbound
+  var ps = G.teams[team].players.filter(function(p){return p.onCourt;});
+  if(!ps.length){notify('No players on court for '+G.teams[team].name,'foul');return;}
+  var p = ps[0];
+  var idx = 0;
+  // Place at half court sideline
+  doInbound(team, p.id, 450, 10);
+  addLog('\u2699\ufe0f PLAYTEST: inbound set for '+G.teams[team].name+' — '+p.name,'l-ev');
+  notify('Playtesting: '+G.teams[team].name+' inbounds','score');
+}
+
+function playtestJumpBall() {
+  G.foulCheckPending = false;
+  G.pendingFoulOn = null;
+  G.pendingShot = null;
+  G.shotActive = null;
+  G.passPending = null;
+  G.stealPassPending = null;
+  G.lookPending = null;
+  G.lookResult = null;
+  G.handleFailed = null;
+  G.handleSR = null;
+  G.critStopPending = null;
+  G.pendingSwat = null;
+  G.pendingOpenShot = null;
+  G.pendingFT = null;
+  G.reboundPending = null;
+  G.modalRequired = null;
+  G._pnrPending = null;
+  document.getElementById('modal-bg').classList.remove('on');
+  document.querySelectorAll('.tok').forEach(function(el){
+    el.classList.remove('look-target','look-origin','look-locked');
+  });
+  showTipoffChooser();
+  addLog('\u2699\ufe0f PLAYTEST: jump ball reset','l-ev');
+  notify('Playtesting: jump ball','score');
 }
 
 function trySwingBall(team) {
@@ -6913,6 +7021,15 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
+
+
+
+
+
+
+
 
 
 
