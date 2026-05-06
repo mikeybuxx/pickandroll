@@ -1147,6 +1147,16 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
+
+
+
+
+
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -1350,16 +1360,29 @@ function chooseLookZone(zone) {
     lr.chosenZone = zone;
     addLog(`📍 Placement: OFF d30→${r2off}(SR${sr2off}) vs DEF d30→${r2def}(SR${sr2def}) — <b style="color:var(--green)">SUCCESS</b> · ${lr.targetPlayer.name} placed in <b>${zoneLabels[zone]}</b>`, 'l-ev');
     moveTokenToZone(lr.targetTeam, lr.targetIdx, zone);
-    // Defender follows (they left their man open but still trail)
+    // Zone repair: temporarily set ballTok to receiver so repair fires correctly
+    if(G.defenseStrat==='zone'){
+      var prevBallTok=G.ballTok;
+      G.ballTok={team:lr.targetTeam,idx:lr.targetIdx};
+      checkZoneRepair();
+      G.ballTok=prevBallTok;
+    }
+    // Defender follows — use committed zone defender if zone mode, else index-match
     const defTeamLZ = lr.targetTeam==='a'?'b':'a';
     const defPosLZ = ZONE_POS[lr.targetTeam][zone];
     if(defPosLZ){
-      const offX2 = lr.targetTeam==='a' ? -42 : 42; // A attacks right, defender trails from left
+      const offX2 = lr.targetTeam==='a' ? -42 : 42;
       const defX = Math.max(30, Math.min(870, defPosLZ.x + offX2));
       const defY = defPosLZ.y;
-      const defTid = 'T-'+defTeamLZ+'-'+lr.targetIdx;
-      const defEl = document.getElementById(defTid);
-      if(defEl && G.tokPos[defTid]){ defEl.setAttribute('transform',`translate(${defX},${defY})`); G.tokPos[defTid].x=defX; G.tokPos[defTid].y=defY; }
+      // In zone defense use the committed defender from zonePairedTo, not index
+      var receiverTidLZ = 'T-'+lr.targetTeam+'-'+lr.targetIdx;
+      var zonePairLZ = G.defenseStrat==='zone' && G.zonePairedTo && G.zonePairedTo[receiverTidLZ];
+      var defIdxLZ = zonePairLZ ? zonePairLZ.defIdx : (G.defenseStrat==='zone' ? -1 : lr.targetIdx);
+      if(defIdxLZ >= 0) {
+        const defTid = 'T-'+defTeamLZ+'-'+defIdxLZ;
+        const defEl = document.getElementById(defTid);
+        if(defEl && G.tokPos[defTid]){ defEl.setAttribute('transform',`translate(${defX},${defY})`); G.tokPos[defTid].x=defX; G.tokPos[defTid].y=defY; }
+      }
     }
     notify('Zone set — press PASS to send', 'score');
   } else {
@@ -1374,15 +1397,21 @@ function chooseLookZone(zone) {
     lr.chosenZone = randZone;
     addLog(`📍 Placement: OFF d30→${r2off}(SR${sr2off}) vs DEF d30→${r2def}(SR${sr2def}) — <b>COVERED zone</b> · still OPEN, random placement: d${inBack?10:nearHalf?4:3}→${randRoll} = <b>${randLabel}</b>`, 'l-ro');
     moveTokenToZone(lr.targetTeam, lr.targetIdx, randZone);
-    // Defender still follows
+    if(G.defenseStrat==='zone') setTimeout(checkZoneRepair, 30);
+    // Defender still follows — use committed zone defender if zone mode
     const defTeamLZ2 = lr.targetTeam==='a'?'b':'a';
     const defPosLZ2 = ZONE_POS[lr.targetTeam][randZone];
     if(defPosLZ2){
       const offX3 = lr.targetTeam==='a' ? -42 : 42;
       const defX2 = Math.max(30, Math.min(870, defPosLZ2.x + offX3));
-      const defTid2 = 'T-'+defTeamLZ2+'-'+lr.targetIdx;
-      const defEl2 = document.getElementById(defTid2);
-      if(defEl2 && G.tokPos[defTid2]){ defEl2.setAttribute('transform',`translate(${defX2},${defPosLZ2.y})`); G.tokPos[defTid2].x=defX2; G.tokPos[defTid2].y=defPosLZ2.y; }
+      var receiverTidLZ2 = 'T-'+lr.targetTeam+'-'+lr.targetIdx;
+      var zonePairLZ2 = G.defenseStrat==='zone' && G.zonePairedTo && G.zonePairedTo[receiverTidLZ2];
+      var defIdxLZ2 = zonePairLZ2 ? zonePairLZ2.defIdx : (G.defenseStrat==='zone' ? -1 : lr.targetIdx);
+      if(defIdxLZ2 >= 0) {
+        const defTid2 = 'T-'+defTeamLZ2+'-'+defIdxLZ2;
+        const defEl2 = document.getElementById(defTid2);
+        if(defEl2 && G.tokPos[defTid2]){ defEl2.setAttribute('transform',`translate(${defX2},${defPosLZ2.y})`); G.tokPos[defTid2].x=defX2; G.tokPos[defTid2].y=defPosLZ2.y; }
+      }
     }
     notify('Zone contest failed — random placement', '');
   }
@@ -2815,22 +2844,30 @@ function makeDraggable(el, id, team) {
       if(ballEl){const bx=team==='a'?14:-14; ballEl.setAttribute('transform',`translate(${nx-450+bx},${ny-260-14})`);}
     }
 
-    // Defender follow: man-to-man = index-matched defender; zone = committed defender (G.ap)
-    const isPosTok = G.ballTok && G.ballTok.team===team && G.ballTok.idx===parseInt(id.split('-')[2]);
+    // Defender follow:
+    // Zone: ball carrier uses G.ap; other tokens use G.zonePairedTo lookup
+    // Man: only ball carrier drags their index-matched defender
+    const tokIdx = parseInt(id.split('-')[2]);
+    const isPosTok = G.ballTok && G.ballTok.team===team && G.ballTok.idx===tokIdx;
     const defTeamFollow = team==='a'?'b':'a';
-    if(isPosTok && !G.fastBreak) {
+    if(!G.fastBreak) {
       let defId, defOffX;
       if(G.defenseStrat==='zone') {
-        // Zone: follow the committed defender (G.ap on def team), if one exists
-        if(G.ap && G.ap.team===defTeamFollow) {
+        var thisTid = 'T-'+team+'-'+tokIdx;
+        var pairing = G.zonePairedTo && G.zonePairedTo[thisTid];
+        if(pairing !== undefined) {
+          // Any zone-paired token drags its committed defender
+          defId = 'T-'+defTeamFollow+'-'+pairing.defIdx;
+          defOffX = defTeamFollow==='a' ? -42 : 42;
+        } else if(isPosTok && G.ap && G.ap.team===defTeamFollow) {
+          // Ball carrier uses G.ap (pre-zone paired defender stays on them)
           defId = 'T-'+defTeamFollow+'-'+G.ap.idx;
           defOffX = defTeamFollow==='a' ? -42 : 42;
         }
-        // No committed defender — nobody follows
-      } else {
-        // Man-to-man: index-matched defender follows
-        const oidx = parseInt(id.split('-')[2]);
-        defId = 'T-'+defTeamFollow+'-'+oidx;
+        // All other tokens: no follow (zone defenders not yet committed to them)
+      } else if(isPosTok) {
+        // Man-to-man: only ball carrier drags their defender
+        defId = 'T-'+defTeamFollow+'-'+tokIdx;
         defOffX = defTeamFollow==='a' ? -42 : 42;
       }
       if(defId && defOffX !== undefined) {
@@ -3820,6 +3857,8 @@ function act(a) {
       const blkBonus=(defP3?.specialty==='BLOCK'?4:defP3?.specialty2==='BLOCK'?2:0)||0;
       const blkAdj=(defP3?.stats.BLK||10)+blkBonus;
       const rBlk=d(30), srBlk=blkAdj-rBlk;
+      // Mark block as rolled so rollBDTeam doesn't re-run reveal_shot
+      if(G.pendingShot) G.pendingShot._blockSR = srBlk;
       const offTeam3=G.myTeam==='a'?'b':'a';
       const offPs3=G.teams[offTeam3].players.filter(px=>px.onCourt);
       const shooter=ps2.player;
@@ -4200,7 +4239,18 @@ function act(a) {
 //  CLOCKS
 // ════════════════════════════════════════════
 function showBCViolationModal(violatingTeam) {
+  // Flip possession and soft lock
   const inboundTeam = violatingTeam === 'a' ? 'b' : 'a';
+  G.possession = inboundTeam;
+  G.modalRequired = true;
+  G.foulCheckPending = false;
+  G.passPending = null;
+  G.lookPending = null;
+  G.lookResult = null;
+  G.handleFailed = null;
+  document.querySelectorAll('.tok').forEach(function(el){
+    el.classList.remove('look-target','look-origin','look-locked');
+  });
   const ps = G.teams[inboundTeam].players.filter(p=>p.onCourt);
   const col = inboundTeam==='a'?'var(--blue)':'var(--red)';
   // Inbound position: top sideline, near half court, on violating team's back court side
@@ -4279,10 +4329,13 @@ function checkHalfCourtCrossing(fromDrag) {
   if (!G.ballTok) return;
   const team = G.ballTok.team;
   const nowInFront = !inBackCourt(team);
+  if(fromDrag) console.log('CHC drag: team='+team+' nowInFront='+nowInFront+' prevInBack='+(G._wasInBackCourt&&G._wasInBackCourt[team])+' ballTok='+JSON.stringify(G.ballTok)+' pos='+JSON.stringify(G.tokPos['T-'+G.ballTok.team+'-'+G.ballTok.idx]));
   // _wasInBackCourt initialized at inbound — always valid
   if(!G._wasInBackCourt) G._wasInBackCourt={a:true,b:true};
   const prevInBack = G._wasInBackCourt[team];
-  G._wasInBackCourt[team] = !nowInFront;
+  // Only update _wasInBackCourt on actual drag — not on programmatic ball moves
+  // (foul setups, FT line placement, etc. would falsely clear the back court flag)
+  if(fromDrag) G._wasInBackCourt[team] = !nowInFront;
   if (!nowInFront && G.clocks.bc < 3) {
     G.clocks.bc = 3;
     syncClocks(); renderPips();
@@ -4341,7 +4394,7 @@ function useMv(n) {
   if (stillInBack) {
     G.clocks.bc = Math.max(0, G.clocks.bc-n);
     syncClocks(); renderPips();
-    if (G.clocks.bc===0) checkBCViolation();
+    if (G.clocks.bc===0 && !G.passPending && !G.lookPending) checkBCViolation();
   } else if(n > 0 && G.clocks.bc < 3 && !G.fastBreak){
     // Ball has crossed to front court — ensure bc is reset
     G.clocks.bc = 3; syncClocks(); renderPips();
@@ -7021,6 +7074,16 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
+
+
+
+
+
+
+
+
 
 
 
