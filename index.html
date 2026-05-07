@@ -1157,6 +1157,9 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
 // ════════════════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════════════════
@@ -2814,6 +2817,7 @@ function makeDraggable(el, id, team) {
   }
 
   function onDown(e) {
+    console.log('onDown: id='+id+' ballTok='+JSON.stringify(G.ballTok));
     e.preventDefault(); dragging = true;
     const tp = G.tokPos[id];
     const cx = e.touches?e.touches[0].clientX:e.clientX;
@@ -2883,6 +2887,7 @@ function makeDraggable(el, id, team) {
   }
 
   function onUp() {
+    console.log('onUp: id='+id+' ballTok='+JSON.stringify(G.ballTok));
     dragging = false; el.style.cursor = 'grab';
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('mouseup', onUp);
@@ -2890,6 +2895,7 @@ function makeDraggable(el, id, team) {
     window.removeEventListener('touchend', onUp);
     const tp = G.tokPos[id];
     // If this token carries the ball, move ball indicator + check half court crossing
+    console.log('onUp: id='+id+' team='+team+' idx='+idx+' ballTok='+JSON.stringify(G.ballTok));
     if (G.ballTok && G.ballTok.team === team && G.ballTok.idx === idx) {
       moveBallToToken(team, idx);
       checkHalfCourtCrossing(true); // fromDrag=true: triggers teammate sweep
@@ -7074,6 +7080,9 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
+
 
 
 
