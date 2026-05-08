@@ -1104,6 +1104,20 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -2260,8 +2274,12 @@ function chooseLookZone(zone) {
     // Zone repair: temporarily set ballTok to receiver so repair fires correctly
     if(G.defenseStrat==='zone'){
       var prevBallTok=G.ballTok;
-      G.ballTok={team:lr.targetTeam,idx:lr.targetIdx};
-      checkZoneRepair();
+      // Only fire zone repair if target team is the possessing/offensive team
+      var lzOffTeam = G.possession || G.ballTok?.team;
+      if(lr.targetTeam === lzOffTeam) {
+        G.ballTok={team:lr.targetTeam,idx:lr.targetIdx};
+        checkZoneRepair();
+      }
       G.ballTok=prevBallTok;
     }
     // Defender follows — use committed zone defender if zone mode, else index-match
@@ -2666,7 +2684,11 @@ function rollFoulTeam(team) {
     addLog(`⚖️ Foul check d12 (${G.teams[team].name}) → ${r} → no foul`, 'l-ro');
   }
   // Pending slam score — resolve after foul check (charge = no basket)
-  if(G.pendingSlamScore && (!G.pendingSlamScore.foulCheckTeam || G.pendingSlamScore.foulCheckTeam===team)){
+  // foulCheckTeam = shooting team; rollFoulTeam(team) = team rolling = opponent of fouler
+  // Shooting foul: fouler is defender, so rolling team = shooting team's opponent
+  // foulCheckTeam should match the OPPONENT of the rolling team
+  var _slamOpp = team==='a'?'b':'a';
+  if(G.pendingSlamScore && (!G.pendingSlamScore.foulCheckTeam || G.pendingSlamScore.foulCheckTeam===_slamOpp||G.pendingSlamScore.foulCheckTeam===team)){
     const pss=G.pendingSlamScore; G.pendingSlamScore=null;
     const isChargeSl = pss.shooter && G.fouls[pss.team] &&
       G.fouls[pss.team].pp[pss.shooter.id] > 0; // foul was assessed on shooter = charge
@@ -2921,6 +2943,10 @@ function resolveRandomHustle(inBackCourt2) {
 }
 
 function startRandomHustle(inBack) {
+  // Clear any stale dead-ball/continue state — hustle is live ball
+  var staleBtn=document.getElementById('continue-btn'); if(staleBtn) staleBtn.remove();
+  G._deadBallSubTeam=undefined; G.pendingScore=null; G.modalRequired=null;
+  closeModal();
   G.ballTok=null;
   const ballEl=document.getElementById('ball-g');
   if(ballEl){const bx=200+Math.random()*500,by=210+Math.random()*100;ballEl.setAttribute('transform','translate('+(bx-450)+','+(by-260)+')');}
@@ -3454,7 +3480,7 @@ function moveBallToToken(team, idx) {
   const tokElMBT=document.getElementById('T-'+team+'-'+idx);
   const toksGMBT=document.getElementById('toks');
   // Defer appendChild so it doesn't interrupt pending click events
-  if(tokElMBT&&toksGMBT) setTimeout(()=>toksGMBT.appendChild(tokElMBT),0);
+  if(tokElMBT&&toksGMBT) setTimeout(()=>{toksGMBT.appendChild(tokElMBT); hilightAP();},0);
   const tid = 'T-'+team+'-'+idx;
   const pos = G.tokPos[tid];
   const ball = document.getElementById('ball-g');
@@ -3971,8 +3997,6 @@ function act(a) {
   if(G.gameOver){ notify('Game over!','foul'); return; 
   // Broadcast game state to remote after action
   if(ablyChannel||bc_chan) setTimeout(broadcastGameState, 100);}
-  // Clear inbound exemption on any action (look1/hold don't call useMv)
-  if(a!=='inbound'&&a!=='tipoff') G._inboundPass=false;
   const FC_EXEMPT = ['to_f','to_20','inbound','tipoff','free'];
   if(G.foulCheckPending && !FC_EXEMPT.includes(a)) {
     notify('⚖️ Resolve foul check first — DICE tab → ROLL FOUL CHECK', 'foul');
@@ -4428,7 +4452,7 @@ function act(a) {
       var specBonus3=(p.specialty==='3-PTR'?4:p.specialty2==='3-PTR'?2:0);
       const adj=p.stats.SHT-10+specBonus3, r=d(30), sr=adj-r;
       const defTeam3=G.myTeam==='a'?'b':'a';
-      const def3=G.teams[defTeam3].players.filter(px=>px.onCourt)[G.ap?.idx??0];
+      const def3=getShotContester(defTeam3, G.myTeam, G.ap?.idx??0);
       if(r===1){
         setLastAction(G.myTeam,'3-PTR',1);
         // Nat 1 = auto-basket ONLY if defender doesn't also roll nat 1 on block
@@ -4469,7 +4493,7 @@ function act(a) {
       var specBonusM=(p.specialty==='MID'?4:p.specialty2==='MID'?2:0);
       const adj=p.stats.SHT-5+specBonusM, r=d(30), sr=adj-r;
       const defTeamM=G.myTeam==='a'?'b':'a';
-      const defM=G.teams[defTeamM].players.filter(px=>px.onCourt)[G.ap?.idx??0];
+      const defM=getShotContester(defTeamM, G.myTeam, G.ap?.idx??0);
       if(r===1){
         setLastAction(G.myTeam,'MID',1);
         G.pendingShot={player:p,shotType:'MID JUMP',r,sr,adj,base:15,defTeam:defTeamM,defName:defM?.name||'',_nat1:true};
@@ -4772,7 +4796,7 @@ function act(a) {
       const blkAdj=(defP3?.stats.BLK||10)+blkBonus;
       const rBlk=d(30), srBlk=blkAdj-rBlk;
       // Mark block as rolled so rollBDTeam doesn't re-run reveal_shot
-      if(G.pendingShot) G.pendingShot._blockSR = srBlk;
+      if(G.pendingShot && G.pendingShot._blockSR === undefined) G.pendingShot._blockSR = srBlk;
       const offTeam3=G.myTeam==='a'?'b':'a';
       const offPs3=G.teams[offTeam3].players.filter(px=>px.onCourt);
       const shooter=ps2.player;
@@ -4949,7 +4973,7 @@ function act(a) {
           if(nat1d4===4){
             const nat1OffTeam2=G.myTeam==='a'?'b':'a';
             G.possession=nat1OffTeam2;
-            showContinueButton(G.myTeam);
+            showContinueButton(nat1OffTeam2);
           } else {
             startRandomHustle(false);
           }
@@ -5288,7 +5312,8 @@ function useMv(n) {
   // Only decrement bc if the possessing team is actually in their back court
   // Tick back court clock (violation check happens on drag-drop in checkHalfCourtCrossing)
   const skipAllClocks = G._inboundPass; // inbound pass costs 0 moves on any clock
-  G._inboundPass = false; // clear after first action
+  // Only consume inbound exemption on a move that actually costs something
+  if(n > 0) G._inboundPass = false;
   if(skipAllClocks){ syncClocks(); renderPips(); return; }
   const stillInBack = n > 0 && !G.fastBreak && inBackCourt(G.possession || G.myTeam);
   if (stillInBack) {
@@ -5972,6 +5997,7 @@ function setPendingScore(team, pts, reason) {
 
 // pressScoreBtn: called by +1/+2/+3 buttons
 function pressScoreBtn(team, pts) {
+  console.log('pressScoreBtn: team='+team+' pts='+pts+' pendingScore='+JSON.stringify(G.pendingScore)+' _pendingBDFoul='+!!G._pendingBDFoul);
   if(G.pendingScore) {
     if(G.pendingScore.team !== team) {
       notify('Wrong team — '+G.teams[G.pendingScore.team].name+' scores!', 'foul');
@@ -6139,7 +6165,7 @@ function commitFoul(team, pid) {
       const chargeInboundTeam=team==='a'?'b':'a';
       G.possession=chargeInboundTeam; G.handleFailed=null; G.critStopPending=null;
       refreshTeamPanel(); syncScoreboard();
-      showContinueButton(team);
+      showContinueButton(chargeInboundTeam);
       return;
     }
     addLog(`⚠️ FOUL on <b>${pl?.name}</b> (${G.teams[team].name}) — ${f}/3 personal`, 'l-fo');
@@ -6368,7 +6394,7 @@ function buildAPSel() {
     sel.innerHTML = '<option value="">— Select Player —</option>' +
       ps.map(p=>{
         const pidxBall = ps.indexOf(p);
-        const hasBall = G.ballTok && G.ballTok.team===team && G.ballTok.idx===pidxBall && G.possession===team;
+        const hasBall = G.ballTok && G.ballTok.team===team && G.ballTok.idx===pidxBall;
         // Paired defender: opponent team, same token index as ball carrier
         const oppPs = G.teams[oppTeamD].players.filter(px=>px.onCourt);
             // Defender: ball is on OTHER team, this team has the paired defender
@@ -7620,6 +7646,22 @@ function hideSubHoverCard() {
 }
 
 
+// Get the correct defender contesting a shot — zone: use G.ap if on defTeam, else G.zonePairedTo
+function getShotContester(defTeam, shooterTeam, shooterIdx) {
+  var defPs = G.teams[defTeam].players.filter(function(p){return p.onCourt;});
+  // 1. G.ap is explicitly on defTeam (most reliable)
+  if(G.ap && G.ap.team===defTeam) return defPs[G.ap.idx] || defPs[0];
+  // 2. Zone: check zonePairedTo for the shooter's token
+  if(G.defenseStrat==='zone' && G.zonePairedTo) {
+    var shooterTid = 'T-'+shooterTeam+'-'+shooterIdx;
+    var zp = G.zonePairedTo[shooterTid];
+    if(zp) return defPs[zp.defIdx] || defPs[0];
+    // Also check G.ap if it's a defender
+  }
+  // 3. Fall back to index match
+  return defPs[shooterIdx] || defPs[0];
+}
+
 function getZoneForPos(team, x) {
   // Determine which zone a given x-coordinate falls in for the attacking team
   // Team A attacks RIGHT: zones increase with x
@@ -7848,9 +7890,26 @@ function placeZoneDefense() {
   if(defPs.length < 1) return;
   var zp = ZONE_POS[offTeam];
   var nearPaintX = offTeam==='a' ? 720 : 180;
-  // Find paired defender = defender token physically closest to ball carrier
+  // Find paired defender — priority: manPairings > G.ap > proximity
   var pairedDefIdx = -1;
-  if(G.ballTok){
+  // 1. Check manPairings for ball carrier
+  if(G.ballTok && G.manPairings) {
+    var ballCarrierId = (G.teams[offTeam].players.filter(function(p){return p.onCourt;})[G.ballTok.idx]||{}).id;
+    if(ballCarrierId) {
+      var manDefId = Object.keys(G.manPairings).find(function(defId){ return G.manPairings[defId]===ballCarrierId; });
+      if(manDefId) {
+        var manIdx = defPs.findIndex(function(p){ return p.id===manDefId; });
+        if(manIdx>=0) pairedDefIdx = manIdx;
+      }
+    }
+  }
+  // 2. G.ap on defTeam (manual active selection)
+  if(pairedDefIdx<0 && G.ap && G.ap.team===defTeam) {
+    var apIdx=defPs.findIndex(function(p){return p.id===G.ap.id;});
+    if(apIdx>=0) pairedDefIdx=apIdx;
+  }
+  // 3. Fall back to closest defender
+  if(pairedDefIdx<0 && G.ballTok){
     var ballPos=G.tokPos['T-'+offTeam+'-'+G.ballTok.idx];
     if(ballPos){
       var minDist=99999;
@@ -7861,11 +7920,6 @@ function placeZoneDefense() {
       });
     }
   }
-  // Also accept G.ap on defTeam as an override (manual selection)
-  if(G.ap && G.ap.team===defTeam){
-    var apIdx=defPs.findIndex(function(p){return p.id===G.ap.id;});
-    if(apIdx>=0) pairedDefIdx=apIdx;
-  }
   // Zone positions for the 4 unpaired defenders
   var zoneSlots = [
     {key:'zone4',  pos:{x:zp.zone4.x, y:260}},
@@ -7874,9 +7928,13 @@ function placeZoneDefense() {
     {key:'zone1',  pos:{x:nearPaintX,  y:260}}
   ];
   // Reset zone assignments
-  G.zoneAssignments = {}; // {zoneKey: {defIdx, defId}}
-  // Track which zone carriers are paired
-  G.zonePairedTo = {}; // {defIdx: offIdx} — set when zone def pairs to handler
+  G.zoneAssignments = {};
+  G.zonePairedTo = {};
+  // Pre-record ball carrier's paired defender so checkZoneRepair won't overwrite it
+  if(pairedDefIdx>=0 && G.ballTok) {
+    var ballCarrierTid = 'T-'+offTeam+'-'+G.ballTok.idx;
+    G.zonePairedTo[ballCarrierTid] = {defIdx:pairedDefIdx, defId:defPs[pairedDefIdx]?.id};
+  }
   var mv = function(i,x,y){
     var tid='T-'+defTeam+'-'+i, el=document.getElementById(tid);
     if(el&&G.tokPos[tid]){el.setAttribute('transform','translate('+x+','+y+')');G.tokPos[tid].x=x;G.tokPos[tid].y=y;}
@@ -7927,6 +7985,15 @@ function checkZoneRepair() {
   var defPs = G.teams[defTeam].players.filter(function(p){return p.onCourt;});
   var defPlayer = defPs[assignment.defIdx];
   if(!defPlayer) return;
+  // Hard guard: defender must be on defTeam, never offTeam
+  // Verify the assignment references a real defensive player
+  if(!defPlayer || defPlayer.id === undefined) return;
+  // Verify the offensive team's ball carrier is genuinely on offTeam
+  var offPs3 = G.teams[offTeam].players.filter(function(p){return p.onCourt;});
+  var ballCarrierPlayer = offPs3[G.ballTok.idx];
+  if(!ballCarrierPlayer) return; // ball carrier not found on offTeam — abort
+  // Never pair defender to a token on their own team
+  if(G.teams[defTeam].players.some(function(p){return p.id===ballCarrierPlayer.id;})) return;
   // Teleport defender to ball carrier and pair them
   var tid='T-'+defTeam+'-'+assignment.defIdx;
   var el=document.getElementById(tid);
@@ -7938,7 +8005,8 @@ function checkZoneRepair() {
   hilightAP(); buildAPSel();
   var zrSel=document.getElementById((defTeam==='a'?'l':'r')+'ap-sel');
   if(zrSel) zrSel.value=defPlayer.id;
-  var ballCarrierName=defPs[G.ballTok.idx]||G.teams[offTeam].players.filter(function(p){return p.onCourt;})[G.ballTok.idx];
+  var offPs2=G.teams[offTeam].players.filter(function(p){return p.onCourt;});
+  var ballCarrierName=offPs2[G.ballTok.idx];
   addLog('⬛ ZONE: '+defPlayer.name+' ('+G.teams[defTeam].name+') commits from '+ballZone+' — now covers '+(ballCarrierName?.name||'ball carrier'),'l-ev');
   // Record pairing so we don't re-pair this ball carrier again
   if(!G.zonePairedTo) G.zonePairedTo={};
@@ -8064,6 +8132,20 @@ function rollBackCourtTeam(team) {
 
 
 })();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
