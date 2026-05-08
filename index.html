@@ -240,15 +240,80 @@ input::placeholder{color:var(--text3);}
 .rules-content td,.rules-content th{padding:4px 8px;border:1px solid var(--border);}
 .rules-content th{color:var(--accent);font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase;font-size:10px;}
 
-/* Draft screen */
-#s-draft{flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow-y:auto;}
-.draft-wrap{width:100%;max-width:680px;padding:40px 20px;}
-.draft-title{font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--accent);letter-spacing:6px;text-align:center;margin-bottom:8px;}
-.draft-sub{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:6px;color:var(--text3);text-transform:uppercase;text-align:center;margin-bottom:40px;}
-.draft-placeholder{background:var(--surface);border:2px dashed var(--border2);border-radius:8px;padding:60px 40px;text-align:center;}
-.draft-placeholder-icon{font-size:64px;margin-bottom:16px;}
-.draft-placeholder-title{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent);letter-spacing:4px;margin-bottom:10px;}
-.draft-placeholder-text{font-size:13px;color:var(--text3);line-height:1.7;max-width:400px;margin:0 auto 24px;}
+/* ═══════════════════════════════════════════
+   DRAFT SCREEN
+═══════════════════════════════════════════ */
+#s-draft { flex-direction:column; background:var(--bg); overflow-y:auto; align-items:stretch; padding:0; }
+.draft-phase { min-height:100vh; }
+.draft-header { background:linear-gradient(180deg,rgba(240,192,64,0.08) 0%,transparent 100%); border-bottom:1px solid rgba(240,192,64,0.2); padding:16px 20px 0; position:sticky; top:0; z-index:10; backdrop-filter:blur(8px); }
+.draft-title-bar { display:flex; align-items:baseline; gap:12px; margin-bottom:8px; justify-content:center; }
+.draft-logo { font-family:'Bebas Neue','Alfa Slab One',sans-serif; font-size:36px; color:var(--accent); letter-spacing:3px; line-height:1; }
+.draft-logo-sub { font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:5px; color:var(--text3); }
+.draft-setup-body { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:800px; margin:20px auto; padding:0 20px; }
+.draft-setup-col { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:16px; }
+.draft-section-label { font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:3px; color:var(--text3); margin-bottom:10px; }
+.draft-format-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.dfmt-btn { padding:10px 6px; font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:1px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:var(--text2); border-radius:4px; cursor:pointer; text-align:center; line-height:1.3; transition:all .15s; }
+.dfmt-btn:hover { border-color:rgba(240,192,64,0.4); color:var(--accent); }
+.dfmt-btn.active { background:rgba(240,192,64,0.12); border-color:rgba(240,192,64,0.6); color:var(--accent); }
+.draft-toggle { position:relative; display:inline-block; width:36px; height:20px; }
+.draft-toggle input { opacity:0; width:0; height:0; }
+.draft-toggle-slider { position:absolute; inset:0; background:#333; border-radius:20px; cursor:pointer; transition:.2s; }
+.draft-toggle-slider:before { content:''; position:absolute; width:14px; height:14px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
+.draft-toggle input:checked + .draft-toggle-slider { background:var(--accent); }
+.draft-toggle input:checked + .draft-toggle-slider:before { transform:translateX(16px); }
+.draft-input { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:6px 10px; color:var(--text); font-family:'Oswald',sans-serif; font-size:12px; outline:none; }
+.draft-input:focus { border-color:rgba(240,192,64,0.5); }
+.draft-select { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:5px 8px; color:var(--text2); font-family:'Oswald',sans-serif; font-size:11px; cursor:pointer; }
+.draft-drafter-list { display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; }
+.draft-drafter-row { display:flex; align-items:center; gap:8px; padding:6px 8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:4px; font-size:12px; }
+.draft-drafter-row .drafter-num { font-family:'Oswald',sans-serif; font-size:10px; color:var(--accent); min-width:18px; }
+.draft-drafter-row .drafter-name { flex:1; }
+.draft-drafter-row .drafter-host { font-size:9px; letter-spacing:2px; color:var(--accent); }
+.draft-pool-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; padding:14px 16px; }
+.draft-pick-grid { max-height:calc(100vh - 180px); overflow-y:auto; }
+.dpc { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:10px; cursor:pointer; transition:all .15s; position:relative; }
+.dpc:hover { border-color:rgba(240,192,64,0.5); transform:translateY(-2px); box-shadow:0 4px 16px rgba(240,192,64,0.1); }
+.dpc.drafted { opacity:0.3; pointer-events:none; filter:grayscale(1); }
+.dpc-name { font-family:'Oswald',sans-serif; font-size:13px; font-weight:600; color:var(--text); margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dpc-meta { font-size:9px; color:var(--text3); margin-bottom:6px; }
+.dpc-stats { display:grid; grid-template-columns:1fr 1fr; gap:2px 8px; }
+.dpc-stat { display:flex; justify-content:space-between; font-size:9px; }
+.dpc-stat-k { color:var(--text3); }
+.dpc-stat-v { color:var(--text2); font-weight:600; }
+.dpc-derived { display:flex; gap:8px; margin-top:5px; padding-top:5px; border-top:1px solid rgba(255,255,255,0.06); font-size:10px; }
+.dpc-drafted-by { position:absolute; top:4px; right:4px; font-size:8px; letter-spacing:1px; padding:2px 5px; border-radius:2px; font-family:'Oswald',sans-serif; }
+.draft-pick-topbar { display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(0,0,0,0.4); border-bottom:1px solid rgba(240,192,64,0.15); position:sticky; top:0; z-index:20; flex-wrap:wrap; }
+.draft-pick-info { display:flex; align-items:center; gap:8px; flex:1; flex-wrap:wrap; }
+.draft-round-badge { background:rgba(240,192,64,0.15); border:1px solid rgba(240,192,64,0.4); color:var(--accent); font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:2px; padding:3px 8px; border-radius:3px; }
+.draft-pick-num { font-family:'Oswald',sans-serif; font-size:13px; color:var(--text2); }
+.draft-on-clock { font-family:'Bebas Neue','Oswald',sans-serif; font-size:18px; color:var(--accent); letter-spacing:1px; }
+.draft-timer-circle { width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.05); border:2px solid rgba(240,192,64,0.4); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-size:16px; color:var(--accent); }
+.draft-timer-circle.urgent { border-color:var(--red); color:var(--red); animation:timer-pulse .5s infinite; }
+@keyframes timer-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.draft-drafter-strips { display:flex; gap:0; overflow-x:auto; border-bottom:1px solid var(--border); background:rgba(0,0,0,0.3); }
+.draft-strip { flex:0 0 auto; min-width:110px; padding:6px 10px; border-right:1px solid rgba(255,255,255,0.06); cursor:pointer; transition:background .15s; }
+.draft-strip:hover { background:rgba(255,255,255,0.05); }
+.draft-strip.on-clock { background:rgba(240,192,64,0.1); border-bottom:2px solid var(--accent); }
+.draft-strip-name { font-family:'Oswald',sans-serif; font-size:11px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.draft-strip-count { font-size:9px; color:var(--text3); }
+.draft-confirm-modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; display:flex; align-items:center; justify-content:center; }
+.draft-confirm-box { background:var(--surface); border:1px solid rgba(240,192,64,0.4); border-radius:8px; padding:24px; max-width:320px; width:90%; text-align:center; }
+.draft-confirm-box h3 { font-family:'Bebas Neue','Oswald',sans-serif; font-size:22px; color:var(--accent); margin-bottom:6px; }
+.draft-confirm-box .dpc-name-big { font-size:18px; font-family:'Oswald',sans-serif; color:var(--text); margin-bottom:14px; }
+.draft-confirm-btns { display:flex; gap:10px; justify-content:center; margin-top:16px; }
+.draft-pool-modal { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9998; display:flex; flex-direction:column; }
+.draft-pool-modal-header { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--border); }
+.draft-pool-modal-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; padding:16px; overflow-y:auto; flex:1; }
+.draft-complete-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; padding:20px; }
+.draft-complete-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.draft-complete-header { padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.07); display:flex; justify-content:space-between; align-items:center; }
+.draft-complete-name { font-family:'Oswald',sans-serif; font-size:14px; letter-spacing:1px; }
+.draft-complete-players { padding:8px 14px; font-size:10px; max-height:200px; overflow-y:auto; }
+.draft-complete-player { padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.04); display:flex; gap:8px; align-items:center; }
+.draft-paused-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:99999; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+
+
 /* Look(1) targeting highlights */
 .tok.look-target .tok-bg { filter: drop-shadow(0 0 10px #f0c040) brightness(1.4); cursor: crosshair !important; }
 .tok.look-origin .tok-bg { opacity: 0.55; }
@@ -296,6 +361,37 @@ input::placeholder{color:var(--text3);}
 .pair-row.pair-matched{border-color:var(--accent);background:rgba(240,192,64,0.1);}
 .pair-badge{font-size:9px;letter-spacing:1px;padding:1px 5px;border-radius:2px;margin-left:6px;vertical-align:middle;}
 
+/* ═══════════════════════════════════════════
+   TEAM EDITOR
+═══════════════════════════════════════════ */
+#s-editor { flex-direction:column; background:var(--bg); overflow-y:auto; align-items:stretch; padding:0; }
+.editor-wrap { max-width:900px; margin:0 auto; width:100%; padding:0 0 40px; }
+.editor-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:10; gap:10px; flex-wrap:wrap; }
+.editor-title { font-family:'Bebas Neue','Alfa Slab One',sans-serif; font-size:28px; color:var(--accent); letter-spacing:3px; }
+.editor-meta-row { display:flex; align-items:flex-end; gap:20px; padding:14px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; background:rgba(240,192,64,0.04); }
+.editor-meta-field { display:flex; flex-direction:column; gap:4px; }
+.editor-label { font-family:'Oswald',sans-serif; font-size:9px; letter-spacing:3px; color:var(--text3); }
+.editor-input { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:6px 10px; color:var(--text); font-family:'Oswald',sans-serif; font-size:13px; outline:none; }
+.editor-input:focus { border-color:rgba(240,192,64,0.5); }
+.editor-name-input { width:220px; }
+.editor-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:300px; color:var(--text3); }
+.editor-player-row { display:grid; grid-template-columns:28px 1fr 80px 120px 120px 60px; gap:10px; align-items:center; padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.05); transition:background .12s; cursor:pointer; }
+.editor-player-row:hover { background:rgba(255,255,255,0.03); }
+.editor-player-row.starter { background:rgba(240,192,64,0.07); border-left:3px solid var(--accent); }
+.editor-player-row.starter .editor-starter-dot { background:var(--accent); box-shadow:0 0 6px var(--accent); }
+.editor-starter-dot { width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.15); transition:all .15s; flex-shrink:0; }
+.editor-player-name-input { background:transparent; border:none; border-bottom:1px solid rgba(255,255,255,0.1); color:var(--text); font-family:'Oswald',sans-serif; font-size:13px; outline:none; width:100%; padding:2px 4px; transition:border-color .15s; }
+.editor-player-name-input:focus { border-bottom-color:rgba(240,192,64,0.6); background:rgba(255,255,255,0.04); }
+.editor-spec-select { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:3px; padding:4px 6px; color:var(--text2); font-family:'Oswald',sans-serif; font-size:11px; cursor:pointer; width:100%; }
+.editor-spec-select:focus { border-color:rgba(240,192,64,0.5); outline:none; }
+.editor-pos-badge { font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:1px; padding:2px 6px; border-radius:3px; background:rgba(255,255,255,0.08); color:var(--text3); text-align:center; }
+.editor-list-header { display:grid; grid-template-columns:28px 1fr 80px 120px 120px 60px; gap:10px; padding:8px 16px; border-bottom:1px solid var(--border); }
+.editor-list-header span { font-family:'Oswald',sans-serif; font-size:9px; letter-spacing:2px; color:var(--text3); }
+.editor-dirty-badge { display:none; font-size:9px; letter-spacing:2px; font-family:'Oswald',sans-serif; background:rgba(240,192,64,0.15); color:var(--accent); border:1px solid rgba(240,192,64,0.3); border-radius:3px; padding:2px 6px; }
+.editor-dirty-badge.visible { display:inline-block; }
+.editor-starter-warn { font-size:10px; color:var(--red); font-family:'Oswald',sans-serif; letter-spacing:1px; display:none; }
+.editor-starter-warn.visible { display:inline; }
+
 </style>
 </head>
 <body>
@@ -337,6 +433,18 @@ input::placeholder{color:var(--text3);}
     <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn btn-primary btn-md" onclick="showGenerate()">&#9733; GENERATE</button>
       <button class="btn btn-ghost btn-md" onclick="showDraft()">&#9654; DRAFT</button>
+      <button class="btn btn-ghost btn-md" onclick="showTeamEditor()">&#9998; TEAM EDITOR</button>
+      <button class="btn btn-ghost btn-md" onclick="show('legacy')">&#127942; LEGACY</button>
+    </div>
+    <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <label class="btn btn-ghost btn-md" style="cursor:pointer;text-align:center" title="Upload JSON team file">
+        &#8679; UPLOAD TEAM (HOME)
+        <input type="file" accept=".json" style="display:none" onchange="lobbyUploadTeam(this,'a')">
+      </label>
+      <label class="btn btn-ghost btn-md" style="cursor:pointer;text-align:center" title="Upload JSON team file">
+        &#8679; UPLOAD TEAM (AWAY)
+        <input type="file" accept=".json" style="display:none" onchange="lobbyUploadTeam(this,'b')">
+      </label>
     </div>
     <div style="margin-top:8px">
       <button class="btn btn-ghost btn-lg" style="opacity:0.5;font-size:10px" onclick="quickStart()">&#9654; QUICK START &#8212; Solo Demo</button>
@@ -345,20 +453,137 @@ input::placeholder{color:var(--text3);}
 </div>
 
 <!-- DRAFT PLACEHOLDER -->
+<!-- DRAFT SCREEN -->
 <div id="s-draft" class="screen">
-  <div class="draft-wrap">
-    <div class="draft-title">DRAFT</div>
-    <div class="draft-sub">Pick &amp; Roll Draft Mode</div>
-    <div class="draft-placeholder">
-      <div class="draft-placeholder-icon">&#127944;</div>
-      <div class="draft-placeholder-title">COMING SOON</div>
-      <div class="draft-placeholder-text">
-        Draft mode will let coaches take turns picking players from a shared pool to build their rosters. Snake draft, auction, and custom formats planned.
+  <!-- PHASE: SETUP -->
+  <div id="draft-setup" class="draft-phase">
+    <div class="draft-header">
+      <div class="draft-title-bar">
+        <span class="draft-logo">DRAFT</span>
+        <span class="draft-logo-sub">PICK &amp; ROLL LEAGUE</span>
       </div>
-      <button class="btn btn-ghost btn-md" onclick="show('lobby');document.getElementById('wait-box').style.display=G.roomCode?'block':'none'">&#8592; BACK TO LOBBY</button>
+    </div>
+    <div class="draft-setup-body">
+      <div class="draft-setup-col">
+        <div class="draft-section-label">DRAFT FORMAT</div>
+        <div class="draft-format-grid">
+          <button class="dfmt-btn active" data-fmt="linear" onclick="draftSetFmt('linear')">LINEAR</button>
+          <button class="dfmt-btn" data-fmt="snake" onclick="draftSetFmt('snake')">SNAKE</button>
+          <button class="dfmt-btn" data-fmt="3rdrev" onclick="draftSetFmt('3rdrev')">3RD ROUND<br>REVERSAL</button>
+          <button class="dfmt-btn" data-fmt="endseason" onclick="draftSetFmt('endseason')">END OF<br>SEASON</button>
+        </div>
+        <div class="draft-section-label" style="margin-top:16px">PICK TIMER</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label class="draft-toggle"><input type="checkbox" id="draft-timer-on" onchange="draftToggleTimer()"><span class="draft-toggle-slider"></span></label>
+          <span style="font-size:11px;color:var(--text3)" id="draft-timer-label">OFF</span>
+          <input type="number" id="draft-timer-secs" value="60" min="10" max="300" style="width:60px;display:none" class="draft-input"> <span id="draft-timer-unit" style="font-size:10px;color:var(--text3);display:none">sec</span>
+        </div>
+      </div>
+      <div class="draft-setup-col">
+        <div class="draft-section-label">DRAFTERS <span id="draft-drafter-count" style="color:var(--accent)">(0)</span></div>
+        <div id="draft-drafter-list" class="draft-drafter-list"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input type="text" id="draft-new-name" class="draft-input" placeholder="Drafter name..." maxlength="24" style="flex:1" onkeydown="if(event.key==='Enter')draftAddDrafter()">
+          <button class="btn btn-ghost btn-sm" onclick="draftAddDrafter()">+ ADD</button>
+        </div>
+        <div id="draft-setup-join" style="margin-top:8px;font-size:10px;color:var(--text3)">Room code: <span id="draft-room-code" style="color:var(--accent)">—</span> <button class="btn btn-xs btn-ghost" onclick="draftCopyLink()">COPY</button></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;padding-bottom:30px">
+      <button class="btn btn-ghost btn-md" onclick="show('lobby');document.getElementById('wait-box').style.display='none'">← BACK</button>
+      <button class="btn btn-primary btn-lg" id="draft-start-btn" onclick="draftStartDraft()" disabled>START DRAFT ▶</button>
     </div>
   </div>
+
+  <!-- PHASE: POOL REVEAL -->
+  <div id="draft-pool-phase" class="draft-phase" style="display:none">
+    <div class="draft-header">
+      <div class="draft-title-bar"><span class="draft-logo">DRAFT POOL</span></div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:8px" id="draft-pool-count"></div>
+      <div style="display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;padding:0 16px 10px">
+        <select id="draft-sort-sel" class="draft-select" onchange="draftSortPool()">
+          <option value="off">Sort: OFF ↓</option>
+          <option value="def">Sort: DEF ↓</option>
+          <option value="sht">Sort: SHT ↓</option>
+          <option value="hnd">Sort: HND ↓</option>
+          <option value="blk">Sort: BLK ↓</option>
+          <option value="pas">Sort: PAS ↓</option>
+          <option value="rbd">Sort: RBD ↓</option>
+          <option value="stl">Sort: STL ↓</option>
+          <option value="hus">Sort: HUS ↓</option>
+          <option value="pos">Sort: Position</option>
+          <option value="name">Sort: Name A-Z</option>
+          <option value="year">Sort: Class Year</option>
+        </select>
+        <select id="draft-filter-pos" class="draft-select" onchange="draftFilterPool()">
+          <option value="">All Positions</option>
+          <option value="PG">PG</option>
+          <option value="SG">SG</option>
+          <option value="SF">SF</option>
+          <option value="PF">PF</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+    </div>
+    <div id="draft-pool-grid" class="draft-pool-grid"></div>
+    <div style="text-align:center;padding:20px">
+      <button class="btn btn-primary btn-lg" onclick="draftBeginPicking()">BEGIN DRAFTING ▶</button>
+    </div>
+  </div>
+
+  <!-- PHASE: PICKING -->
+  <div id="draft-pick-phase" class="draft-phase" style="display:none">
+    <!-- Top bar -->
+    <div class="draft-pick-topbar">
+      <div class="draft-pick-info">
+        <span class="draft-round-badge" id="draft-round-badge">RD 1</span>
+        <span class="draft-pick-num" id="draft-pick-num">PICK 1</span>
+        <span class="draft-on-clock" id="draft-on-clock-name">—</span>
+        <span style="font-size:10px;color:var(--text3)">is on the clock</span>
+      </div>
+      <div id="draft-timer-display" style="display:none" class="draft-timer-circle">
+        <span id="draft-timer-val">60</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="draft-pick-sort" class="draft-select" onchange="draftSortPickPool()">
+          <option value="off">OFF ↓</option>
+          <option value="def">DEF ↓</option>
+          <option value="sht">SHT ↓</option>
+          <option value="hnd">HND ↓</option>
+          <option value="blk">BLK ↓</option>
+          <option value="pas">PAS ↓</option>
+          <option value="rbd">RBD ↓</option>
+          <option value="stl">STL ↓</option>
+          <option value="hus">HUS ↓</option>
+          <option value="pos">Position</option>
+          <option value="name">Name A-Z</option>
+          <option value="year">Class Year</option>
+        </select>
+        <select id="draft-pick-filter" class="draft-select" onchange="draftFilterPickPool()">
+          <option value="">All Pos</option>
+          <option value="PG">PG</option>
+          <option value="SG">SG</option>
+          <option value="SF">SF</option>
+          <option value="PF">PF</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+    </div>
+    <!-- Drafter strips -->
+    <div id="draft-drafter-strips" class="draft-drafter-strips"></div>
+    <!-- Pool grid -->
+    <div id="draft-pick-pool-grid" class="draft-pool-grid draft-pick-grid"></div>
+  </div>
+
+  <!-- PHASE: COMPLETE -->
+  <div id="draft-complete-phase" class="draft-phase" style="display:none">
+    <div class="draft-header">
+      <div class="draft-title-bar"><span class="draft-logo">DRAFT COMPLETE</span></div>
+    </div>
+    <div id="draft-complete-list" class="draft-complete-list"></div>
+  </div>
 </div>
+
 
 <!-- GENERATE SCREEN -->
 <div id="s-generate" class="screen">
@@ -596,9 +821,9 @@ input::placeholder{color:var(--text3);}
           <button class="abtn" onclick="actTeam('a','to_20')">20-SEC T/O</button>
         </div></div>
         <div class="agroup"><div class="agroup-title">Score</div><div class="agrid">
-          <button class="abtn blue span2" onclick="score('a',1)">+1 HOME</button>
-          <button class="abtn blue span2" onclick="score('a',2)">+2 HOME</button>
-          <button class="abtn blue span2" onclick="score('a',3)">+3 HOME</button>
+          <button class="abtn blue span2" onclick="pressScoreBtn('a',1)">+1 HOME</button>
+          <button class="abtn blue span2" onclick="pressScoreBtn('a',2)">+2 HOME</button>
+          <button class="abtn blue span2" onclick="pressScoreBtn('a',3)">+3 HOME</button>
           <button class="abtn red span2" onclick="foul('a')">FOUL HOME</button>
           <button class="abtn span2" onclick="resetClk()">RESET CLOCKS</button>
         </div></div>
@@ -789,9 +1014,9 @@ input::placeholder{color:var(--text3);}
           <button class="abtn" onclick="actTeam('b','to_20')">20-SEC T/O</button>
         </div></div>
         <div class="agroup"><div class="agroup-title">Score</div><div class="agrid">
-          <button class="abtn red span2" onclick="score('b',1)">+1 AWAY</button>
-          <button class="abtn red span2" onclick="score('b',2)">+2 AWAY</button>
-          <button class="abtn red span2" onclick="score('b',3)">+3 AWAY</button>
+          <button class="abtn red span2" onclick="pressScoreBtn('b',1)">+1 AWAY</button>
+          <button class="abtn red span2" onclick="pressScoreBtn('b',2)">+2 AWAY</button>
+          <button class="abtn red span2" onclick="pressScoreBtn('b',3)">+3 AWAY</button>
           <button class="abtn red span2" onclick="foul('b')">FOUL AWAY</button>
           <button class="abtn span2" onclick="resetClk()">RESET CLOCKS</button>
         </div>
@@ -875,6 +1100,675 @@ input::placeholder{color:var(--text3);}
 })();
 </script>
 <script>
+
+
+
+
+// ════════════════════════════════════════════
+//  TEAM EDITOR
+// ════════════════════════════════════════════
+var TE = {
+  team: null,      // loaded team object
+  dirty: false,
+};
+
+var SPEC_OPTIONS = ['','3-PTR','MID','SLAM','HANDLE','PASS','STEAL','REBOUND','HUSTLE'];
+
+function showTeamEditor() { show('editor'); editorInit(); }
+
+function editorInit() {
+  TE.team = null; TE.dirty = false;
+  document.getElementById('editor-empty').style.display = '';
+  document.getElementById('editor-player-list').style.display = 'none';
+  document.getElementById('editor-meta-row').style.display = 'none';
+}
+
+function editorLoadJSON(input) {
+  var file = input.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if(!data.players || !Array.isArray(data.players)) { alert('Invalid team file — missing players array'); return; }
+      TE.team = JSON.parse(JSON.stringify(data)); // deep copy
+      TE.dirty = false;
+      editorRender();
+    } catch(err) { alert('Could not parse file: '+err.message); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function editorRender() {
+  if(!TE.team) return;
+  var t = TE.team;
+
+  // Show meta row
+  document.getElementById('editor-meta-row').style.display = '';
+  document.getElementById('editor-empty').style.display = 'none';
+  document.getElementById('editor-player-list').style.display = '';
+
+  // Team name
+  document.getElementById('editor-team-name').value = t.name || '';
+
+  // Color
+  var col = t.color || '#2a6ee8';
+  document.getElementById('editor-team-color').value = col;
+  document.getElementById('editor-color-preview').textContent = col.toUpperCase();
+  document.getElementById('editor-color-preview').style.color = col;
+
+  // Format badge
+  document.getElementById('editor-format-badge').textContent = t.format ? t.format.toUpperCase() : 'CUSTOM';
+
+  // Starter count
+  editorUpdateStarterCount();
+
+  // Player list
+  var listEl = document.getElementById('editor-player-list');
+  var specOpts = SPEC_OPTIONS.map(function(s){
+    return '<option value="'+s+'">'+(s||'— none —')+'</option>';
+  }).join('');
+
+  listEl.innerHTML =
+    '<div class="editor-list-header">'
+    +'<span></span><span>PLAYER</span><span>POS</span>'
+    +'<span>PRIMARY ★</span><span>SECONDARY ★★</span><span>YEAR</span>'
+    +'</div>'
+    +t.players.map(function(p, i) {
+      var isStarter = p.onCourt ? true : false;
+      var yearCol = {FR:'#88bbff',SO:'#88ffcc',JR:'#ffdd88',SR:'#ff9966'}[p.year]||'#aaa';
+      return '<div class="editor-player-row'+(isStarter?' starter':'')+'" id="epr-'+i+'" onclick="editorToggleStarter('+i+',event)">'
+        +'<div class="editor-starter-dot"></div>'
+        +'<input class="editor-player-name-input" value="'+escHtml(p.name||'')+'" maxlength="32"'
+        +' onclick="event.stopPropagation()"'
+        +' oninput="editorSetName('+i+',this.value)">'
+        +'<span class="editor-pos-badge">'+escHtml(p.position||'—')+'</span>'
+        +'<select class="editor-spec-select" onclick="event.stopPropagation()" onchange="editorSetSpec('+i+',\'specialty\',this.value)">'
+        +SPEC_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(p.specialty===s?' selected':'')+'>'+( s||'— none —')+'</option>'; }).join('')
+        +'</select>'
+        +'<select class="editor-spec-select" onclick="event.stopPropagation()" onchange="editorSetSpec('+i+',\'specialty2\',this.value)">'
+        +SPEC_OPTIONS.map(function(s){ return '<option value="'+s+'"'+(p.specialty2===s?' selected':'')+'>'+( s||'— none —')+'</option>'; }).join('')
+        +'</select>'
+        +'<span style="font-size:11px;color:'+yearCol+'">'+escHtml(p.year||'—')+'</span>'
+        +'</div>';
+    }).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function editorUpdateStarterCount() {
+  if(!TE.team) return;
+  var count = TE.team.players.filter(function(p){ return p.onCourt; }).length;
+  var el = document.getElementById('editor-starter-count');
+  if(el) {
+    el.textContent = count+'/5';
+    el.style.color = count===5 ? 'var(--green)' : count>5 ? 'var(--red)' : 'var(--accent)';
+  }
+  // Warn if not exactly 5
+  var warn = document.querySelector('.editor-starter-warn');
+  if(warn) warn.classList.toggle('visible', count!==5);
+}
+
+function editorToggleStarter(idx, e) {
+  if(!TE.team) return;
+  var p = TE.team.players[idx];
+  var starterCount = TE.team.players.filter(function(x){ return x.onCourt; }).length;
+  if(!p.onCourt && starterCount >= 5) {
+    notify('Already 5 starters — deselect one first', 'foul');
+    return;
+  }
+  p.onCourt = !p.onCourt;
+  var row = document.getElementById('epr-'+idx);
+  if(row) row.classList.toggle('starter', p.onCourt);
+  editorUpdateStarterCount();
+  editorDirty();
+}
+
+function editorSetName(idx, val) {
+  if(!TE.team) return;
+  TE.team.players[idx].name = val;
+  editorDirty();
+}
+
+function editorSetSpec(idx, key, val) {
+  if(!TE.team) return;
+  TE.team.players[idx][key] = val || undefined;
+  editorDirty();
+}
+
+function editorUpdateColor() {
+  var col = document.getElementById('editor-team-color').value;
+  document.getElementById('editor-color-preview').textContent = col.toUpperCase();
+  document.getElementById('editor-color-preview').style.color = col;
+  if(TE.team) { TE.team.color = col; editorDirty(); }
+}
+
+function editorDirty() {
+  TE.dirty = true;
+  // Sync team name from input
+  if(TE.team) TE.team.name = document.getElementById('editor-team-name').value;
+  var badge = document.querySelector('.editor-dirty-badge');
+  if(badge) badge.classList.add('visible');
+}
+
+function editorExport() {
+  if(!TE.team) { notify('No team loaded', 'foul'); return; }
+  // Final sync of name
+  TE.team.name = document.getElementById('editor-team-name').value || TE.team.name;
+  TE.team.color = document.getElementById('editor-team-color').value;
+  // Validate starters
+  var starterCount = TE.team.players.filter(function(p){ return p.onCourt; }).length;
+  if(starterCount !== 5) {
+    if(!confirm('Warning: '+starterCount+' starters selected (should be 5). Export anyway?')) return;
+  }
+  var blob = new Blob([JSON.stringify(TE.team, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (TE.team.name||'team').replace(/\s+/g,'_')+'_edited.json';
+  a.click();
+  TE.dirty = false;
+  var badge = document.querySelector('.editor-dirty-badge');
+  if(badge) badge.classList.remove('visible');
+  notify('Team exported!', 'score');
+}
+
+
+
+
+
+
+
+// ════════════════════════════════════════════
+//  DRAFT ENGINE
+// ════════════════════════════════════════════
+var DR = {
+  drafters: [],       // [{id, name, isHost, picks:[]}]
+  format: 'linear',
+  pool: [],           // all generated players
+  available: [],      // undrafted players
+  pickOrder: [],      // [{drafterIdx, round, pick}]
+  pickIdx: 0,
+  timerOn: false,
+  timerSecs: 60,
+  timerHandle: null,
+  timerRemaining: 0,
+  started: false,
+  complete: false,
+  paused: false,
+  _confirm: null,     // player being confirmed
+  _viewingIdx: null,  // drafter pool being viewed
+  _myIdx: null,       // local drafter index
+  _isHost: false,
+};
+
+function showDraft() { show('draft'); draftInit(); }
+
+function draftInit() {
+  draftShowPhase('setup');
+  DR.drafters = []; DR.pool = []; DR.available = [];
+  DR.pickOrder = []; DR.pickIdx = 0; DR.started = false; DR.complete = false;
+  DR.format = 'linear';
+  document.querySelectorAll('.dfmt-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-fmt="linear"]').classList.add('active');
+  draftRenderDrafterList();
+  document.getElementById('draft-start-btn').disabled = true;
+}
+
+function draftShowPhase(ph) {
+  ['setup','pool','pick','complete'].forEach(function(p){
+    var el=document.getElementById('draft-'+p+'-phase')||document.getElementById('draft-'+p+'Phase');
+    if(el) el.style.display='none';
+  });
+  document.getElementById('draft-setup').style.display = ph==='setup'?'':'none';
+  document.getElementById('draft-pool-phase').style.display = ph==='pool'?'':'none';
+  document.getElementById('draft-pick-phase').style.display = ph==='pick'?'':'none';
+  document.getElementById('draft-complete-phase').style.display = ph==='complete'?'':'none';
+}
+
+function draftSetFmt(fmt) {
+  DR.format = fmt;
+  document.querySelectorAll('.dfmt-btn').forEach(b=>b.classList.toggle('active', b.dataset.fmt===fmt));
+}
+
+function draftToggleTimer() {
+  DR.timerOn = document.getElementById('draft-timer-on').checked;
+  document.getElementById('draft-timer-label').textContent = DR.timerOn ? 'ON' : 'OFF';
+  document.getElementById('draft-timer-secs').style.display = DR.timerOn ? '' : 'none';
+  document.getElementById('draft-timer-unit').style.display = DR.timerOn ? '' : 'none';
+}
+
+function draftAddDrafter() {
+  var inp = document.getElementById('draft-new-name');
+  var name = inp.value.trim();
+  if(!name) { inp.focus(); return; }
+  if(DR.drafters.length >= 16) { alert('Max 16 drafters'); return; }
+  var isHost = DR.drafters.length === 0;
+  DR.drafters.push({ id:'dr-'+Date.now()+'-'+Math.random(), name:name, isHost:isHost, picks:[] });
+  inp.value = '';
+  draftRenderDrafterList();
+  document.getElementById('draft-start-btn').disabled = DR.drafters.length < 2;
+}
+
+function draftRemoveDrafter(idx) {
+  if(DR.drafters[idx].isHost && DR.drafters.length > 1) { DR.drafters[1].isHost = true; }
+  DR.drafters.splice(idx, 1);
+  draftRenderDrafterList();
+  document.getElementById('draft-start-btn').disabled = DR.drafters.length < 2;
+}
+
+function draftRenderDrafterList() {
+  var el = document.getElementById('draft-drafter-list');
+  document.getElementById('draft-drafter-count').textContent = '('+DR.drafters.length+')';
+  el.innerHTML = DR.drafters.map(function(d,i){
+    return '<div class="draft-drafter-row">'
+      +'<span class="drafter-num">'+(i+1)+'</span>'
+      +'<span class="drafter-name">'+d.name+'</span>'
+      +(d.isHost?'<span class="drafter-host">HOST</span>':'')
+      +'<button onclick="draftRemoveDrafter('+i+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0 4px">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+function draftCopyLink() {
+  navigator.clipboard.writeText(location.href).catch(function(){});
+}
+
+// ── Generate Pool ─────────────────────────────────────────────────────────
+function draftGeneratePool() {
+  var n = DR.drafters.length;
+  var perDrafter = DR.format === 'endseason' ? 10 : 20;
+  var total = n * perDrafter;
+  var years = ['FR','SO','JR','SR'];
+  var positions = ['PG','SG','SF','PF','C'];
+  var usedNames = new Set();
+  DR.pool = [];
+  for(var i=0; i<total; i++) {
+    var p = mkPlayer ? mkPlayer() : {id:'dp-'+Date.now()+'-'+i, stats:{}, onCourt:false};
+    p.id = 'dp-'+Date.now()+'-'+Math.random();
+    p.name = typeof genPlayerName==='function' ? genPlayerName(usedNames) : 'Player '+(i+1);
+    usedNames.add(p.name);
+    p.position = positions[Math.floor(Math.random()*positions.length)];
+    p.height = typeof genHeight==='function' ? genHeight(p.position) : "6'6\"";
+    p.year = years[Math.floor(Math.random()*years.length)];
+    p.ftPct = typeof genFTPct==='function' ? genFTPct() : Math.floor(55+Math.random()*35);
+    var STATS=['SHT','HND','BLK','PAS','RBD','STL','HUS'];
+    STATS.forEach(function(k){ p.stats[k] = typeof best2d30==='function' ? best2d30() : Math.max(1,Math.min(30,Math.round(10+Math.random()*18))); });
+    if(typeof assignSpecialty==='function') assignSpecialty(p);
+    DR.pool.push(p);
+  }
+  DR.available = DR.pool.slice();
+}
+
+// ── Draft order ───────────────────────────────────────────────────────────
+function draftBuildPickOrder() {
+  var n = DR.drafters.length;
+  var maxRounds = 16; // 16 players max per drafter
+  DR.pickOrder = [];
+  for(var r=0; r<maxRounds; r++) {
+    var order = [];
+    if(DR.format==='linear') {
+      for(var i=0;i<n;i++) order.push(i);
+    } else if(DR.format==='snake') {
+      for(var i=0;i<n;i++) order.push(r%2===0?i:n-1-i);
+    } else if(DR.format==='3rdrev') {
+      // Linear, linear, flip, snake thereafter
+      if(r<2) { for(var i=0;i<n;i++) order.push(i); }
+      else if(r===2) { for(var i=n-1;i>=0;i--) order.push(i); }
+      else { for(var i=0;i<n;i++) order.push((r-2)%2===1?i:n-1-i); }
+    } else { // endseason / default linear
+      for(var i=0;i<n;i++) order.push(i);
+    }
+    order.forEach(function(di){ DR.pickOrder.push({drafterIdx:di, round:r+1}); });
+  }
+  DR.pickIdx = 0;
+}
+
+// ── Render helpers ────────────────────────────────────────────────────────
+function draftDeriveOFF(p) { var s=p.stats; return Math.round((s.SHT+s.HND+s.PAS+s.HUS)/4); }
+function draftDeriveDEF(p) { var s=p.stats; return Math.round((s.BLK+s.RBD+s.STL+s.HUS)/4); }
+
+function draftPlayerCard(p, showDraftBtn, isDrafted) {
+  var dv = {OFF:draftDeriveOFF(p), DEF:draftDeriveDEF(p)};
+  var yearCol = {FR:'#88bbff',SO:'#88ffcc',JR:'#ffdd88',SR:'#ff9966'}[p.year]||'#aaa';
+  var drafterInfo = '';
+  if(isDrafted) {
+    var dr = DR.drafters.find(function(d){ return d.picks.some(function(pk){ return pk.id===p.id; }); });
+    if(dr) drafterInfo = '<div class="dpc-drafted-by" style="background:rgba(240,192,64,0.15);color:var(--accent)">'+dr.name+'</div>';
+  }
+  return '<div class="dpc'+(isDrafted?' drafted':'')+'" onclick="'+(showDraftBtn&&!isDrafted?'draftConfirmPick(\''+p.id+'\')':'')+(isDrafted?'':'')+'">'+
+    drafterInfo+
+    '<div class="dpc-name">'+p.name+'</div>'+
+    '<div class="dpc-meta">'+p.position+' · '+p.height+' · <span style="color:'+yearCol+'">'+p.year+'</span>'+(p.specialty?' · <span style="color:var(--accent)">★ '+p.specialty+'</span>':'')+(p.specialty2&&p.specialty2!==p.specialty?' <span style="color:var(--text3)">★★ '+p.specialty2+'</span>':p.specialty===p.specialty2&&p.specialty?' <span style="color:var(--accent)">(×2)</span>':'')+'</div>'+
+    '<div class="dpc-stats">'+
+      ['SHT','HND','PAS','BLK','RBD','STL','HUS'].map(function(k){
+        return '<div class="dpc-stat"><span class="dpc-stat-k">'+k+'</span><span class="dpc-stat-v">'+p.stats[k]+'</span></div>';
+      }).join('')+
+    '</div>'+
+    '<div class="dpc-derived"><span style="color:var(--text3)">OFF</span><b style="color:var(--green)">'+dv.OFF+'</b><span style="color:var(--text3);margin:0 4px">·</span><span style="color:var(--text3)">DEF</span><b style="color:#ff9966">'+dv.DEF+'</b></div>'+
+    '</div>';
+}
+
+function draftSortPlayers(arr, key) {
+  var copy = arr.slice();
+  copy.sort(function(a,b){
+    if(key==='off') return draftDeriveOFF(b)-draftDeriveOFF(a);
+    if(key==='def') return draftDeriveDEF(b)-draftDeriveDEF(a);
+    if(key==='name') return a.name.localeCompare(b.name);
+    if(key==='pos') { var po=['PG','SG','SF','PF','C']; return po.indexOf(a.position)-po.indexOf(b.position); }
+    if(key==='year') { var yo=['FR','SO','JR','SR']; return yo.indexOf(a.year)-yo.indexOf(b.year); }
+    var k=key.toUpperCase();
+    return (b.stats[k]||0)-(a.stats[k]||0);
+  });
+  return copy;
+}
+
+function draftGetFilter() { return (document.getElementById('draft-filter-pos')||{}).value||''; }
+function draftGetPickFilter() { return (document.getElementById('draft-pick-filter')||{}).value||''; }
+
+function draftRenderPoolGrid(container, players, showBtn, isDraftedFn) {
+  var el = document.getElementById(container); if(!el) return;
+  el.innerHTML = players.map(function(p){ return draftPlayerCard(p, showBtn, isDraftedFn?isDraftedFn(p):false); }).join('');
+}
+
+function draftSortPool() {
+  var key = document.getElementById('draft-sort-sel').value;
+  var flt = draftGetFilter();
+  var list = DR.pool.filter(function(p){ return !flt||p.position===flt; });
+  draftRenderPoolGrid('draft-pool-grid', draftSortPlayers(list, key), false, function(p){ return !DR.available.some(function(a){return a.id===p.id;}); });
+}
+
+function draftFilterPool() { draftSortPool(); }
+
+function draftSortPickPool() {
+  var key = document.getElementById('draft-pick-sort').value;
+  var flt = draftGetPickFilter();
+  var list = DR.available.filter(function(p){ return !flt||p.position===flt; });
+  draftRenderPoolGrid('draft-pick-pool-grid', draftSortPlayers(list, key), true, null);
+  // also show drafted ones greyed
+  var drafted = DR.pool.filter(function(p){ return !DR.available.some(function(a){return a.id===p.id;}); });
+  var grid = document.getElementById('draft-pick-pool-grid');
+  if(grid) grid.innerHTML += draftSortPlayers(drafted.filter(function(p){return !flt||p.position===flt;}), key).map(function(p){ return draftPlayerCard(p, false, true); }).join('');
+}
+function draftFilterPickPool() { draftSortPickPool(); }
+
+// ── Start Draft ───────────────────────────────────────────────────────────
+function draftStartDraft() {
+  if(DR.drafters.length < 2) return;
+  DR.timerSecs = parseInt(document.getElementById('draft-timer-secs').value)||60;
+  draftGeneratePool();
+  draftBuildPickOrder();
+  draftShowPhase('pool');
+  var count = DR.pool.length;
+  document.getElementById('draft-pool-count').textContent = count + ' players generated for ' + DR.drafters.length + ' drafters';
+  draftSortPool();
+}
+
+function draftBeginPicking() {
+  draftShowPhase('pick');
+  draftRenderStrips();
+  draftSortPickPool();
+  draftAdvanceTurn();
+}
+
+// ── Strips ────────────────────────────────────────────────────────────────
+function draftRenderStrips() {
+  var el = document.getElementById('draft-drafter-strips');
+  var cur = DR.pickOrder[DR.pickIdx];
+  el.innerHTML = DR.drafters.map(function(d,i){
+    var onClock = cur && cur.drafterIdx===i;
+    return '<div class="draft-strip'+(onClock?' on-clock':'')+'" onclick="draftViewPool('+i+')">'
+      +'<div class="draft-strip-name">'+(onClock?'⏰ ':'')+d.name+'</div>'
+      +'<div class="draft-strip-count">'+d.picks.length+' picks</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ── Turn logic ────────────────────────────────────────────────────────────
+function draftAdvanceTurn() {
+  // Skip drafters whose roster is full (16)
+  while(DR.pickIdx < DR.pickOrder.length) {
+    var cur = DR.pickOrder[DR.pickIdx];
+    if(DR.drafters[cur.drafterIdx].picks.length < 16) break;
+    DR.pickIdx++;
+  }
+  // Check if all done
+  var allFull = DR.drafters.every(function(d){ return d.picks.length >= 16; });
+  var noMore = DR.pickIdx >= DR.pickOrder.length || DR.available.length === 0;
+  if(allFull || noMore) { draftFinish(); return; }
+  var cur = DR.pickOrder[DR.pickIdx];
+  var d = DR.drafters[cur.drafterIdx];
+  document.getElementById('draft-round-badge').textContent = 'RD '+cur.round;
+  document.getElementById('draft-pick-num').textContent = 'PICK '+(DR.pickIdx+1);
+  document.getElementById('draft-on-clock-name').textContent = d.name;
+  draftRenderStrips();
+  draftSortPickPool();
+  if(DR.timerOn) draftStartTimer();
+}
+
+function draftStartTimer() {
+  clearInterval(DR.timerHandle);
+  DR.timerRemaining = DR.timerSecs;
+  var disp = document.getElementById('draft-timer-display');
+  var val = document.getElementById('draft-timer-val');
+  if(disp) disp.style.display='';
+  function tick() {
+    DR.timerRemaining--;
+    if(val) val.textContent = DR.timerRemaining;
+    if(disp) disp.classList.toggle('urgent', DR.timerRemaining<=10);
+    if(DR.timerRemaining <= 0) {
+      clearInterval(DR.timerHandle);
+      // Auto-pick: pick first available
+      if(DR.available.length > 0) draftMakePick(DR.available[0].id);
+    }
+  }
+  DR.timerHandle = setInterval(tick, 1000);
+  if(val) val.textContent = DR.timerSecs;
+  if(disp) disp.classList.remove('urgent');
+}
+
+function draftStopTimer() {
+  clearInterval(DR.timerHandle);
+  var disp = document.getElementById('draft-timer-display');
+  if(disp) disp.style.display='none';
+}
+
+// ── Pick confirm ──────────────────────────────────────────────────────────
+function draftConfirmPick(pid) {
+  var p = DR.available.find(function(x){ return x.id===pid; });
+  if(!p) return;
+  var cur = DR.pickOrder[DR.pickIdx];
+  var drafter = DR.drafters[cur.drafterIdx];
+  DR._confirm = p;
+  // Show confirm modal
+  var overlay = document.createElement('div');
+  overlay.className = 'draft-confirm-modal';
+  overlay.id = 'draft-confirm-overlay';
+  var dv = {OFF:draftDeriveOFF(p), DEF:draftDeriveDEF(p)};
+  overlay.innerHTML = '<div class="draft-confirm-box">'
+    +'<h3>DRAFT PLAYER?</h3>'
+    +'<div class="dpc-name-big">'+p.name+'</div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-bottom:4px">'+p.position+' · '+p.height+' · '+p.year+'</div>'
+    +'<div style="font-size:11px;color:var(--accent);margin-bottom:8px">'+(p.specialty?'★ '+p.specialty:'')+(p.specialty2&&p.specialty2!==p.specialty?' / ★★ '+p.specialty2:'')+'</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-bottom:12px">OFF <b style="color:var(--green)">'+dv.OFF+'</b> · DEF <b style="color:#ff9966">'+dv.DEF+'</b></div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-bottom:16px"><b style="color:var(--accent)">'+drafter.name+'</b> selects:</div>'
+    +'<div class="draft-confirm-btns">'
+    +'<button class="btn btn-ghost btn-md" onclick="draftCancelConfirm()">NO</button>'
+    +'<button class="btn btn-primary btn-md" onclick="draftMakePick(\''+pid+'\')">YES — DRAFT</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+
+function draftCancelConfirm() {
+  DR._confirm = null;
+  var ov = document.getElementById('draft-confirm-overlay');
+  if(ov) ov.remove();
+}
+
+function draftMakePick(pid) {
+  draftCancelConfirm();
+  draftStopTimer();
+  var p = DR.available.find(function(x){ return x.id===pid; });
+  if(!p) return;
+  var cur = DR.pickOrder[DR.pickIdx];
+  var drafter = DR.drafters[cur.drafterIdx];
+  drafter.picks.push(p);
+  DR.available = DR.available.filter(function(x){ return x.id!==pid; });
+  DR.pickIdx++;
+  draftAdvanceTurn();
+}
+
+// ── View pool ─────────────────────────────────────────────────────────────
+function draftViewPool(idx) {
+  var drafter = DR.drafters[idx];
+  var overlay = document.createElement('div');
+  overlay.className = 'draft-pool-modal';
+  overlay.id = 'draft-pool-overlay';
+  var picks = drafter.picks;
+  overlay.innerHTML = '<div class="draft-pool-modal-header">'
+    +'<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'draft-pool-overlay\').remove()">← CLOSE</button>'
+    +'<span style="font-family:\'Oswald\',sans-serif;font-size:16px;letter-spacing:2px;color:var(--accent)">'+drafter.name+'\'s ROSTER</span>'
+    +'<span style="font-size:11px;color:var(--text3)">'+picks.length+'/16 picks</span>'
+    +'</div>'
+    +'<div class="draft-pool-modal-grid">'
+    +(picks.length ? picks.map(function(p){ return draftPlayerCard(p,false,false); }).join('') : '<div style="padding:40px;color:var(--text3);text-align:center">No picks yet</div>')
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+
+// ── Paused / Kick ─────────────────────────────────────────────────────────
+function draftPause(drafterIdx) {
+  draftStopTimer();
+  DR.paused = true;
+  var d = DR.drafters[drafterIdx];
+  var overlay = document.createElement('div');
+  overlay.className = 'draft-paused-overlay';
+  overlay.id = 'draft-paused-overlay';
+  overlay.innerHTML = '<div style="font-family:\'Bebas Neue\',\'Oswald\',sans-serif;font-size:36px;color:var(--accent);letter-spacing:4px">DRAFT PAUSED</div>'
+    +'<div style="font-size:13px;color:var(--text2);margin-bottom:20px">'+d.name+' disconnected</div>'
+    +'<div style="display:flex;gap:12px">'
+    +'<button class="btn btn-primary btn-lg" onclick="draftResume()">▶ CONTINUE</button>'
+    +'<button class="btn btn-danger btn-md" onclick="draftKickDrafter('+drafterIdx+')">KICK DRAFTER</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
+}
+
+function draftResume() {
+  DR.paused = false;
+  var ov = document.getElementById('draft-paused-overlay');
+  if(ov) ov.remove();
+  if(DR.timerOn) draftStartTimer();
+}
+
+function draftKickDrafter(idx) {
+  // Return their picks to pool
+  DR.drafters[idx].picks.forEach(function(p){ DR.available.push(p); });
+  DR.drafters.splice(idx, 1);
+  // Rebuild pick order
+  draftBuildPickOrder();
+  // Find current pick position (approximate)
+  var ov = document.getElementById('draft-paused-overlay');
+  if(ov) ov.remove();
+  DR.paused = false;
+  draftRenderStrips();
+  draftSortPickPool();
+  draftAdvanceTurn();
+}
+
+// ── Finish ────────────────────────────────────────────────────────────────
+function draftFinish() {
+  draftStopTimer();
+  DR.complete = true;
+  draftShowPhase('complete');
+  var el = document.getElementById('draft-complete-list');
+  el.innerHTML = DR.drafters.map(function(d,i){
+    return '<div class="draft-complete-card">'
+      +'<div class="draft-complete-header">'
+      +'<span class="draft-complete-name" style="color:var(--accent)">'+d.name+'</span>'
+      +'<span style="font-size:10px;color:var(--text3)">'+d.picks.length+' players</span>'
+      +'</div>'
+      +'<div class="draft-complete-players">'
+      +d.picks.map(function(p,pi){
+        return '<div class="draft-complete-player">'
+          +'<span style="font-size:9px;color:var(--accent);min-width:20px">'+(pi+1)+'</span>'
+          +'<span style="flex:1;font-size:11px">'+p.name+'</span>'
+          +'<span style="font-size:9px;color:var(--text3)">'+p.position+'</span>'
+          +'<span style="font-size:9px;color:var(--text3);margin-left:4px">'+p.year+'</span>'
+          +'</div>';
+      }).join('')
+      +'</div>'
+      +'<div style="padding:8px 14px;border-top:1px solid rgba(255,255,255,0.07)">'
+      +'<button class="btn btn-ghost btn-sm" style="width:100%" onclick="draftExportTeam('+i+')">⬇ DOWNLOAD JSON</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function draftExportTeam(idx) {
+  var d = DR.drafters[idx];
+  var teamData = {
+    name: d.name,
+    drafted: new Date().toISOString(),
+    format: DR.format,
+    players: d.picks.map(function(p){ return {
+      id: p.id, name: p.name, position: p.position, height: p.height,
+      year: p.year, specialty: p.specialty, specialty2: p.specialty2,
+      ftPct: p.ftPct, fatigue: 0, stats: p.stats, onCourt: false
+    }; })
+  };
+  var blob = new Blob([JSON.stringify(teamData, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = d.name.replace(/\s+/g,'_')+'_draft_team.json';
+  a.click();
+}
+
+
+function lobbyUploadTeam(input, slot) {
+  var file = input.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if(!data.players || !Array.isArray(data.players)) { alert('Invalid team file'); return; }
+      G.teams[slot].players = data.players;
+      G.teams[slot].name = data.name || (slot==='a'?'HOME':'AWAY');
+      // Mark first 5 as on court if none set
+      var hasOn = data.players.some(function(p){ return p.onCourt; });
+      if(!hasOn) data.players.slice(0,5).forEach(function(p){ p.onCourt=true; });
+      if(typeof refreshTeamPanel==='function') refreshTeamPanel();
+      if(typeof syncScoreboard==='function') syncScoreboard();
+      notify((data.name||'Team')+' loaded into '+(slot==='a'?'HOME':'AWAY')+'!', 'score');
+      addLog('\u2B06\ufe0f Team uploaded: '+(data.name||'Unknown')+' → '+(slot==='a'?'HOME':'AWAY'), 'l-ev');
+    } catch(err) { alert('Could not parse team file: '+err.message); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1244,8 +2138,8 @@ const uid = () => {
 function derive(p) {
   const s = p.stats;
   return {
-    OFF: Math.round((s.SHT + s.HND + s.PAS) / 3),
-    DEF: Math.round((s.BLK + s.RBD + s.STL) / 3)
+    OFF: Math.round((s.SHT + s.HND + s.PAS + s.HUS) / 4),
+    DEF: Math.round((s.BLK + s.RBD + s.STL + s.HUS) / 4)
   };
 }
 
@@ -1787,8 +2681,8 @@ function rollFoulTeam(team) {
       showContinueButton(pss.team);
     } else {
       // No foul — basket counts
-      score(pss.team,pss.pts);
-      addLog('💥 DUNK! +'+pss.pts+' ('+G.teams[pss.team].name+') — no charge — basket counts','l-sc');
+      setPendingScore(pss.team, pss.pts, 'dunk');
+      addLog('💥 DUNK! '+pss.pts+'pt — no charge — press +'+pss.pts+' to record','l-sc');
       notify('DUNK!','score');
       showContinueButton(pss.team);
     }
@@ -1919,7 +2813,18 @@ function rollBDTeam(team) {
   G._lastShotReveal = null;
   addLog(`🏀 BD: rolled ${r} vs ${t} → <b>${in_?'BASKET':'no basket'}</b>${shotReveal}`, in_?'l-sc':'l-ro');
   if(in_) {
-    notify('BASKET!', 'score');
+    // Determine scoring team and points
+    const bdOffTeam = G.pendingShot ? (G.pendingShot.defTeam ? (G.pendingShot.defTeam==='a'?'b':'a') : (team==='a'?'b':'a')) : (team==='a'?'b':'a');
+    const bdPts = (G.pendingShot && G.pendingShot.shotType && G.pendingShot.shotType.includes('3')) ? 3 : 2;
+    const bdShooter = G.pendingShot ? G.pendingShot.player : null;
+    // Check if there was a within-3 foul check pending (shooting foul = and-1)
+    const bdFoulNote = G._pendingBDFoul ? G._pendingBDFoul : null;
+    G._pendingBDFoul = null;
+    G.shotJustScored = true;
+    G.shotActive = G.pendingShot ? {type: bdPts===3?'3pt':'mid', team:bdOffTeam, player:bdShooter} : G.shotActive;
+    G.pendingShot = null;
+    if(bdFoulNote) G._pendingBDFoul = bdFoulNote;
+    setPendingScore(bdOffTeam, bdPts, bdPts===3?'3-pointer':'field goal');
   } else {
     notify('No basket — REBOUND!', 'foul');
     G.reboundPending = { a: null, b: null };
@@ -2067,8 +2972,12 @@ function mkPlayer() {
 // Dynamic name pools — generated from realistic basketball name patterns
 const BBALL_FIRST_NAMES = [
     "Marcus","Darius","Terrell","Devon","Curtis","Jerome","Kendall","Lamont","Tyrone","Antoine","Reginald","Darnell","Marlon","Tyrell","Rasheed","Jamal","Kareem","Malik","Denzel","Donte","Davion","Tremaine","Marquis","Deshawn","Travon","Kevon","Isaiah","Elijah","Josiah","Jeremiah","Trevon","Davon","Javon","Preston","Weston","Easton","Kofi","Kwame","Kojo","Kwesi","Dante","Andre","Broderick","Kendrick","Tremont","Nikola","Dragan","Bogdan","Stefan","Mamadou","Hamidou","Cheikh","Moussa","Oumar","Ibou","Luca","Marco","Paolo","Bruno","Shai","Deni","Amir","Chandler","Garrison","Harrison","Ashton","Brayden","Collin","Griffin","Bryson","Drayton","Peyton","Leandro","Zuberi","Kamau","Amari","Omari","Jabari","Cade","Jalen","Jaylen","Dalen","Talen","Courtland","Roland","Garland","Harland","Aldrick","Treston","Rondae","Keshawn","Frederick","Cornelius","Quinton","Sheldon","Vernon","Rodney","Darrell","Marvin","Kelvin","Calvin","Melvin","Alvin","Dwayne","Dwight","DeShawn","DeAndre","DaMarcus","DaQuan","DaVion","LaMarcus","Anfernee","Chauncey","Terrence","Clarence","Lawrence","Donovan","Sullivan","Callahan","Brennan","Keegan","Declan","Finnegan","Riordan","Cormac","Zydrunas","Arvydas","Domantas","Jonas","Kristaps","Rodions","Arturas","Sarunas",
+    // Female basketball names
+    "Aaliyah","Brianna","Ciara","Deja","Erica","Fantasia","Gabrielle","Halley","Imani","Jasmine","Kiara","Latasha","Monique","Nadia","Octavia","Portia","Quanisha","Renee","Simone","Tiffany","Unique","Veronica","Whitney","Xavia","Yolanda","Zaria","Aliyah","Breanna","Chloe","Danielle","Essence","Fallon","Gia","Hadiya","Ivory","Janelle","Kezia","Lashonda","Monet","Nia","Precious","Raven","Shaniqua","Tierra","Tamara","Shayla","Keandra","Lakeisha","Destinee","Chanelle","Ayanna","Brielle","Shanique",
     // Sci-fi & Fantasy
-    "Galadriel","Aragorn","Legolas","Gandalf","Theron","Kaelen","Zephyr","Oryn","Tavian","Eryndor","Sylvara","Aelindra","Caelum","Draven","Erevan","Faolan","Gideon","Hadrius","Isadora","Jareth","Kaelthas","Lyraniel","Malachar","Naeris","Orvyn","Perindel","Quellan","Rhaegos","Sable","Talindra","Umbral","Vesper","Wraithborn","Xandrel","Ysolde","Zandris","Zephon","Kael","Ryker","Jaxen","Vance","Orion","Zaren","Calix","Daxon","Triton","Nexus","Quasar","Blazar","Pulsar","Halcyon","Vega","Altair","Sirius","Rigel","Lyra","Phaser","Proton","Axiom","Vector","Cipher","Flux","Nova","Zenith","Apex","Ion","Thrax","Gorvin","Krix","Zoth","Yorn","Draxar","Vexor","Korrigan","Tyzan","Grom","Skrel","Vael","Xuri","Qarl","Thrynn","Zelkor","Brix","Dravon","Ganthor","Helix","Vesperus","Calderon","Morrigan","Seraphon","Valdris","Nightshade","Asheron","Crestfall","Darkwind","Emberveil","Frostmourne","Grimoire","Hexen","Inkara","Jadewing","Kovalyn","Lorekeeper","Mysticor","Nocturn","Obsidian"
+    "Galadriel","Aragorn","Legolas","Gandalf","Theron","Kaelen","Zephyr","Oryn","Tavian","Eryndor","Sylvara","Aelindra","Caelum","Draven","Erevan","Faolan","Gideon","Hadrius","Isadora","Jareth","Kaelthas","Lyraniel","Malachar","Naeris","Orvyn","Perindel","Quellan","Rhaegos","Sable","Talindra","Umbral","Vesper","Wraithborn","Xandrel","Ysolde","Zandris","Zephon","Kael","Ryker","Jaxen","Vance","Orion","Zaren","Calix","Daxon","Triton","Nexus","Quasar","Blazar","Pulsar","Halcyon","Vega","Altair","Sirius","Rigel","Lyra","Phaser","Proton","Axiom","Vector","Cipher","Flux","Nova","Zenith","Apex","Ion","Thrax","Gorvin","Krix","Zoth","Yorn","Draxar","Vexor","Korrigan","Tyzan","Grom","Skrel","Vael","Xuri","Qarl","Thrynn","Zelkor","Brix","Dravon","Ganthor","Helix","Vesperus","Calderon","Morrigan","Seraphon","Valdris","Nightshade","Asheron","Crestfall","Darkwind","Emberveil","Frostmourne","Grimoire","Hexen","Inkara","Jadewing","Kovalyn","Lorekeeper","Mysticor","Nocturn","Obsidian",
+    // Female fantasy names
+    "Seraphina","Thessaly","Vyndara","Aelith","Calindra","Eirene","Morwenna","Zephyrine","Lyranith","Noctura","Solenne","Vaelith","Astraea","Bryndis","Caladwen","Dawnveil","Elyndra","Feyara","Greymourn","Hollowstar","Illyria","Jasanthis","Korinna","Lunara","Maelindra","Nyxara","Ophyris","Phantara","Quelindra","Rivenmoor","Solvara","Thornveil"
   ];
 const BBALL_LAST_NAMES = [
     "Washington","Jefferson","Hamilton","Madison","Harrington","Pennington","Worthington","Coleman","Holloway","Calloway","Galloway","Stringer","Springer","Hayward","Finney","Paxton","Fulton","Bowman","Morrow","Worthy","Drummond","Birch","Diallo","Mosely","Randle","Portis","Garland","Mobley","Sexton","Maxey","Cunningham","Holman","Briggs","Griggs","Carrington","Barrington","Kensington","Booker","Tatum","Waiters","Exum","Clarkson","Hardaway","Nwaba","Vonleh","Quickley","Okoro","Suggs","Kuminga","Clayton","Dalton","Walton","Bolton","Colton","Holton","Milton","Tilton","Burks","Perks","Quirks","Crowder","Payne","Wayne","Lane","Crane","Bane","Cane","Vane","Gordon","Monroe","Tillman","Dillman","Millman","Willman","Spencer","Freeman","Reynolds","Barrett","Garrett","Jarrett","Harden","Garden","Warden","Porter","Bridges","Crawford","Wheeler","Forbes","Collins","Whitfield","Blackwood","Ashford","Bradford","Clifford","Stafford","Stanford","Stratford","Oxford","Wexford","Pemberton","Atherton","Henderson","Robertson","Patterson","Richardson","Williamson","Dupont","Laforge","Beaumont","Delacroix","Fontaine","Leblanc","Moreau","Rousseau","Okafor","Afolabi","Adeyemi","Olawale","Babatunde","Okonkwo","Nwosu","Emeka","Chukwu","Gillespie","Mackenzie","Fitzpatrick","O'Brien","Gallagher","Donnelly","McCarthy","Flanagan",
@@ -2544,7 +3453,8 @@ function moveBallToToken(team, idx) {
   // Bring ball carrier token to top of SVG stack
   const tokElMBT=document.getElementById('T-'+team+'-'+idx);
   const toksGMBT=document.getElementById('toks');
-  if(tokElMBT&&toksGMBT) toksGMBT.appendChild(tokElMBT);
+  // Defer appendChild so it doesn't interrupt pending click events
+  if(tokElMBT&&toksGMBT) setTimeout(()=>toksGMBT.appendChild(tokElMBT),0);
   const tid = 'T-'+team+'-'+idx;
   const pos = G.tokPos[tid];
   const ball = document.getElementById('ball-g');
@@ -2817,7 +3727,6 @@ function makeDraggable(el, id, team) {
   }
 
   function onDown(e) {
-    console.log('onDown: id='+id+' ballTok='+JSON.stringify(G.ballTok));
     e.preventDefault(); dragging = true;
     const tp = G.tokPos[id];
     const cx = e.touches?e.touches[0].clientX:e.clientX;
@@ -2887,7 +3796,6 @@ function makeDraggable(el, id, team) {
   }
 
   function onUp() {
-    console.log('onUp: id='+id+' ballTok='+JSON.stringify(G.ballTok));
     dragging = false; el.style.cursor = 'grab';
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('mouseup', onUp);
@@ -2895,9 +3803,9 @@ function makeDraggable(el, id, team) {
     window.removeEventListener('touchend', onUp);
     const tp = G.tokPos[id];
     // If this token carries the ball, move ball indicator + check half court crossing
-    console.log('onUp: id='+id+' team='+team+' idx='+idx+' ballTok='+JSON.stringify(G.ballTok));
-    if (G.ballTok && G.ballTok.team === team && G.ballTok.idx === idx) {
-      moveBallToToken(team, idx);
+    var _upParts=id.split('-'), _upTeam=_upParts[1], _upIdx=parseInt(_upParts[2]);
+    if (G.ballTok && G.ballTok.team === _upTeam && G.ballTok.idx === _upIdx) {
+      moveBallToToken(_upTeam, _upIdx);
       checkHalfCourtCrossing(true); // fromDrag=true: triggers teammate sweep
       checkZoneRepair(); // re-pair defender on drag into zone
     }
@@ -3698,7 +4606,7 @@ function act(a) {
 
       // Score if made
       if(ftMade || ftRoll===1) {
-        score(ftTeam, 1);
+        setPendingScore(ftTeam, 1, 'free throw');
       }
 
       // Handle pendingFT (bonus/multi-shot tracking)
@@ -3911,11 +4819,8 @@ function act(a) {
             addLog('⚖️ Foul check on '+shooter.name+' — DICE tab → ROLL FOUL CHECK — charge = no basket','l-fo');
             notify('Foul check on '+shooter.name+' — charge waves off basket!','foul');
           } else {
-            // Clean dunk
-            score(offTeam3,2);
-            addLog('💥 DUNK! +2 ('+G.teams[offTeam3].name+') — clean finish','l-sc');
-            notify('DUNK!','score');
-            showContinueButton(offTeam3);
+            // Clean dunk — prompt to record
+            setPendingScore(offTeam3, 2, 'dunk');
           }
         }
       } else {
@@ -4036,20 +4941,18 @@ function act(a) {
           const defName1 = G.pendingShot.defName||p.name;
           addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} — defender fails to match nat 1 · <b style="color:var(--green)">AUTO-BASKET CONFIRMED!</b> · Foul check on ${p.name} (defender)`, 'l-ev');
           notify('AUTO-BASKET! Foul check on defender','score');
-          // Score first, then foul check for and-1
-          const nat1OffTeam = G.myTeam==='a'?'b':'a';
-          const nat1Shooter = G.pendingShot?.player;
+          // Nat 1 block = CLEAN SWAT — no score, no foul, ball live or OOB
           G.pendingShot = null;
-          G.shotActive = nat1Shooter ? {type:'3pt',team:nat1OffTeam,player:nat1Shooter} : G.shotActive;
-          G.shotJustScored = true;
-          score(nat1OffTeam, G.shotActive?.type==='3pt'?3:2);
-          // Foul check on blocker (p) — shooting foul = and-1
-          // Blocker may have fouled shooter. Fouled=shooter(offTeam), roller=blocker's opp
-          var offTeamAB=G.myTeam==='a'?'b':'a';
-          // Blocker (p) is fouler → team = G.myTeam
-          G.pendingFoulOn = {playerId:p.id, playerName:p.name,
-            team:G.myTeam, _shootingFoul:true, _ftCount:1, _foulerPid:p.id, _foulerTeam:G.myTeam};
-          G.foulCheckPending = true;
+          const nat1d4 = d(4);
+          addLog('💥 CLEAN BLOCK! d4→'+nat1d4+(nat1d4===4?' — OUT OF BOUNDS — offense inbounds at baseline':' — ball live — RANDOM HUSTLE'),'l-ev');
+          notify('Clean block!'+(nat1d4===4?' — OOB':''),'score');
+          if(nat1d4===4){
+            const nat1OffTeam2=G.myTeam==='a'?'b':'a';
+            G.possession=nat1OffTeam2;
+            showContinueButton(G.myTeam);
+          } else {
+            startRandomHustle(false);
+          }
         } else if(blockWins && !shotMissed){
           // Block SR > Shot SR — store for BD calc, proceed to BD (not auto-block)
           G.pendingShot._blockSR = sr;
@@ -4115,10 +5018,7 @@ function act(a) {
               addLog('⚖️ Foul check on '+shooterSlF.name+' — DICE tab → ROLL FOUL CHECK — charge = no basket','l-fo');
               notify('Foul check on '+shooterSlF.name+' — charge waves off basket!','foul');
             } else {
-              score(offTeamSlF,2);
-              addLog('💥 DUNK! +2 ('+G.teams[offTeamSlF].name+') — block failed — clean finish','l-sc');
-              notify('DUNK!','score');
-              showContinueButton(offTeamSlF);
+              setPendingScore(offTeamSlF, 2, 'dunk');
             }
             break;
           }
@@ -4139,6 +5039,12 @@ function act(a) {
         const oppPfx = G.myTeam==='a'?'r':'l';
         const bdEl = document.getElementById(oppPfx+'bd-t');
         if(bdEl) bdEl.value = 15;
+        // Within-3: store foul to fire after BD — And-1 if basket
+        if(diff2!==null && diff2<=3) {
+          G._pendingBDFoul = {playerId:p.id, playerName:p.name, team:G.myTeam,
+            _shootingFoul:true, _ftCount:1, _foulerPid:p.id, _foulerTeam:G.myTeam};
+          addLog('\u26a0\ufe0f Within 3 — foul check after BD (And-1 if basket)', 'l-fo');
+        }
         notify('Block succeeds — BD now 15','foul');
         G.lastShotSR = null;
       }
@@ -4335,8 +5241,6 @@ function checkHalfCourtCrossing(fromDrag) {
   if (!G.ballTok) return;
   const team = G.ballTok.team;
   const nowInFront = !inBackCourt(team);
-  if(fromDrag) console.log('CHC drag: team='+team+' nowInFront='+nowInFront+' prevInBack='+(G._wasInBackCourt&&G._wasInBackCourt[team])+' ballTok='+JSON.stringify(G.ballTok)+' pos='+JSON.stringify(G.tokPos['T-'+G.ballTok.team+'-'+G.ballTok.idx]));
-  // _wasInBackCourt initialized at inbound — always valid
   if(!G._wasInBackCourt) G._wasInBackCourt={a:true,b:true};
   const prevInBack = G._wasInBackCourt[team];
   // Only update _wasInBackCourt on actual drag — not on programmatic ball moves
@@ -4367,18 +5271,8 @@ function checkHalfCourtCrossing(fromDrag) {
       if (!tp || !isInBack(tp.x)) return;
       const zi = parseInt(tid.split('-')[2]);
       // Find a defPos that isn't occupied by an opponent token
-      let chosenPos = null;
-      const candidates = [defPos[zi], ...defPos].filter(Boolean);
-      for(const cand of candidates){
-        const occ = getOccupied();
-        const blocked = occ.some(op => Math.sqrt(Math.pow(op.x-cand.x,2)+Math.pow(op.y-cand.y,2)) < 35);
-        if(!blocked){ chosenPos=cand; break; }
-      }
-      // If all candidates blocked, offset by +20y from preferred position
-      if(!chosenPos){
-        const pref = defPos[zi] || defPos[0];
-        chosenPos = {x: pref.x, y: Math.min(500, pref.y + 30)};
-      }
+      // Use assigned defPos slot — offset by index if needed
+      const chosenPos = defPos[zi] || defPos[zi % defPos.length] || defPos[0];
       const el = document.getElementById(tid);
       if(el){
         el.setAttribute('transform', `translate(${chosenPos.x},${chosenPos.y})`);
@@ -5038,6 +5932,7 @@ function renderPips() {
 // ════════════════════════════════════════════
 //  SCORE / FOULS
 // ════════════════════════════════════════════
+// score() now just syncs UI after manual button press
 function score(team, pts) {
   G.score[team] += pts;
   syncScoreboard();
@@ -5045,7 +5940,69 @@ function score(team, pts) {
   notify(`+${pts} ${G.teams[team].name}!`, 'score');
   bcast({ type:'score', team, pts });
   checkGame();
-  showContinueButton(team);
+}
+
+// setPendingScore: call instead of score() when a basket is earned
+// Prompts the scoring team to press their +1/+2/+3 button
+function setPendingScore(team, pts, reason) {
+  G.pendingScore = { team, pts, reason: reason||'' };
+  const col = (G.teamColors&&G.teamColors[team])||(team==='a'?'var(--blue)':'var(--red)');
+  const sc = document.getElementById('subcourt-log');
+  if(sc) sc.innerHTML = `<div style="display:flex;align-items:center;gap:8px;font-size:11px">`
+    + `<span style="color:${col};font-family:'Oswald',sans-serif;letter-spacing:1px">🏀 ${G.teams[team].name} scores ${pts}pt${pts>1?'s':''}</span>`
+    + `<span style="color:var(--text3)">— press</span>`
+    + `<span style="color:${col};font-weight:bold">+${pts}</span>`
+    + `<span style="color:var(--text3)">to record${reason?' ('+reason+')':''}</span>`
+    + `</div>`;
+  addLog(`🏀 ${G.teams[team].name} scores ${pts} — press <b>+${pts}</b> to record`, 'l-sc');
+  notify(`Press +${pts} to record basket!`, 'score');
+  // BUCKET! flash
+  const _bktEl = document.createElement('div');
+  const _bktCol = (G.teamColors&&G.teamColors[team])||(team==='a'?'#4a9eff':'#ff5555');
+  _bktEl.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;';
+  _bktEl.innerHTML = `<span style="font-family:'Alfa Slab One','Oswald',sans-serif;font-size:clamp(48px,12vw,96px);color:${_bktCol};text-shadow:0 0 40px ${_bktCol},0 0 80px ${_bktCol}88,0 0 120px ${_bktCol}44;letter-spacing:4px;animation:bucket-pop 1.1s ease-out forwards">BUCKET!</span>`;
+  if(!document.getElementById('bucket-style')){
+    const _st=document.createElement('style'); _st.id='bucket-style';
+    _st.textContent='@keyframes bucket-pop{0%{opacity:0;transform:scale(0.6)}15%{opacity:1;transform:scale(1.08)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}';
+    document.head.appendChild(_st);
+  }
+  document.body.appendChild(_bktEl);
+  setTimeout(()=>_bktEl.remove(), 1100);
+}
+
+// pressScoreBtn: called by +1/+2/+3 buttons
+function pressScoreBtn(team, pts) {
+  if(G.pendingScore) {
+    if(G.pendingScore.team !== team) {
+      notify('Wrong team — '+G.teams[G.pendingScore.team].name+' scores!', 'foul');
+      return;
+    }
+    if(G.pendingScore.pts !== pts) {
+      notify('Wrong amount — should be +'+G.pendingScore.pts, 'foul');
+      return;
+    }
+    const scoringTeam = G.pendingScore.team;
+    const scoringPts = G.pendingScore.pts;
+    const hadAndOne = G.pendingScore._andOne;
+    G.pendingScore = null;
+    score(scoringTeam, scoringPts);
+    // If And-1 foul was pending, now trigger it
+    if(G._pendingBDFoul) {
+      G.pendingFoulOn = G._pendingBDFoul;
+      G._pendingBDFoul = null;
+      G.foulCheckPending = true;
+      addLog('⚖️ Shooting foul — And-1 possible — roll Foul Check', 'l-fo');
+      notify('And-1 — roll Foul Check!', 'foul');
+    } else {
+      showContinueButton(scoringTeam);
+    }
+    const sc = document.getElementById('subcourt-log');
+    if(sc) sc.innerHTML = '';
+  } else {
+    // No pending score — treat as manual score adjustment
+    score(team, pts);
+    showContinueButton(team);
+  }
 }
 
 function showTimeoutSubPrompt(callingTeam) {
@@ -6252,6 +7209,32 @@ function ltSaveTeam() {
   try{ localStorage.setItem('pr_legacy_teams', JSON.stringify(G_legacyTeams)); }catch(e){}
 }
 
+function ltExportLegacyTeam(idx) {
+  var t = G_legacyTeams[idx];
+  if(!t) return;
+  // Normalise to same format as draft/editor exports
+  var data = {
+    name: t.name,
+    drafted: t.created || new Date().toISOString(),
+    format: 'legacy',
+    color: t.color || '#2a6ee8',
+    players: t.players.map(function(p) {
+      return {
+        id: p.id || ('lp-'+Math.random()),
+        name: p.name, position: p.position, height: p.height,
+        year: p.year, specialty: p.specialty, specialty2: p.specialty2,
+        ftPct: p.ftPct||70, fatigue: 0, stats: p.stats, onCourt: p.onCourt||false
+      };
+    })
+  };
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = t.name.replace(/\s+/g,'_')+'_legacy.json';
+  a.click();
+  notify(t.name+' exported!', 'score');
+}
+
 function ltRenderSaved() {
   var list = document.getElementById('lt-saved-list');
   if(!list) return;
@@ -6262,6 +7245,7 @@ function ltRenderSaved() {
         '<div style="font-size:13px;font-weight:bold;color:var(--accent)">'+t.name+'</div>'+
         '<div style="font-size:10px;color:var(--text3)">'+t.players.length+' players · '+t.created+'</div>'+
       '</div>'+
+      '<button onclick="event.stopPropagation();ltExportLegacyTeam('+i+')" style="background:none;border:1px solid rgba(240,192,64,0.3);color:var(--accent);cursor:pointer;font-size:10px;font-family:Oswald,sans-serif;padding:3px 7px;border-radius:3px;margin-right:6px">&#8659; JSON</button>'+
       '<button onclick="event.stopPropagation();G_legacyTeams.splice('+i+',1);try{localStorage.setItem("pr_legacy_teams",JSON.stringify(G_legacyTeams))}catch(e){};ltRenderSaved()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 6px">&#215;</button>'+
       '</div>';
   }).join('');
@@ -7268,9 +8252,91 @@ function rollBackCourtTeam(team) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </script>
 
 <!-- LEGACY TEAM BUILDER -->
+<!-- TEAM EDITOR SCREEN -->
+<div id="s-editor" class="screen">
+  <div class="editor-wrap">
+    <div class="editor-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-ghost btn-sm" onclick="show('lobby')">← BACK</button>
+        <span class="editor-title">TEAM EDITOR</span><span class="editor-dirty-badge">UNSAVED</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+          ⬆ LOAD JSON <input type="file" accept=".json" style="display:none" onchange="editorLoadJSON(this)">
+        </label>
+        <button class="btn btn-primary btn-sm" onclick="editorExport()">⬇ SAVE JSON</button>
+      </div>
+    </div>
+
+    <!-- Team meta row -->
+    <div class="editor-meta-row" id="editor-meta-row" style="display:none">
+      <div class="editor-meta-field">
+        <label class="editor-label">TEAM NAME</label>
+        <input type="text" id="editor-team-name" class="editor-input editor-name-input" maxlength="32" placeholder="Team name..." oninput="editorDirty()">
+      </div>
+      <div class="editor-meta-field">
+        <label class="editor-label">TEAM COLOR</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" id="editor-team-color" value="#2a6ee8" oninput="editorUpdateColor()" style="width:36px;height:30px;border:none;background:none;cursor:pointer;padding:0;border-radius:4px">
+          <span id="editor-color-preview" style="font-size:11px;font-family:'Oswald',sans-serif;color:var(--text3)"></span>
+        </div>
+      </div>
+      <div class="editor-meta-field">
+        <label class="editor-label">STARTERS <span id="editor-starter-count" style="color:var(--accent)">0/5</span></label>
+        <span style="font-size:10px;color:var(--text3)">Click player row to toggle</span> <span class="editor-starter-warn">⚠ must be exactly 5</span>
+      </div>
+      <div class="editor-meta-field" style="margin-left:auto">
+        <label class="editor-label">FORMAT</label>
+        <span id="editor-format-badge" style="font-size:10px;color:var(--text3)">—</span>
+      </div>
+    </div>
+
+    <!-- No team loaded state -->
+    <div id="editor-empty" class="editor-empty">
+      <div style="font-size:48px;margin-bottom:12px">📋</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:2px;color:var(--text3);margin-bottom:8px">NO TEAM LOADED</div>
+      <div style="font-size:12px;color:var(--text3)">Upload a JSON team file to begin editing</div>
+    </div>
+
+    <!-- Player list -->
+    <div id="editor-player-list" style="display:none"></div>
+  </div>
+</div>
+
+
+<!-- LEGACY SCREEN -->
 <div id="s-legacy" class="screen">
   <div class="gen-wrap">
     <div class="gen-header">
