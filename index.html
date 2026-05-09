@@ -1118,6 +1118,46 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -2391,7 +2431,9 @@ function rollActiveDefense(team) {
     // Crit success — foul check on HANDLER (offense), then steal
     if(G.handlePlayer) { G.pendingFoulOn = { playerId: G.handlePlayer.id, playerName: G.handlePlayer.name, team: offTeam }; G.foulCheckPending=true; }
     addLog(`🛡 DEF (${p.name}): DEF ${dv.DEF}, d30→${r} → SR <b>${sr}</b> ⭐ CRIT STOP — Foul check on ${G.handlePlayer?.name||G.teams[offTeam].name}, then steal`,'l-ev');
-    notify('CRIT STOP — foul check on offense','foul');
+    G.critStopPending = { defPlayer: p, defTeam: team, offTeam: offTeam,
+      handler: G.handlePlayer || (G.teams[offTeam].players.filter(function(px){return px.onCourt;})[G.ballTok&&G.ballTok.idx||0]) };
+    notify('CRIT STOP — foul check first, auto-steal after','foul');
     G.handleSR=null;
   } else if(r===30){
     // Crit fail — foul check on DEFENDER (p), fast break for offense
@@ -2399,12 +2441,15 @@ function rollActiveDefense(team) {
     G.fastBreak = { team: offTeam, movesLeft: fb, joiners: [] };
     resolveHustleJoinFastBreak(offTeam);
     // Crit fail: defender fouled handler. Fouled=handler(offTeam), roller=defender's opp
+    // Defender is fouler (team) — defender's team blocked from rolling
+    // Offensive team (offTeamCF) rolls the foul check
     var offTeamCF = team==='a'?'b':'a';
-    if(G.handlePlayer){ G.pendingFoulOn={playerId:G.handlePlayer.id,playerName:G.handlePlayer.name,team:offTeamCF,_foulerPid:p.id,_foulerTeam:team}; G.foulCheckPending=true; }
-    addLog(`🛡 DEF (${p.name}): DEF ${dv.DEF}, d30→${r} → SR <b>${sr}</b> 💀 CRIT FAIL — Foul check on ${p.name} · Fast break: d4→${fb} free move${fb>1?'s':''}`,'l-fo');
-    addLog(`⚡ FAST BREAK: ${G.teams[offTeam].name} gets ${fb} free move${fb>1?'s':''} (handle free, hold dribble free, open shot)`,'l-ev');
-    notify(`Fast break! ${fb} free move${fb>1?'s':''}!`,'score');
-    syncFastBreak();
+    if(G.handlePlayer){ G.pendingFoulOn={playerId:p.id,playerName:p.name,
+      team:team,_foulerPid:p.id,_foulerTeam:team}; G.foulCheckPending=true; }
+    // Store fast break to activate AFTER foul check resolves
+    G._pendingFastBreak = G._pendingFastBreak || {team:offTeamCF, moves:fb};
+    addLog(`🛡 DEF (${p.name}): DEF ${dv.DEF}, d30→${r} → SR <b>${sr}</b> 💀 CRIT FAIL — Foul check on ${p.name} · Fast break: d4→${fb} free move${fb>1?'s':''} (after foul check)`,'l-fo');
+    notify('Foul check first — fast break after!','foul');
     G.handleSR=null;
   } else if(G.handleSR!==null){
     const hSR=G.handleSR;
@@ -2412,6 +2457,8 @@ function rollActiveDefense(team) {
     addLog(`🛡 DEF (${p.name}): DEF ${dv.DEF}, d30→${r} → SR <b>${sr}</b> vs handle SR ${hSR} — <b style="color:${defWins?'var(--red)':'var(--green)'}">${defWins?'STOPS ADVANCEMENT':'ADVANCEMENT SUCCEEDS'}</b>${foulNote}`,'l-ro');
     notify(defWins?p.name+' stops the advance!':'Advancement succeeds!',defWins?'foul':'score');
     G.handleSR=null;
+    // Now that contest resolved, check if BC violation should fire
+    if(G.clocks.bc===0 && !G.passPending && !G.lookPending && !G.handleSR) setTimeout(checkBCViolation,50);
   } else {
     addLog(`🛡 DEF (${p.name}): DEF ${dv.DEF}, d30→${r} → SR <b>${sr}</b>${foulNote}`,'l-ro');
     notify(`${p.name} DEF: ${r} (SR ${sr})`,'');
@@ -2765,6 +2812,12 @@ function rollFoulTeam(team) {
     addLog('🏀 <span style="color:var(--accent)">REBOUND — both teams press REBOUND</span>','l-ev');
     notify('Rebound!','foul');
   }
+  // Crit tip pending — show receiver selection after foul check
+  if(G._critTipPending) {
+    var ctp = G._critTipPending; G._critTipPending = null;
+    showCritTipSelection(ctp.winTeam, ctp.winPs, ctp.jumpIdx);
+    return;
+  }
   // PnR pending resolution after def nat30 foul check
   if(G._pnrPendingResolution){
     var pnrR=G._pnrPendingResolution; G._pnrPendingResolution=null;
@@ -2776,16 +2829,39 @@ function rollFoulTeam(team) {
     addLog('🔥 '+pnrR.handler.name+' advances — '+pnrR.screener.name+' rolls to Zone 1 — alley-oop eligible — no block','l-ev');
     notify('Advance + alley-oop eligible!','score');
   }
-  // Crit stop pending: prompt STEAL or BACK OFF after foul check resolves
+  // Pending fast break from DEF nat30 — activate after foul check
+  if(G._pendingFastBreak) {
+    var pfb = G._pendingFastBreak; G._pendingFastBreak = null;
+    G.fastBreak = { team: pfb.team, movesLeft: pfb.moves, joiners: [] };
+    addLog(`⚡ FAST BREAK: ${G.teams[pfb.team].name} gets ${pfb.moves} free move${pfb.moves>1?'s':''} (handle free, hold dribble free, open shot)`,'l-ev');
+    notify(`Fast break! ${pfb.moves} free move${pfb.moves>1?'s':''}!`,'score');
+    syncFastBreak();
+  }
+  // Crit stop: auto-steal — defender reads perfectly, takes the ball
   if(G.critStopPending){
     const csp=G.critStopPending; G.critStopPending=null;
-    G.handleFailed={player:null,defPlayer:csp.defPlayer,defTeam:csp.defTeam,critFail:false};
-    const dlCS=csp.defPlayer?cardLink(csp.defPlayer,csp.defTeam):'Defender';
-    const bCS='padding:2px 8px;font-size:10px;font-family:\'Oswald\',sans-serif;border-radius:3px;cursor:pointer;border:1px solid ';
-    addLog('🛡️ CRIT STOP — '+G.teams[csp.defTeam].name+' — '+dlCS+
-      ': <button onclick="actTeam(\''+csp.defTeam+'\',\'stld\')" style="'+bCS+'rgba(220,80,50,0.35);background:rgba(220,80,50,0.12);color:var(--red)">STEAL</button>'+
-      ' <button onclick="handleBackOff()" style="'+bCS+'rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--text2)">BACK OFF</button>','l-fo');
-    notify(G.teams[csp.defTeam].name+': STEAL or BACK OFF','foul');
+    const defPs4=G.teams[csp.defTeam].players.filter(function(px){return px.onCourt;});
+    const defIdx4=defPs4.findIndex(function(px){return px.id===csp.defPlayer.id;});
+    if(defIdx4>=0){
+      // Place stealer next to handler
+      var handlerTeam4=csp.offTeam;
+      var handlerTid4='T-'+handlerTeam4+'-'+(G.ballTok?G.ballTok.idx:0);
+      var handlerPos4=G.tokPos[handlerTid4];
+      if(handlerPos4){
+        var sx4=handlerPos4.x+(csp.defTeam==='a'?-30:30);
+        var sy4=handlerPos4.y;
+        sx4=Math.max(20,Math.min(880,sx4)); sy4=Math.max(20,Math.min(500,sy4));
+        var stealEl4=document.getElementById('T-'+csp.defTeam+'-'+defIdx4);
+        if(stealEl4&&G.tokPos['T-'+csp.defTeam+'-'+defIdx4]){
+          stealEl4.setAttribute('transform','translate('+sx4+','+sy4+')');
+          G.tokPos['T-'+csp.defTeam+'-'+defIdx4].x=sx4;
+          G.tokPos['T-'+csp.defTeam+'-'+defIdx4].y=sy4;
+        }
+      }
+      setActiveAndBall(csp.defTeam,defIdx4,csp.defPlayer.id);
+      addLog('🛡 CRIT STOP — AUTO-STEAL: '+csp.defPlayer.name+' takes the ball! '+G.teams[csp.defTeam].name+' possession','l-fo');
+      notify(csp.defPlayer.name+' has the ball — play on!','score');
+    }
   }
 }
 
@@ -2939,6 +3015,13 @@ function resolveRandomHustle(inBackCourt2) {
   G.reboundPending=null;
   addLog(`💨 <b style="color:var(--green)">${winner.name} (${G.teams[winTeam].name}) recovers in ${locLabel}!</b>`,'l-ev');
   notify(winner.name+' gets the hustle ball!','score');
+  // If same team that lost the ball wins the hustle, restore BC clock
+  if(G._prHustleBC && G._prHustleBC.team === winTeam && G._prHustleBC.bc > 0) {
+    G.clocks.bc = G._prHustleBC.bc;
+    addLog('⏱ BC clock restored: '+G._prHustleBC.bc+' moves remaining','l-ev');
+    syncClocks(); renderPips();
+  }
+  G._prHustleBC = null;
   buildAPSel();
 }
 
@@ -3336,8 +3419,13 @@ function startGame() {
 
 function quickStart() {
   G.role = 'host'; G.myTeam = 'a'; G.roomCode = 'LOCAL';
-  G.editTeam = 'a'; G.teams.a.name = 'HOME'; autoFill();
-  G.editTeam = 'b'; G.teams.b.name = 'VISITORS'; autoFill();
+  // Only auto-fill slots that haven't had a team uploaded
+  var hasA = G.teams.a.players && G.teams.a.players.some(function(p){return p.onCourt;});
+  var hasB = G.teams.b.players && G.teams.b.players.some(function(p){return p.onCourt;});
+  G.editTeam = 'a';
+  if(!hasA){ G.teams.a.name = 'HOME'; autoFill(); }
+  G.editTeam = 'b';
+  if(!hasB){ G.teams.b.name = 'VISITORS'; autoFill(); }
   G.editTeam = 'a';
   startLocal();
 }
@@ -3480,7 +3568,7 @@ function moveBallToToken(team, idx) {
   const tokElMBT=document.getElementById('T-'+team+'-'+idx);
   const toksGMBT=document.getElementById('toks');
   // Defer appendChild so it doesn't interrupt pending click events
-  if(tokElMBT&&toksGMBT) setTimeout(()=>{toksGMBT.appendChild(tokElMBT); hilightAP();},0);
+  if(tokElMBT&&toksGMBT) setTimeout(()=>{toksGMBT.appendChild(tokElMBT); hilightAP(); buildAPSel();},0);
   const tid = 'T-'+team+'-'+idx;
   const pos = G.tokPos[tid];
   const ball = document.getElementById('ball-g');
@@ -3510,8 +3598,8 @@ function setActiveAndBall(team, idx, pid) {
   G.ap = { team, idx, id: pid };
   G.possession = team;
   hilightAP();
-  buildAPSel();
   moveBallToToken(team, idx);
+  buildAPSel(); // after moveBallToToken so G.ballTok is set for emoji
   const tokEl=document.getElementById('T-'+team+'-'+idx);
   const toksG=document.getElementById('toks');
   if(tokEl&&toksG) toksG.appendChild(tokEl);
@@ -3574,6 +3662,21 @@ function mkTok(player, team, idx, pos) {
       const el2=document.getElementById(mcid);
       if(el2) el2.style.display='none';
     });
+    // Crit tip receiver selection
+    if(G._critTipChoosing && team===G._critTipChoosing.winTeam) {
+      var ctc=G._critTipChoosing; G._critTipChoosing=null;
+      document.querySelectorAll('.tok').forEach(function(el){el.classList.remove('look-target');});
+      var clickedIdx=parseInt(id.split('-')[2]);
+      if(clickedIdx===ctc.jumpIdx){notify('Cannot tip to yourself — click a teammate','foul');showCritTipSelection(ctc.winTeam,ctc.winPs,ctc.jumpIdx);return;}
+      var receiver=ctc.winPs[clickedIdx];
+      if(!receiver){notify('Invalid selection','foul');return;}
+      moveTokenToZone(ctc.winTeam, clickedIdx, 'back');
+      setActiveAndBall(ctc.winTeam, clickedIdx, receiver.id);
+      addLog('\u2B50 '+receiver.name+' receives the critical tip \u2014 back court','l-ev');
+      notify(receiver.name+' receives the tip!','score');
+      G.possession=ctc.winTeam; resetClk();
+      return;
+    }
     // PnR screener selection
     if(G._pnrPending&&team===G._pnrPending.team&&parseInt(id.split('-')[2])!==G._pnrPending.handlerIdx){resolvePnrScreener(parseInt(id.split('-')[2]));return;}
     // Pass pending: teammate receives the ball
@@ -3693,15 +3796,23 @@ function mkTok(player, team, idx, pos) {
           // srOff < srDef: passer lower SR → passer possible fouler → fouled = defender
           // srDef < srOff: defender lower SR → defender possible fouler → fouled = pass TARGET (receiver)
           // Pass target not known yet — store pending and resolve when receiver is chosen
-          if(srOff < srDef && defPlayer){
-            // Passer has lower SR = passer is fouler
-            // pendingFoulOn.team = passer's team (team) — blocks passer, opponent (defTeam) rolls
-            G.pendingFoulOn={playerId:player.id,playerName:player.name,team:team,_chargeCandidate:true};
-            G.foulCheckPending=true;
-          } else if(srDef <= srOff && defPlayer){
-            // Defender may have fouled receiver — store flag, resolve when target chosen
-            G._lookFoulPending={foulerPid:defPlayer.id,foulerName:defPlayer.name,foulerTeam:defTeam};
-            G.foulCheckPending=true;
+          if(diff > 0 && defPlayer){
+            // Foul is between the TARGET (player) and TARGET's DEFENDER (defPlayer)
+            // Passer is not involved
+            if(srOff < srDef){
+              // Target lower SR — target fouled the defender (illegal cut/push)
+              // Fouler = target's team (team), fouled = defender → team blocked, defTeam rolls
+              G.pendingFoulOn={playerId:player.id,playerName:player.name,
+                team:team,_chargeCandidate:true,_foulerPid:player.id,_foulerTeam:team};
+              G.foulCheckPending=true;
+            } else {
+              // Defender lower SR — defender fouled the target (holding/denying illegally)
+              // Set pendingFoulOn immediately so rollFoulTeam blocks the right team
+              G.pendingFoulOn={playerId:defPlayer.id,playerName:defPlayer.name,
+                team:defTeam,_foulerPid:defPlayer.id,_foulerTeam:defTeam};
+              G._lookFoulPending={foulerPid:defPlayer.id,foulerName:defPlayer.name,foulerTeam:defTeam};
+              G.foulCheckPending=true;
+            }
           }
         }
         const foulOn1 = diff<=3 ? (srOff < srDef ? ` · Possible foul on <b>${player.name}</b>` : ` · Possible foul on <b>${defPlayer?defPlayer.name:'Defender'}</b>`) : '';
@@ -4055,12 +4166,12 @@ function act(a) {
       const jumpIdx = winPs.findIndex(p=>p.id===winJumper.id);
       // On critical 1: winner chooses any teammate + any location (prompt)
       if (isCrit && (critA1||(critB30&&winTeam==='b')||(critA30&&winTeam==='a'))) {
-        // Critical win: auto tip to player 1 (they choose) + log choice prompt
-        const receiver = winPs.find((p,i)=>i!==jumpIdx) || winPs[0];
-        const recIdx = winPs.findIndex(p=>p.id===receiver.id);
-        setActiveAndBall(winTeam, recIdx, receiver.id);
-        addLog(`⭐ CRITICAL TIP — ${winJumper.name} tips to any teammate of choice. Ball at any back court location. Check foul on ${G.teams[loseTeam].name}.`, 'l-ev');
-        notify('Critical tip! Choose receiver & location', 'score');
+        // Critical win: store pending tip, fire foul check, then show receiver selection
+        G._critTipPending = { winTeam, winPs, jumpIdx };
+        G.pendingFoulOn = { team: loseTeam, playerName: G.teams[loseTeam].name+' player' };
+        G.foulCheckPending = true;
+        addLog(`⭐ CRITICAL TIP — ${winJumper.name} — foul check on ${G.teams[loseTeam].name} first, then choose receiver`, 'l-ev');
+        notify('Critical tip! Foul check first', 'foul');
       } else {
         // Normal win: d4 determines receiver — count right from jumper, wrapping left
         const tipRoll = d(4);
@@ -4354,6 +4465,7 @@ function act(a) {
       } else {
         // Failed hold — loose ball, random hustle
         addLog(`🔄 HOLD DRB (${p.name}): BH d30→${r}(SR${sr}) vs ${defP2?.name||'Def'} DEF d30→${rDef}(SR${srDef}) — <b style="color:var(--red)">FAILED</b> · LOOSE BALL!`,'l-fo');
+        G._prHustleBC = {team:G.myTeam, bc:G.clocks.bc}; // preserve BC clock if same team wins
         startRandomHustle(inBackCourt(G.myTeam));
       }
       // Note: hold dribble costs 0 moves — do NOT call useMv
@@ -4630,6 +4742,7 @@ function act(a) {
 
       // Score if made
       if(ftMade || ftRoll===1) {
+        G._ftInbound = true; // signal that next inbound should disperse
         setPendingScore(ftTeam, 1, 'free throw');
       }
 
@@ -4725,7 +4838,10 @@ function act(a) {
         addLog('⚠️ AUTO FOUL — '+p.name+' committed foul on '+stldHandler.name+' (no roll needed)','l-fo');
         commitFoul(G.myTeam, p.id);
       } else if(stldMayFoul && stldHandler) {
-        G.pendingFoulOn={playerId:stldHandler.id,playerName:stldHandler.name,team:stldOffTeam};
+        // Stealer (p, G.myTeam) is the fouler — fouler's team blocked from rolling
+        // Handler (stldHandler, stldOffTeam) is the fouled player
+        G.pendingFoulOn={playerId:stldHandler.id,playerName:stldHandler.name,
+          team:G.myTeam,_foulerPid:p.id,_foulerTeam:G.myTeam};
         G.foulCheckPending=true;
       }
       const foulNote = stldAutoFoul?' — <span style="color:var(--red)">AUTO FOUL committed</span>':stldMayFoul?' — <span style="color:var(--accent)">May foul — roll foul check</span>':'';
@@ -4873,10 +4989,13 @@ function act(a) {
             if(bdEl) bdEl.value=5;
             addLog('🛡️ Blocker wins (SR '+srBlk+' vs shot SR '+shotSR3+') — BD set to 5','l-ro');
             if(Math.abs(srBlk-shotSR3)<=3){
-              // Blocker wins by ≤3 — possible CHARGE on shooter
-              G.pendingFoulOn={playerId:shooter.id,playerName:shooter.name,team:offTeam3,_chargeCandidate:true,_foulerTeam:G.myTeam};
+              // Blocker wins by ≤3 — possible CHARGE on shooter (shooter is fouler)
+              // team = shooter's team (fouler, blocked from rolling); opponent (blocker's team) rolls
+              G.pendingFoulOn={playerId:shooter.id,playerName:shooter.name,
+                team:offTeam3,_chargeCandidate:true,
+                _foulerPid:shooter.id,_foulerTeam:offTeam3};
               G.foulCheckPending=true;
-              addLog('🛡️ Within 3 (blocker wins) — foul check on shooter '+shooter.name+' (charge candidate)','l-fo');
+              addLog('🛡️ Within 3 (blocker wins) — foul check on '+shooter.name+' (charge candidate — lower SR)','l-fo');
             }
           } else {
             // Shooter wins or tie — BD unchanged
@@ -5009,9 +5128,13 @@ function act(a) {
           G.pendingOpenShot={defTeam:G.myTeam,offTeam:G.myTeam==='a'?'b':'a',bd:5};
           addLog('\U0001f6e1\ufe0f if no foul: open shot BD=5','l-ev');
         } else if(shotMissed){
-          // Shot missed, block also failed — just a miss
-          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> — shot already missed${foulNote}`, 'l-ro');
-          actTeam(G.myTeam,'reveal_shot');
+          // Shot missed, block irrelevant — go to rebound
+          if(G.pendingShot) G.pendingShot._blockSR = sr; // prevent rollBDTeam re-triggering
+          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> — shot already missed — REBOUND`, 'l-ro');
+          G.pendingShot = null;
+          G.reboundPending = {a:null, b:null};
+          addLog('🏀 <span style="color:var(--accent)">REBOUND — both teams press REBOUND</span>','l-ev');
+          (()=>{const ballEl=document.getElementById('ball-g');G.ballTok=null;if(ballEl){const bx=200+Math.random()*500,by=210+Math.random()*100;ballEl.setAttribute('transform',`translate(${bx-450},${by-260})`);}})();
         } else if(false) {// dead branch
         } else {
           const base = G.pendingShot.base;
@@ -5205,14 +5328,17 @@ function showBCViolationModal(violatingTeam) {
   document.getElementById('modal-bg').classList.add('on');
 }
 
-function doInbound(team,pid,x,y){
+function doInbound(team,pid,x,y,doDisperseAfterFT){
   const ps=G.teams[team].players.filter(p=>p.onCourt);
   const idx=ps.findIndex(p=>p.id===pid), pl=ps[idx]; if(!pl) return;
   const tid='T-'+team+'-'+idx, el=document.getElementById(tid);
   if(el&&G.tokPos[tid]){el.setAttribute('transform',`translate(${x},${y})`);G.tokPos[tid].x=x;G.tokPos[tid].y=y;}
   resetClk(); setActiveAndBall(team,idx,pid); buildAPSel();
   G.lastAction=null; G.lookBothFailed=false; G.modalRequired=null; G.shotActive=null; G.shotJustScored=false; G._wasInBackCourt={a:true,b:true}; G._inboundPass=true; G._lookFoulPending=null; // fresh possession
-  addLog(`📋 INBOUND: ${pl.name} (${G.teams[team].name}) at half court sideline`,'l-ev');
+  if(doDisperseAfterFT) disperseAfterFT(team, idx);
+  refreshManPairings(); // reposition man2man defenders on new possession
+  var ibLoc = (x===450||y===10||y===510) ? 'half court' : 'baseline';
+  addLog(`📋 INBOUND: ${pl.name} (${G.teams[team].name}) at ${ibLoc}`,'l-ev');
   notify(pl.name+' inbounds','score');
   setTimeout(broadcastGameState, 150);
 }
@@ -5245,7 +5371,13 @@ function inBackCourt(team) {
 }
 
 function checkBCViolation() {
-  // Only fire if ball is still in back court (drag may have crossed half)
+  // Never fire while any contest is still pending resolution
+  if(G.handleSR) return;             // handle vs DEF contest pending
+  if(G.handleFailed) return;         // handle recovery/steal contest pending
+  if(G.passPending) return;           // pass in flight
+  if(G.lookPending) return;           // look in flight
+  if(G.foulCheckPending) return;      // foul check pending
+  if(G.stealPassPending) return;      // steal pass pending
   if (!G.ballTok) return;
   const team = G.ballTok.team;
   if (!inBackCourt(team)) { G.clocks.bc = 3; syncClocks(); renderPips(); return; } // crossed — no violation
@@ -5315,18 +5447,25 @@ function useMv(n) {
   // Only consume inbound exemption on a move that actually costs something
   if(n > 0) G._inboundPass = false;
   if(skipAllClocks){ syncClocks(); renderPips(); return; }
-  const stillInBack = n > 0 && !G.fastBreak && inBackCourt(G.possession || G.myTeam);
+  // Only tick BC clock when the possessing team is acting, not a non-ball-handler
+  const actingTeam = G.possession || G.myTeam;
+  const stillInBack = n > 0 && !G.fastBreak && inBackCourt(actingTeam);
   if (stillInBack) {
     G.clocks.bc = Math.max(0, G.clocks.bc-n);
     syncClocks(); renderPips();
-    if (G.clocks.bc===0 && !G.passPending && !G.lookPending) checkBCViolation();
+    // Don't fire BC violation while handle/DEF contest is pending — crossing may resolve it
+    if (G.clocks.bc===0 && !G.passPending && !G.lookPending && !G.handleSR && !G.handleFailed) checkBCViolation();
   } else if(n > 0 && G.clocks.bc < 3 && !G.fastBreak){
     // Ball has crossed to front court — ensure bc is reset
     G.clocks.bc = 3; syncClocks(); renderPips();
   }
-  G.clocks.sh = Math.max(0, G.clocks.sh-n);
-  syncClocks(); renderPips();
-  if (G.clocks.sh===0) notify('SHOT CLOCK VIOLATION!','foul');
+  // Shot clock ticks only in front court (BC clock inactive) AND only on costed moves
+  const inFrontCourt = n > 0 && !G.fastBreak && !inBackCourt(actingTeam);
+  if(inFrontCourt) {
+    G.clocks.sh = Math.max(0, G.clocks.sh-n);
+    syncClocks(); renderPips();
+    if (G.clocks.sh===0) notify('SHOT CLOCK VIOLATION!','foul');
+  }
 }
 
 function clearHandleSR() { G.handleSR = null; }
@@ -5501,6 +5640,18 @@ function pnrPassToRoller(screenerIdx,screenerId){
 }
 
 
+function showCritTipSelection(winTeam, winPs, jumpIdx) {
+  addLog('⭐ CRITICAL TIP — click any teammate token to receive the tip in back court', 'l-ev');
+  notify('Click a teammate to receive the tip', 'score');
+  G._critTipChoosing = { winTeam, winPs, jumpIdx };
+  // Highlight all teammates except the jumper
+  winPs.forEach(function(p, i) {
+    if(i === jumpIdx) return;
+    var el = document.getElementById('T-'+winTeam+'-'+i);
+    if(el) el.classList.add('look-target');
+  });
+}
+
 function playtestInbound(team) {
   // Reset game state to fresh inbound for selected team
   G.foulCheckPending = false;
@@ -5568,13 +5719,28 @@ function trySwingBall(team) {
   if(G.foulCheckPending){notify('Resolve foul check first','foul');return;}
   if(G.gameOver){notify('Game over!','foul');return;}
   if(!G.ballTok||G.ballTok.team!==team){notify('Your team must have possession','foul');return;}
-  var btid='T-'+team+'-'+G.ballTok.idx;
+  // Use ballTok.idx — most reliable reference for ball carrier
+  var swingIdx = G.ballTok.idx;
+  // Also accept G.ap if on same team as a fallback
+  if(G.ap && G.ap.team===team) swingIdx = G.ap.idx;
+  var btid='T-'+team+'-'+swingIdx;
   var bpos=G.tokPos[btid];
+  // Also check G.ap position as fallback if ballTok pos seems wrong
+  if((!bpos || bpos.x===0) && G.ap && G.ap.team===team) {
+    btid='T-'+team+'-'+G.ap.idx;
+    bpos=G.tokPos[btid];
+    swingIdx=G.ap.idx;
+  }
   if(!bpos){notify('Ball carrier position unknown','foul');return;}
   var zone=getZoneForPos(team,bpos.x);
-  if(zone!=='zone3'&&zone!=='zone4'){
-    notify('Ball carrier must be at the 3pt line to swing','foul');
-    addLog('⛔ SWING blocked — ball carrier must be in Zone 3 or 4','l-fo');
+  // Zone 3 range for A: x 535-620; for B: x 280-365. Be lenient by 20px for drag imprecision
+  var leniency=20;
+  var inZone34;
+  if(team==='a') inZone34 = bpos.x >= (535-leniency) && bpos.x < 690;
+  else inZone34 = bpos.x > (210+leniency) && bpos.x <= (365+leniency);
+  if(!inZone34){
+    notify('Ball carrier must be at the 3pt line (Zone 3 or 4) to swing','foul');
+    addLog('⛔ SWING blocked — ball carrier in '+zone+' (need Zone 3 or 4) x='+Math.round(bpos.x),'l-fo');
     return;
   }
   swingBall(team);
@@ -5587,16 +5753,25 @@ function swingBall(team) {
   var carrier=ps[G.ballTok.idx];
   if(!carrier){notify('No carrier found','foul');return;}
   useMv(1);
+  // 3pt arc positions for 900x520 court
+  // Team A attacks RIGHT: basket at x≈703,y=260
+  // Arc bows TOWARD basket — top of key is x≈700, corners are sideline-close
+  // Corner (short corner): x≈565, y≈80 or y≈440
+  // Wing: x≈600, y≈150 or y≈370
+  // Elbow: x≈630, y≈190 or y≈330
+  // Top of key: x≈700, y≈260
   var zone3Positions=team==='a'
-    ?[{x:590,y:150},{x:620,y:200},{x:620,y:320},{x:590,y:370}]
-    :[{x:310,y:150},{x:280,y:200},{x:280,y:320},{x:310,y:370}];
+    ?[{x:560,y:75},{x:595,y:145},{x:625,y:190},{x:700,y:260},{x:625,y:330},{x:595,y:375},{x:560,y:445}]
+    :[{x:340,y:75},{x:305,y:145},{x:275,y:190},{x:200,y:260},{x:275,y:330},{x:305,y:375},{x:340,y:445}];
   var zi2=0;
   ps.forEach(function(p,i){
     if(p.id===carrier.id) return;
     var tid='T-'+team+'-'+i;
     var pos=zone3Positions[zi2%zone3Positions.length]; zi2++;
     var el=document.getElementById(tid);
-    if(el&&G.tokPos[tid]){el.setAttribute('transform','translate('+pos.x+','+pos.y+')');G.tokPos[tid].x=pos.x;G.tokPos[tid].y=pos.y;}
+    if(el){el.setAttribute('transform','translate('+pos.x+','+pos.y+')');}
+    if(G.tokPos[tid]){G.tokPos[tid].x=pos.x;G.tokPos[tid].y=pos.y;}
+    else{G.tokPos[tid]={x:pos.x,y:pos.y};}
   });
   addLog('🏀 SWING THE BALL — '+carrier.name+' initiates — teammates spread to arc','l-ev');
   var pasAdj=carrier.stats.PAS+(carrier.specialty==='PASS'?4:carrier.specialty2==='PASS'?2:0);
@@ -5660,9 +5835,9 @@ function swingContest(team,carrier,chain,ps,defPs,defTeam){
     var stlEl=document.getElementById('T-'+defTeam+'-'+stlIdx);
     if(stlEl&&G.tokPos['T-'+defTeam+'-'+stlIdx]){stlEl.setAttribute('transform','translate('+placeX+','+placeY+')');G.tokPos['T-'+defTeam+'-'+stlIdx].x=placeX;G.tokPos['T-'+defTeam+'-'+stlIdx].y=placeY;}
     setActiveAndBall(defTeam,stlIdx,stlDef.id);
-    addLog('🛡 '+stlDef.name+' (STL '+stlDef.stats.STL+') reads the play — TURNOVER!','l-fo');
-    notify(stlDef.name+' intercepts!','foul');
-    showContinueButton(defTeam);
+    addLog('🛡 '+stlDef.name+' (STL '+stlDef.stats.STL+') reads the play — TURNOVER! '+G.teams[defTeam].name+' has possession — play continues','l-fo');
+    notify(stlDef.name+' intercepts! Play on!','foul');
+    // Live ball steal — no dead ball, no inbound
     return;
   }
   var bdBonus=rOff===1?-3:0;
@@ -5691,12 +5866,34 @@ function swingShoot(bdBonus) {
   notify('Open 3 — press 3-PTR','score');
 }
 
+function disperseAfterFT(inboundTeam, passerIdx) {
+  // Disperse all on-court players except the inbounder
+  // 80% back court, 20% in front court near half
+  var offPs = G.teams[inboundTeam].players.filter(function(p){return p.onCourt;});
+  // Back court x ranges: team a = 50-430, team b = 470-850
+  var bcX = inboundTeam==='a' ? [50,430] : [470,850];
+  var fcX = inboundTeam==='a' ? [460,560] : [340,440];
+  offPs.forEach(function(p, i) {
+    if(i===passerIdx) return; // skip inbounder
+    var tid='T-'+inboundTeam+'-'+i;
+    var el=document.getElementById(tid); if(!el) return;
+    var inBack = Math.random() < 0.8;
+    var xRange = inBack ? bcX : fcX;
+    var rx = xRange[0] + Math.random()*(xRange[1]-xRange[0]);
+    var ry = 60 + Math.random()*400;
+    el.setAttribute('transform','translate('+rx+','+ry+')');
+    if(G.tokPos[tid]){G.tokPos[tid].x=rx; G.tokPos[tid].y=ry;}
+  });
+}
+
 function swingDrive() {
   G._swingNoBlock=false;
   var team=G.possession||G.myTeam;
   var ballIdx=G.ballTok?G.ballTok.idx:0;
   var driverName=G.teams[team].players.filter(function(p){return p.onCourt;})[ballIdx]?.name||'Driver';
   moveTokenToZone(team,ballIdx,'zone2');
+  moveBallToToken(team,ballIdx);
+  setActiveAndBall(team,ballIdx,(G.teams[team].players.filter(function(p){return p.onCourt;})[ballIdx]||{}).id);
   addLog('🏃 DRIVE — Advancement Succeeds — '+driverName+' drives to Zone 2','l-ev');
   notify('Drive to Zone 2!','score');
 }
@@ -5963,7 +6160,7 @@ function score(team, pts) {
   syncScoreboard();
   addLog(`🏀 <b>${G.teams[team].name}</b> +${pts} (${G.score[team]})`, 'l-sc');
   notify(`+${pts} ${G.teams[team].name}!`, 'score');
-  bcast({ type:'score', team, pts });
+  if(ablyChannel||bc_chan) setTimeout(broadcastGameState, 100);
   checkGame();
 }
 
@@ -5985,49 +6182,50 @@ function setPendingScore(team, pts, reason) {
   const _bktEl = document.createElement('div');
   const _bktCol = (G.teamColors&&G.teamColors[team])||(team==='a'?'#4a9eff':'#ff5555');
   _bktEl.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99999;pointer-events:none;';
-  _bktEl.innerHTML = `<span style="font-family:'Alfa Slab One','Oswald',sans-serif;font-size:clamp(48px,12vw,96px);color:${_bktCol};text-shadow:0 0 40px ${_bktCol},0 0 80px ${_bktCol}88,0 0 120px ${_bktCol}44;letter-spacing:4px;animation:bucket-pop 1.1s ease-out forwards">BUCKET!</span>`;
+  _bktEl.innerHTML = `<span style="font-family:'Alfa Slab One','Oswald',sans-serif;font-size:clamp(48px,12vw,96px);color:${_bktCol};text-shadow:0 0 40px ${_bktCol},0 0 80px ${_bktCol}88,0 0 120px ${_bktCol}44;letter-spacing:4px;animation:bucket-pop 1.5s ease-out forwards">BUCKET!</span>`;
   if(!document.getElementById('bucket-style')){
     const _st=document.createElement('style'); _st.id='bucket-style';
-    _st.textContent='@keyframes bucket-pop{0%{opacity:0;transform:scale(0.6)}15%{opacity:1;transform:scale(1.08)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}';
+    _st.textContent='@keyframes bucket-pop{0%{opacity:0;transform:scale(0.6)}12%{opacity:1;transform:scale(1.08)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}';
     document.head.appendChild(_st);
   }
   document.body.appendChild(_bktEl);
-  setTimeout(()=>_bktEl.remove(), 1100);
+  setTimeout(()=>_bktEl.remove(), 1500);
 }
 
 // pressScoreBtn: called by +1/+2/+3 buttons
 function pressScoreBtn(team, pts) {
-  console.log('pressScoreBtn: team='+team+' pts='+pts+' pendingScore='+JSON.stringify(G.pendingScore)+' _pendingBDFoul='+!!G._pendingBDFoul);
+  var scoringTeam, scoringPts;
   if(G.pendingScore) {
     if(G.pendingScore.team !== team) {
-      notify('Wrong team — '+G.teams[G.pendingScore.team].name+' scores!', 'foul');
-      return;
+      notify('Wrong team — '+G.teams[G.pendingScore.team].name+' scores!', 'foul'); return;
     }
     if(G.pendingScore.pts !== pts) {
-      notify('Wrong amount — should be +'+G.pendingScore.pts, 'foul');
-      return;
+      notify('Wrong amount — should be +'+G.pendingScore.pts, 'foul'); return;
     }
-    const scoringTeam = G.pendingScore.team;
-    const scoringPts = G.pendingScore.pts;
-    const hadAndOne = G.pendingScore._andOne;
+    scoringTeam = G.pendingScore.team;
+    scoringPts = G.pendingScore.pts;
     G.pendingScore = null;
-    score(scoringTeam, scoringPts);
-    // If And-1 foul was pending, now trigger it
-    if(G._pendingBDFoul) {
-      G.pendingFoulOn = G._pendingBDFoul;
-      G._pendingBDFoul = null;
-      G.foulCheckPending = true;
-      addLog('⚖️ Shooting foul — And-1 possible — roll Foul Check', 'l-fo');
-      notify('And-1 — roll Foul Check!', 'foul');
-    } else {
-      showContinueButton(scoringTeam);
-    }
-    const sc = document.getElementById('subcourt-log');
+    var sc = document.getElementById('subcourt-log');
     if(sc) sc.innerHTML = '';
   } else {
-    // No pending score — treat as manual score adjustment
-    score(team, pts);
-    showContinueButton(team);
+    // Manual score adjustment
+    scoringTeam = team; scoringPts = pts;
+  }
+  score(scoringTeam, scoringPts);
+  // BUCKET! flash then dead ball flow
+  var hasFoul = !!G._pendingBDFoul;
+  if(hasFoul) {
+    G.pendingFoulOn = G._pendingBDFoul; G._pendingBDFoul = null;
+    G.foulCheckPending = true;
+    addLog('⚖️ Shooting foul — And-1 — roll Foul Check', 'l-fo');
+    notify('And-1 — roll Foul Check!', 'foul');
+  } else {
+    // Show dead ball modal immediately — BUCKET! flash is non-blocking
+    var _deadTeam = scoringTeam;
+    G.modalRequired = null;
+    G.pendingScore = null;
+    document.getElementById('modal-bg').classList.remove('on');
+    showDeadBallSubPrompt(_deadTeam);
   }
 }
 
@@ -6092,7 +6290,7 @@ function showInboundFromDeadBall(inboundTeam) {
   document.getElementById('modal-body').innerHTML=`
     <h2>INBOUND FROM BASELINE</h2>
     <p style="font-size:11px;color:var(--text3);margin-bottom:14px">${G.teams[inboundTeam].name}: select inbounder — placed at baseline.</p>
-    <div class="modal-row">${ps.map(px=>`<button class="btn btn-ghost btn-sm" style="color:${col}" onclick="doInbound('${inboundTeam}','${px.id}',${ibX},${ibY});closeModal()" title="PAS: ${px.stats.PAS}">${px.name} (${px.position}) · PAS ${px.stats.PAS}</button>`).join('')}</div>
+    <div class="modal-row">${ps.map(px=>`<button class="btn btn-ghost btn-sm" style="color:${col}" onclick="doInbound('${inboundTeam}','${px.id}',${ibX},${ibY},G._ftInbound);G._ftInbound=false;closeModal()" title="PAS: ${px.stats.PAS}">${px.name} (${px.position}) · PAS ${px.stats.PAS}</button>`).join('')}</div>
     <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal();resetClk()">SKIP</button></div>`;
   document.getElementById('modal-bg').classList.add('on');
 }
@@ -6129,9 +6327,12 @@ function checkGame() {
       G.gameOver = true;
       addLog('🏆 GAME OVER — <b>'+G.teams[w].name+'</b> wins '+G.score.a+'–'+G.score.b+'!', 'l-ev');
       notify(G.teams[w].name+' WINS!','score');
-      // Block all further actions
+      // Block all further actions except score recording
       document.querySelectorAll('.abtn,.dbtn,.btn').forEach(function(b){
-        if(!b.classList.contains('keep-active')) b.disabled=true;
+        var oc2 = b.getAttribute('onclick')||'';
+        if(b.classList.contains('keep-active')) return;
+        if(oc2.indexOf('pressScoreBtn') !== -1) return; // keep score buttons active
+        b.disabled=true;
       });
     }
   }
@@ -6181,9 +6382,16 @@ function commitFoul(team, pid) {
   // pfoPlayer = the FOULED player (goes to FT line)
   // G.pendingFoulOn.team = fouled team, playerId = fouled player
   // _foulerPid/_foulerTeam = the player who committed the foul (for personal foul tracking)
-  const pfoPlayer = G.pendingFoulOn && G.pendingFoulOn.team === fouledTeam
-    ? G.teams[fouledTeam].players.find(function(px){return px.id===G.pendingFoulOn.playerId;})
-    : null;
+  // pfoPlayer = the fouled player who goes to the FT line
+  // For shooting fouls: playerId is the FOULED player (on fouledTeam)
+  // For charges/offensive fouls: playerId is the FOULER (on team), no FT
+  // Search both teams for playerId to handle all cases
+  let pfoPlayer = null;
+  if(G.pendingFoulOn && G.pendingFoulOn.playerId && !G.pendingFoulOn._chargeCandidate) {
+    // Shooting/blocking foul — find fouled player (could be on either team)
+    pfoPlayer = G.teams[fouledTeam].players.find(function(px){return px.id===G.pendingFoulOn.playerId;})
+             || G.teams[team].players.find(function(px){return px.id===G.pendingFoulOn.playerId;});
+  }
   // If within-3 shooting foul: override pid to be the fouler (defender), not the fouled
   if(G.pendingFoulOn && G.pendingFoulOn._foulerPid && pid === G.pendingFoulOn.playerId){
     // pid was set to fouled player — correct it to fouler
@@ -6573,7 +6781,7 @@ function assignSpecialty(p) {
   var SHOT_SPECS = {'3-PTR':1,'MID':1,'SLAM':1};
   var THRESH = {
     '3-PTR': function(){ return s.SHT>=18 && s.HND>=16; },
-    'MID':   function(){ return s.SHT>=14; },
+    'MID':   function(){ return s.SHT>=12; },
     'SLAM':  function(){ return s.SHT>=15 && htIn2>82; },
     'HANDLE':function(){ return s.HND>=18; },
     'PASS':  function(){ return s.PAS>=18; },
@@ -6582,9 +6790,9 @@ function assignSpecialty(p) {
     'HUSTLE':function(){ return s.HUS>=18; }
   };
   var rawScores = {
-    '3-PTR':  (s.SHT*0.50+s.HND*0.35+s.PAS*0.15)*1.25,
-    'MID':    (s.SHT*0.55+s.HND*0.30+Math.max(0,10-htScore)*0.5)*1.25,
-    'SLAM':   (htScore*4+s.SHT*0.35+Math.max(0,20-s.HND)*0.25)*1.25,
+    '3-PTR':  (s.SHT*0.65+s.HND*0.25+s.PAS*0.10)*1.6,
+    'MID':    (s.SHT*0.70+s.HND*0.20+Math.max(0,10-htScore)*0.3)*1.6,
+    'SLAM':   (htScore*4+s.SHT*0.45+Math.max(0,20-s.HND)*0.20)*1.6,
     'HANDLE': s.HND*0.60+s.SHT*0.25+s.PAS*0.15,
     'PASS':   s.PAS*0.65+s.HND*0.20+s.SHT*0.15,
     'STEAL':  s.STL*0.55+(s.BLK+s.STL+s.RBD)/3*0.35+s.HUS*0.10,
@@ -7864,6 +8072,8 @@ function pairCommit() {
     }
     pairCount++;
   });
+  G.defenseStrat = 'man';
+  G._manDefTeam = defTeam; // remember which team is defending man2man
   addLog('\u{1f6e1}\ufe0f MAN2MAN SET: '+pairCount+' matchups assigned ('+G.teams[defTeam].name+' defends)','l-ev');
   notify('Man2Man pairings set!','score');
   G.modalRequired = null;
@@ -7871,6 +8081,29 @@ function pairCommit() {
 }
 
 // Get the man-paired defender for a given offensive player (by player ID, not index)
+
+function refreshManPairings() {
+  if(!G.manPairings || !G._manDefTeam) return;
+  var defTeam = G._manDefTeam;
+  var offTeam = defTeam==='a'?'b':'a';
+  var defPs = G.teams[defTeam].players.filter(function(p){return p.onCourt;});
+  var offPs = G.teams[offTeam].players.filter(function(p){return p.onCourt;});
+  Object.keys(G.manPairings).forEach(function(defPid){
+    var offPid = G.manPairings[defPid];
+    var defP = defPs.find(function(p){return p.id===defPid;});
+    var offP = offPs.find(function(p){return p.id===offPid;});
+    if(!defP||!offP) return;
+    var defIdx=defPs.indexOf(defP), offIdx=offPs.indexOf(offP);
+    var offTid='T-'+offTeam+'-'+offIdx, defTid='T-'+defTeam+'-'+defIdx;
+    var offPos=G.tokPos[offTid];
+    if(offPos){
+      var dx=defTeam==='a'?-38:38;
+      var nx=Math.max(20,Math.min(880,offPos.x+dx)), ny=Math.max(20,Math.min(500,offPos.y));
+      var el=document.getElementById(defTid);
+      if(el&&G.tokPos[defTid]){el.setAttribute('transform','translate('+nx+','+ny+')');G.tokPos[defTid].x=nx;G.tokPos[defTid].y=ny;}
+    }
+  });
+}
 function getManPairedDefenderForOff(offPid, defTeam) {
   // Check G.manPairings for explicit assignment
   var defPid = Object.keys(G.manPairings||{}).find(function(dId){
@@ -8326,6 +8559,66 @@ function rollBackCourtTeam(team) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ── Button debounce — prevents accidental double-press ──────────────────────
+(function() {
+  var _lastBtn = null, _lastBtnTime = 0;
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.abtn, .dbtn');
+    if(!btn) return;
+    // Never debounce score buttons
+    var oc = btn.getAttribute('onclick')||'';
+    if(oc.indexOf('pressScoreBtn') !== -1) return;
+    var now = Date.now();
+    if(btn === _lastBtn && now - _lastBtnTime < 500) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      return;
+    }
+    _lastBtn = btn;
+    _lastBtnTime = now;
+  }, true);
+})();
 
 
 
