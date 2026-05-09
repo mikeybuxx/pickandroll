@@ -1158,6 +1158,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -5103,9 +5104,15 @@ function act(a) {
           const diff4 = sr - shotSR;
           const adjBD2 = base2 + diff4;
           addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> vs shot SR ${shotSR} — block wins by ${diff4}${foulNote}`, 'l-ev');
-          // Skip BD prompt for SLAM — no BD on dunks
+          // Skip BD prompt for SLAM — blocked dunk goes straight to rebound
           if(G.pendingShot && G.pendingShot._nosBD) {
             G.pendingShot = null;
+            G.reboundPending = {a:null, b:null};
+            G.ballTok = null;
+            var ballElBlk = document.getElementById('ball-g');
+            if(ballElBlk){var bx2=200+Math.random()*500,by2=210+Math.random()*100;ballElBlk.setAttribute('transform','translate('+(bx2-450)+','+(by2-260)+')');}
+            addLog('🏀 <span style="color:var(--accent)">BLOCKED DUNK — REBOUND — both teams press REBOUND</span>','l-ev');
+            notify('Blocked dunk — REBOUND!','foul');
           } else {
             const defTeamBD2 = G.myTeam;
             const bpfx2 = defTeamBD2==='a'?'l':'r';
@@ -8619,6 +8626,7 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
 
 
 
