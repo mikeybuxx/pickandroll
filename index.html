@@ -1159,6 +1159,15 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
+
+
+
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -2901,8 +2910,25 @@ function rollBDTeam(team) {
     }
   }
   const pfx = team==='a'?'l':'r';
-  const t = (G.pendingShot&&G.pendingShot._bdTarget) ? G.pendingShot._bdTarget
+  // SR-adjusted BD per rules:
+  // Base: 20 defended, 15 uncontested
+  // Shooter wins by N → BD -= N; Defender wins by N → BD += N
+  var bdBase = (G.pendingShot&&G.pendingShot._bdTarget) ? G.pendingShot._bdTarget
     : (parseInt(document.getElementById(pfx+'bd-t').value)||20);
+  // Apply SR difference if we have both shot SR and block SR
+  var shotSR_bd = (G.pendingShot && G.pendingShot.sr !== undefined) ? G.pendingShot.sr : G.lastShotSR;
+  var blkSR_bd  = (G.pendingShot && G.pendingShot._blockSR !== undefined) ? G.pendingShot._blockSR : null;
+  if(shotSR_bd !== null && shotSR_bd !== undefined) {
+    if(blkSR_bd !== null && blkSR_bd !== undefined) {
+      // Contested: adjust by SR difference
+      var srDiff = shotSR_bd - blkSR_bd; // positive = shooter wins
+      bdBase = Math.round(bdBase - srDiff);
+    } else {
+      // Uncontested: shooter SR reduces BD (open shot)
+      bdBase = Math.round(bdBase - Math.max(0, shotSR_bd));
+    }
+  }
+  var t = Math.max(2, Math.min(30, bdBase));
   const r = d(30), in_ = r > t;
   const el = document.getElementById(pfx+'dr-bd');
   if(el) el.innerHTML = `<span class="dface ${in_?'cs':'cf'}">${r}</span><span style="color:${in_?'var(--green)':'var(--red)'};font-size:14px;margin-left:8px"><b>${in_?'SCORES!':'NO BASKET'}</b></span><span style="color:var(--text3);font-size:10px;margin-left:4px">vs ${t}</span>`;
@@ -2910,7 +2936,7 @@ function rollBDTeam(team) {
   // Reveal shot roll at resolution
   const shotReveal = G._lastShotReveal ? ` · shot was d30→${G._lastShotReveal.r} adj ${G._lastShotReveal.adj} SR <b>${G._lastShotReveal.sr}</b>` : '';
   G._lastShotReveal = null;
-  addLog(`🏀 BD: rolled ${r} vs ${t} → <b>${in_?'BASKET':'no basket'}</b>${shotReveal}`, in_?'l-sc':'l-ro');
+  addLog(`🏀 BD: rolled ${r} vs ${t} (base ${bdBase} SR-adj) → <b>${in_?'BASKET':'no basket'}</b>${shotReveal}`, in_?'l-sc':'l-ro');
   if(in_) {
     // Determine scoring team and points
     const bdOffTeam = G.pendingShot ? (G.pendingShot.defTeam ? (G.pendingShot.defTeam==='a'?'b':'a') : (team==='a'?'b':'a')) : (team==='a'?'b':'a');
@@ -2925,6 +2951,19 @@ function rollBDTeam(team) {
     if(bdFoulNote) G._pendingBDFoul = bdFoulNote;
     setPendingScore(bdOffTeam, bdPts, bdPts===3?'3-pointer':'field goal');
   } else {
+    // If foul was detected during the block contest (block fails within 3),
+    // missed basket + foul = 1 FT for shooter
+    var missedBDFoul = G._pendingBDFoul; G._pendingBDFoul = null;
+    if(missedBDFoul && missedBDFoul._shootingFoul) {
+      var ftOffTeam = missedBDFoul._foulerTeam==='a'?'b':'a'; // fouler=defender, shooter=other team
+      // Actually fouler is the DEFENDER so shooter's team is opposite of foulerTeam
+      // _foulerTeam = defTeam (the team that fouled) → shooter = offTeam
+      G.pendingFoulOn = missedBDFoul;
+      G.foulCheckPending = true;
+      addLog('⚖️ Shot missed but foul on defender — foul check: if called, 1 FT for shooter','l-fo');
+      notify('Foul on missed shot — roll Foul Check for 1 FT','foul');
+      return;
+    }
     notify('No basket — REBOUND!', 'foul');
     G.reboundPending = { a: null, b: null };
     addLog(`🏀 <span style="color:var(--accent)">NO BASKET — REBOUND SITUATION: both teams press REBOUND</span>`, 'l-ev');
@@ -5084,19 +5123,17 @@ function act(a) {
           // Shooter had nat 1, defender did NOT match → auto-basket confirmed
           const defName1 = G.pendingShot.defName||p.name;
           addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} — defender fails to match nat 1 · <b style="color:var(--green)">AUTO-BASKET CONFIRMED!</b> · Foul check on ${p.name} (defender)`, 'l-ev');
-          notify('AUTO-BASKET! Foul check on defender','score');
-          // Nat 1 block = CLEAN SWAT — no score, no foul, ball live or OOB
+          notify('AUTO-BASKET! Foul check on defender for shooting foul','score');
+          // Auto-basket: score for shooter, foul check on defender (shooting foul = and-1 if called)
+          var ab_offTeam = G.myTeam==='a'?'b':'a';
+          var ab_pts = (G.pendingShot && G.pendingShot.shotType && G.pendingShot.shotType.includes('3')) ? 3 : 2;
+          G.shotJustScored = true;
+          G.pendingFoulOn = {playerId:p.id, playerName:p.name,
+            team:G.myTeam, _shootingFoul:true, _ftCount:1, _foulerPid:p.id, _foulerTeam:G.myTeam};
+          G.foulCheckPending = true;
+          G._pendingBDFoul = G.pendingFoulOn;
           G.pendingShot = null;
-          const nat1d4 = d(4);
-          addLog('💥 CLEAN BLOCK! d4→'+nat1d4+(nat1d4===4?' — OUT OF BOUNDS — offense inbounds at baseline':' — ball live — RANDOM HUSTLE'),'l-ev');
-          notify('Clean block!'+(nat1d4===4?' — OOB':''),'score');
-          if(nat1d4===4){
-            const nat1OffTeam2=G.myTeam==='a'?'b':'a';
-            G.possession=nat1OffTeam2;
-            showContinueButton(nat1OffTeam2);
-          } else {
-            startRandomHustle(false);
-          }
+          setPendingScore(ab_offTeam, ab_pts, 'nat1 auto-basket');
         } else if(blockWins && !shotMissed){
           // Block SR > Shot SR — store for BD calc, proceed to BD (not auto-block)
           G.pendingShot._blockSR = sr;
@@ -5119,6 +5156,14 @@ function act(a) {
             const bdEl2 = document.getElementById(bpfx2+'bd-t');
             if(bdEl2) bdEl2.value = adjBD2;
             addLog(`🏀 <span style="color:var(--accent)">${G.teams[defTeamBD2].name}: roll Basket Defense (BD <b>${adjBD2}</b> = base ${base2}+${diff4})</span>`,'l-ev');
+            // Within-3: shooter is potential fouler (offensive foul/charge)
+            // If foul called: basket waved off, defending team inbounds at baseline
+            if(diff4 <= 3 && shooter) {
+              G._pendingBDFoul = {playerId:shooter.id, playerName:shooter.name,
+                team:offTeam3, _chargeCandidate:true,
+                _foulerPid:shooter.id, _foulerTeam:offTeam3};
+              addLog('⚠️ Within 3 — shooter may have fouled blocker — foul check after BD (charge = no basket)','l-fo');
+            }
             G.pendingShot = null;
           }
         } else if(r===30 && !shotMissed){
@@ -6633,11 +6678,14 @@ function setAPTeam(team, id) {
 
 function actTeam(team, a) {
   const selId = document.getElementById((team==='a'?'l':'r')+'ap-sel')?.value;
+  const ps = G.teams[team].players.filter(p=>p.onCourt);
   if(selId) {
-    const ps = G.teams[team].players.filter(p=>p.onCourt);
     const idx = ps.findIndex(p=>p.id===selId);
-    if(idx>=0) G.ap = { team, idx, id:selId };
-    hilightAP();
+    if(idx>=0) { G.ap = { team, idx, id:selId }; hilightAP(); }
+  }
+  // Safety: if G.ap is not on this team, force it to first on-court player
+  if(!G.ap || G.ap.team !== team) {
+    if(ps.length > 0) { G.ap = { team, idx:0, id:ps[0].id }; hilightAP(); }
   }
   setLastAction(team, ACT_LABELS[a]||a.toUpperCase());
   const saved = G.myTeam;
@@ -8626,6 +8674,15 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
+
+
+
+
+
+
+
 
 
 
