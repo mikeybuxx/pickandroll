@@ -1168,6 +1168,13 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
+
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -2468,7 +2475,12 @@ function rollActiveDefense(team) {
     notify(defWins?p.name+' stops the advance!':'Advancement succeeds!',defWins?'foul':'score');
     G.handleSR=null;
     // Now that contest resolved, check if BC violation should fire
-    if(G.clocks.bc===0 && !G.passPending && !G.lookPending && !G.handleSR) setTimeout(checkBCViolation,50);
+    // Only fire if defense STOPPED the advance — if advance succeeded, handler may have crossed
+    if(defWins && G.clocks.bc===0 && !G.passPending && !G.lookPending) setTimeout(checkBCViolation,50);
+    else if(!defWins && G.clocks.bc===0) {
+      // Advancement succeeded — reset BC clock (crossed half legally)
+      G.clocks.bc = 3; syncClocks(); renderPips();
+    }
   } else {
     addLog(`🛡 DEF (${p.name}): DEF ${dv.DEF}, d30→${r} → SR <b>${sr}</b>${foulNote}`,'l-ro');
     notify(`${p.name} DEF: ${r} (SR ${sr})`,'');
@@ -3896,7 +3908,7 @@ function hilightAP() {
 // ——— DRAG ———
 function makeDraggable(el, id, team) {
   const svg = document.getElementById('court-svg');
-  let dragging = false, ox, oy;
+  let dragging = false, ox, oy, _dragStartX = null, _dragStartY = null;
 
   function svgPt(cx, cy) {
     const r = svg.getBoundingClientRect();
@@ -3906,6 +3918,7 @@ function makeDraggable(el, id, team) {
   function onDown(e) {
     e.preventDefault(); dragging = true;
     const tp = G.tokPos[id];
+    _dragStartX = tp ? tp.x : null; _dragStartY = tp ? tp.y : null;
     const cx = e.touches?e.touches[0].clientX:e.clientX;
     const cy = e.touches?e.touches[0].clientY:e.clientY;
     const p = svgPt(cx,cy);
@@ -3981,10 +3994,11 @@ function makeDraggable(el, id, team) {
     const tp = G.tokPos[id];
     // If this token carries the ball, move ball indicator + check half court crossing
     var _upParts=id.split('-'), _upTeam=_upParts[1], _upIdx=parseInt(_upParts[2]);
+    var _moved = _dragStartX !== null && tp && (Math.abs(tp.x - _dragStartX) > 3 || Math.abs(tp.y - _dragStartY) > 3);
     if (G.ballTok && G.ballTok.team === _upTeam && G.ballTok.idx === _upIdx) {
       moveBallToToken(_upTeam, _upIdx);
-      checkHalfCourtCrossing(true); // fromDrag=true: triggers teammate sweep
-      checkZoneRepair(); // re-pair defender on drag into zone
+      if(_moved) checkHalfCourtCrossing(true); // only check crossing if token actually moved
+      checkZoneRepair();
     }
     // Nudge opponent tokens that are too close (cross-team overlap prevention)
     const NUDGE_R = 18; // pixels — minimum separation
@@ -5141,15 +5155,29 @@ function act(a) {
           const diff4 = sr - shotSR;
           const adjBD2 = base2 + diff4;
           addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> vs shot SR ${shotSR} — block wins by ${diff4}${foulNote}`, 'l-ev');
-          // Skip BD prompt for SLAM — blocked dunk goes straight to rebound
+          // Skip BD prompt for SLAM/alley-oop
           if(G.pendingShot && G.pendingShot._nosBD) {
-            G.pendingShot = null;
-            G.reboundPending = {a:null, b:null};
-            G.ballTok = null;
-            var ballElBlk = document.getElementById('ball-g');
-            if(ballElBlk){var bx2=200+Math.random()*500,by2=210+Math.random()*100;ballElBlk.setAttribute('transform','translate('+(bx2-450)+','+(by2-260)+')');}
-            addLog('🏀 <span style="color:var(--accent)">BLOCKED DUNK — REBOUND — both teams press REBOUND</span>','l-ev');
-            notify('Blocked dunk — REBOUND!','foul');
+            var isAO = G.pendingShot._alleyOop;
+            var aoShotSR = G.pendingShot.sr;
+            var aoShooter = G.pendingShot.player;
+            var aoOffTeam = G.pendingShot.defTeam==='a'?'b':'a';
+            if(isAO && sr < aoShotSR) {
+              // Block fails vs receiver SR — alley-oop scores!
+              addLog('🏀 ALLEY-OOP SCORES! Block (SR '+sr+') fails vs receiver (SR '+aoShotSR+') — BUCKET!','l-sc');
+              notify('ALLEY-OOP!','score');
+              G.pendingShot = null;
+              setPendingScore(aoOffTeam, 2, 'alley-oop');
+            } else {
+              // Block wins (or non-AO slam) — rebound
+              if(isAO) addLog('🛡 BLOCK beats alley-oop (SR '+sr+' vs '+aoShotSR+') — REBOUND!','l-fo');
+              else addLog('🏀 <span style="color:var(--accent)">BLOCKED DUNK — REBOUND — both teams press REBOUND</span>','l-ev');
+              G.pendingShot = null;
+              G.reboundPending = {a:null, b:null};
+              G.ballTok = null;
+              var ballElBlk = document.getElementById('ball-g');
+              if(ballElBlk){var bx2=200+Math.random()*500,by2=210+Math.random()*100;ballElBlk.setAttribute('transform','translate('+(bx2-450)+','+(by2-260)+')');}
+              notify(isAO?'Alley-oop blocked — REBOUND!':'Blocked dunk — REBOUND!','foul');
+            }
           } else {
             const defTeamBD2 = G.myTeam;
             const bpfx2 = defTeamBD2==='a'?'l':'r';
@@ -5164,21 +5192,44 @@ function act(a) {
                 _foulerPid:shooter.id, _foulerTeam:offTeam3};
               addLog('⚠️ Within 3 — shooter may have fouled blocker — foul check after BD (charge = no basket)','l-fo');
             }
-            G.pendingShot = null;
+            // Keep pendingShot alive so rollBDTeam can read shotType for correct pts (2 vs 3)
+            // rollBDTeam will null it after scoring
           }
         } else if(r===30 && !shotMissed){
           // Block nat30: blocker crit fail — blocker fouled shooter
           // Fouled=shooter(offTeam), roller=shooter's opp=blocker's team
-          var offTeamBN30=G.myTeam==='a'?'b':'a';
-          var shooterBN30=G.pendingShot?.player;
-          // Blocker is fouler → team = G.myTeam (blocker's team, blocked from rolling)
-          if(shooterBN30){ G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam,_foulerPid:p.id,_foulerTeam:G.myTeam}; }
-          else { G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam}; }
-          G.foulCheckPending=true;
-          addLog(`🛡 BLOCK (${p.name}): 💀 NATURAL 30 — <b style="color:var(--red)">CRIT FAIL</b> · Foul check on ${p.name} (defender) · Shooter may go to line`, 'l-fo');
-          notify('Block nat 30 — foul check on defender!','foul');
-          G.pendingOpenShot={defTeam:G.myTeam,offTeam:G.myTeam==='a'?'b':'a',bd:5};
-          addLog('\U0001f6e1\ufe0f if no foul: open shot BD=5','l-ev');
+          // Nat30 block = AUTO-FOUL on blocker, no foul check roll needed
+          var offTeamBN30 = G.myTeam==='a'?'b':'a';
+          var shooterBN30 = G.pendingShot?.player;
+          addLog(`🛡 BLOCK (${p.name}): 💀 NATURAL 30 — <b style="color:var(--red)">CRIT FAIL</b> · AUTO-FOUL on ${p.name} — shooting foul`, 'l-fo');
+          notify('Block nat 30 — auto shooting foul!','foul');
+          // Commit foul on blocker immediately — no roll
+          commitFoul(G.myTeam, p.id);
+          // Now resolve the shot: if pendingShot still had SR >= 0, basket pending → And-1
+          // If shot SR < 0 (would have missed) → 2 FT (fouled on miss)
+          if(shooterBN30 && G.pendingShot) {
+            var bn30SR = G.pendingShot.sr;
+            G.pendingShot._blockSR = 30; // mark as blocked
+            if(bn30SR >= 0) {
+              // Shot was on target — resolve BD, if scores = And-1
+              G._pendingBDFoul = {playerId:shooterBN30.id, playerName:shooterBN30.name,
+                team:offTeamBN30, _shootingFoul:true, _ftCount:1,
+                _foulerPid:p.id, _foulerTeam:G.myTeam};
+              // Set BD=5 (open after crit foul)
+              var bpfxBN30 = G.myTeam==='a'?'r':'l';
+              var bdElBN30 = document.getElementById(bpfxBN30+'bd-t');
+              if(bdElBN30) bdElBN30.value = 5;
+              addLog('🏀 Shot still live — BD=5 (open). If basket: And-1 (1 FT). If miss: 1 FT.','l-ev');
+              notify(G.teams[offTeamBN30].name+': roll BD (5)','foul');
+            } else {
+              // Shot was already a miss — 2 FT for shooter
+              G.pendingShot = null;
+              addLog('🎯 Fouled on missed shot — '+shooterBN30.name+' shoots 2 FTs','l-fo');
+              notify(shooterBN30.name+' shoots 2 FTs','foul');
+              G.ftPending = {player:shooterBN30, team:offTeamBN30, count:2};
+              if(typeof showFTPrompt==='function') showFTPrompt();
+            }
+          }
         } else if(shotMissed){
           // Shot missed, block irrelevant — go to rebound
           if(G.pendingShot) G.pendingShot._blockSR = sr; // prevent rollBDTeam re-triggering
@@ -5192,6 +5243,15 @@ function act(a) {
           const base = G.pendingShot.base;
           addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> vs shot SR ${shotSR} — block fails${foulNote}`, 'l-ro');
           G.lastShotSR = shotSR;
+          // Alley-oop: block fails = scores (no BD)
+          if(G.pendingShot._alleyOop) {
+            var aoOff2 = G.pendingShot.defTeam==='a'?'b':'a';
+            addLog('🏀 ALLEY-OOP SCORES! Block (SR '+sr+') fails vs receiver (SR '+shotSR+') — BUCKET!','l-sc');
+            notify('ALLEY-OOP!','score');
+            G.pendingShot = null;
+            setPendingScore(aoOff2, 2, 'alley-oop');
+            break;
+          }
           // Store block SR so reveal_shot can calculate adjusted BD
           G.pendingShot._blockSR = sr;
           const defTeamBD = G.myTeam;
@@ -8674,6 +8734,13 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
+
+
+
+
+
 
 
 
