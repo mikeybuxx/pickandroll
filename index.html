@@ -1175,6 +1175,8 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -2761,10 +2763,8 @@ function rollFoulTeam(team) {
     const pss=G.pendingSlamScore; G.pendingSlamScore=null;
     const isChargeSl = pss.shooter && G.fouls[pss.team] &&
       G.fouls[pss.team].pp[pss.shooter.id] > 0; // foul was assessed on shooter = charge
-    // Check if foul was actually called (r <= 3 in d12)
-    // We infer: if commitFoul was just called on the shooter's team, it's a charge
-    // Simpler: check if G.score didn't change (no points awarded yet)
-    if(r <= 3) {
+    // Foul threshold: r >= 10 (same as all other foul checks)
+    if(is) {
       // Foul = charge — basket waved off
       addLog('💥 CHARGE — basket waved off! '+G.teams[pss.team==='a'?'b':'a'].name+' ball','l-fo');
       notify('CHARGE — no basket!','foul');
@@ -6478,7 +6478,8 @@ function commitFoul(team, pid) {
       const chargeInboundTeam=team==='a'?'b':'a';
       G.possession=chargeInboundTeam; G.handleFailed=null; G.critStopPending=null;
       refreshTeamPanel(); syncScoreboard();
-      showContinueButton(chargeInboundTeam);
+      // showDeadBallSubPrompt flips team → pass fouler's team so it inbounds opponent
+      showContinueButton(team);
       return;
     }
     addLog(`⚠️ FOUL on <b>${pl?.name}</b> (${G.teams[team].name}) — ${f}/3 personal`, 'l-fo');
@@ -8734,6 +8735,8 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
 
 
 
