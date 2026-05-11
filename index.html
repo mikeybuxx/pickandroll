@@ -1177,6 +1177,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -5182,8 +5183,9 @@ function act(a) {
             const defTeamBD2 = G.myTeam;
             const bpfx2 = defTeamBD2==='a'?'l':'r';
             const bdEl2 = document.getElementById(bpfx2+'bd-t');
-            if(bdEl2) bdEl2.value = adjBD2;
-            addLog(`🏀 <span style="color:var(--accent)">${G.teams[defTeamBD2].name}: roll Basket Defense (BD <b>${adjBD2}</b> = base ${base2}+${diff4})</span>`,'l-ev');
+            var baseBD2 = (G.pendingShot && G.pendingShot.base) ? G.pendingShot.base : 20;
+            if(bdEl2) bdEl2.value = baseBD2;
+            addLog(`🏀 <span style="color:var(--accent)">${G.teams[defTeamBD2].name}: roll Basket Defense (BD <b>${baseBD2}</b> base — SR adjusted on roll)</span>`,'l-ev');
             // Within-3: shooter is potential fouler (offensive foul/charge)
             // If foul called: basket waved off, defending team inbounds at baseline
             if(diff4 <= 3 && shooter) {
@@ -5260,9 +5262,10 @@ function act(a) {
           // If block SR > shooter SR, shouldn't reach here but use base
           const bpfx = defTeamBD==='a'?'l':'r';
           const bdEl = document.getElementById(bpfx+'bd-t');
-          const adjBDFail = Math.max(1, base + Math.max(0, shotSR - sr));
-          if(bdEl) bdEl.value = adjBDFail;
-          if(G.pendingShot) G.pendingShot._bdTarget = adjBDFail;
+          // Set base BD — rollBDTeam will SR-adjust using pendingShot.sr and _blockSR
+          var baseBD = (G.pendingShot && G.pendingShot.base) ? G.pendingShot.base : 20;
+          if(bdEl) bdEl.value = baseBD;
+          if(G.pendingShot) G.pendingShot._bdTarget = baseBD;
           // SLAM with failed block: score immediately, no BD needed
           if(G.pendingShot && G.pendingShot._nosBD) {
             const ps3=G.pendingShot; G.pendingShot=null;
@@ -8735,6 +8738,7 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
 
 
 
