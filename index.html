@@ -1178,6 +1178,9 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -3853,17 +3856,22 @@ function mkTok(player, team, idx, pos) {
             // Foul is between the TARGET (player) and TARGET's DEFENDER (defPlayer)
             // Passer is not involved
             if(srOff < srDef){
-              // Target lower SR — target fouled the defender (illegal cut/push)
-              // Fouler = target's team (team), fouled = defender → team blocked, defTeam rolls
+              // Target lower SR — target (cutter) fouled defender (illegal cut/push)
+              // Offensive foul — turnover, no FT, not a charge (no ball handler)
+              // Fouler = target (team), defTeam rolls foul check
               G.pendingFoulOn={playerId:player.id,playerName:player.name,
-                team:team,_chargeCandidate:true,_foulerPid:player.id,_foulerTeam:team};
+                team:team,_offensiveFoul:true,_foulerPid:player.id,_foulerTeam:team};
               G.foulCheckPending=true;
             } else {
-              // Defender lower SR — defender fouled the target (holding/denying illegally)
-              // Set pendingFoulOn immediately so rollFoulTeam blocks the right team
-              G.pendingFoulOn={playerId:defPlayer.id,playerName:defPlayer.name,
-                team:defTeam,_foulerPid:defPlayer.id,_foulerTeam:defTeam};
-              G._lookFoulPending={foulerPid:defPlayer.id,foulerName:defPlayer.name,foulerTeam:defTeam};
+              // Defender lower SR — defender fouled the cutter (holding/grabbing off-ball)
+              // Defensive foul — cutter gets 1 FT (or 1-and-1 at 7+ team fouls)
+              // Fouler = defender (defTeam), team rolls foul check
+              // fouled player = target (player) who gets the FT
+              G.pendingFoulOn={playerId:player.id,playerName:player.name,
+                team:defTeam,_foulerPid:defPlayer.id,_foulerTeam:defTeam,
+                _offBallFoul:true,_ftCount:1};
+              G._lookFoulPending={foulerPid:defPlayer.id,foulerName:defPlayer.name,foulerTeam:defTeam,
+                fouledPid:player.id,fouledName:player.name,fouledTeam:team};
               G.foulCheckPending=true;
             }
           }
@@ -6469,7 +6477,8 @@ function foul(team) {
 function commitFoul(team, pid) {
   G.fouls[team].team++;
   // Check if this is a CHARGE (foul on the possessing team, with no pending named defender foul)
-  const isCharge = team === G.possession && (!G.pendingFoulOn || G.pendingFoulOn.team === team);
+  const isCharge = (G.pendingFoulOn && G.pendingFoulOn._offensiveFoul)
+    || (team === G.possession && (!G.pendingFoulOn || G.pendingFoulOn.team === team));
   if (pid && pid!=='null') {
     G.fouls[team].pp[pid] = (G.fouls[team].pp[pid]||0)+1;
     const pl = G.teams[team].players.find(p=>p.id===pid);
@@ -6514,6 +6523,8 @@ function commitFoul(team, pid) {
     pid = G.pendingFoulOn._foulerPid;
   }
   // Use the fouled team's active player, or first on-court player
+  // For charges/offensive fouls: no FT, just possession change
+  if(G.pendingFoulOn && (G.pendingFoulOn._chargeCandidate || G.pendingFoulOn._offensiveFoul)) return;
   const fouledPs = G.teams[fouledTeam].players.filter(p=>p.onCourt);
   const ftPlayer = pfoPlayer || ((ap && ap.team === fouledTeam)
     ? fouledPs.find(p=>p.id===ap.id) || fouledPs[0]
@@ -6531,8 +6542,15 @@ function commitFoul(team, pid) {
       G.tokPos[tid].x = ftPos.x; G.tokPos[tid].y = ftPos.y;
     }
     setActiveAndBall(fouledTeam, ftIdx, ftPlayer.id);
-    addLog(`🎯 <b>${ftPlayer.name}</b> to the free throw line`,'l-ev');
-    notify(ftPlayer.name+' to the line','score');
+    // Off-ball foul: 1 FT, or 1-and-1 if fouling team has 7+ team fouls
+    if(G.pendingFoulOn && G.pendingFoulOn._offBallFoul && G.fouls[team] && G.fouls[team].team >= 7) {
+      G.pendingFoulOn._ftCount = '1-and-1';
+      addLog(`🎯 <b>${ftPlayer.name}</b> to the free throw line — 1-and-1 (${G.fouls[team].team} team fouls)`,'l-ev');
+      notify(ftPlayer.name+' shoots 1-and-1','score');
+    } else {
+      addLog(`🎯 <b>${ftPlayer.name}</b> to the free throw line`,'l-ev');
+      notify(ftPlayer.name+' to the line','score');
+    }
     snapToFTLane(fouledTeam, team, ftIdx);
   }
   refreshTeamPanel(); syncScoreboard();
@@ -8738,6 +8756,9 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
+
 
 
 
