@@ -804,8 +804,8 @@ input::placeholder{color:var(--text3);}
           <button class="abtn" onclick="actTeam('a','stld')">STEAL DRB</button>
         </div></div>
         <div class="agroup"><div class="agroup-title">Team Roll</div><div class="agrid">
-          <button class="abtn blue" onclick="rollTeamOFF('a')">TEAM OFF</button>
-          <button class="abtn red" onclick="rollTeamDEF('a')">TEAM DEF</button>
+          <button class="abtn blue" onclick="rollTeamDEF('a')">TEAM DEF</button>
+          <button class="abtn" onclick="rollTeamOFF('a')">TEAM OFF</button>
         </div></div>
         <div class="agroup"><div class="agroup-title">Coach</div><div class="agrid">
           <button class="abtn" onclick="setDefenseStrategy('man','a')">MAN 2 MAN</button>
@@ -856,6 +856,9 @@ input::placeholder{color:var(--text3);}
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="playtestInbound('a')">INBOUND (HOME)</button>
             <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="playtestInbound('b')">INBOUND (VISITORS)</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="G.reboundPending={a:null,b:null};G.ballTok=null;var bEl=document.getElementById('ball-g');if(bEl){var bx=200+Math.random()*500,by=210+Math.random()*100;bEl.setAttribute('transform','translate('+(bx-450)+','+(by-260)+')');}addLog('🏀 REBOUND SITUATION (playtest)','l-ev');notify('Rebound situation','foul');">REBOUND SITUATION</button>
           </div>
           <div style="display:flex;gap:6px;margin-top:6px">
             <button class="dbtn" style="flex:1;color:rgba(180,180,255,0.9);border-color:rgba(180,180,255,0.3)" onclick="playtestJumpBall()">JUMP BALL</button>
@@ -1100,6 +1103,12 @@ input::placeholder{color:var(--text3);}
 })();
 </script>
 <script>
+
+
+
+
+
+
 
 
 
@@ -2757,6 +2766,21 @@ function rollFoulTeam(team) {
     commitFoul(foulTeam, foulPid);
   } else {
     addLog(`⚖️ Foul check d12 (${G.teams[team].name}) → ${r} → no foul`, 'l-ro');
+    // And-1 foul check resolved no foul — basket already scored, proceed to dead ball
+    if(G.shotJustScored) {
+      G.shotJustScored = false;
+      var andOneScorer = G.shotActive ? G.shotActive.team : (team==='a'?'b':'a');
+      showDeadBallSubPrompt(andOneScorer);
+    }
+    // Missed-shot foul check resolved no foul — rebound
+    else if(G._missedShotFoulPending) {
+      G._missedShotFoulPending = false;
+      G.reboundPending = {a:null, b:null};
+      var ballElNF=document.getElementById('ball-g'); G.ballTok=null;
+      if(ballElNF){var bxNF=200+Math.random()*500,byNF=210+Math.random()*100;ballElNF.setAttribute('transform','translate('+(bxNF-450)+','+(byNF-260)+')');}
+      addLog('🏀 <span style="color:var(--accent)">NO FOUL — REBOUND — both teams press REBOUND</span>','l-ev');
+      notify('No foul — REBOUND!','foul');
+    }
   }
   // Pending slam score — resolve after foul check (charge = no basket)
   // foulCheckTeam = shooting team; rollFoulTeam(team) = team rolling = opponent of fouler
@@ -2961,6 +2985,7 @@ function rollBDTeam(team) {
     // Check if there was a within-3 foul check pending (shooting foul = and-1)
     const bdFoulNote = G._pendingBDFoul ? G._pendingBDFoul : null;
     G._pendingBDFoul = null;
+    if(G._pendingNat30Foul){var pnf=G._pendingNat30Foul;G._pendingNat30Foul=null;commitFoul(pnf.blockerTeam,pnf.blockerId);}
     G.shotJustScored = true;
     G.shotActive = G.pendingShot ? {type: bdPts===3?'3pt':'mid', team:bdOffTeam, player:bdShooter} : G.shotActive;
     G.pendingShot = null;
@@ -2970,12 +2995,15 @@ function rollBDTeam(team) {
     // If foul was detected during the block contest (block fails within 3),
     // missed basket + foul = 1 FT for shooter
     var missedBDFoul = G._pendingBDFoul; G._pendingBDFoul = null;
+    // Commit nat30 blocker foul if pending
+    if(G._pendingNat30Foul) { var pnfM=G._pendingNat30Foul; G._pendingNat30Foul=null; commitFoul(pnfM.blockerTeam,pnfM.blockerId); }
     if(missedBDFoul && missedBDFoul._shootingFoul) {
       var ftOffTeam = missedBDFoul._foulerTeam==='a'?'b':'a'; // fouler=defender, shooter=other team
       // Actually fouler is the DEFENDER so shooter's team is opposite of foulerTeam
       // _foulerTeam = defTeam (the team that fouled) → shooter = offTeam
       G.pendingFoulOn = missedBDFoul;
       G.foulCheckPending = true;
+      G._missedShotFoulPending = true; // if no foul → rebound
       addLog('⚖️ Shot missed but foul on defender — foul check: if called, 1 FT for shooter','l-fo');
       notify('Foul on missed shot — roll Foul Check for 1 FT','foul');
       return;
@@ -5208,42 +5236,36 @@ function act(a) {
         } else if(r===30 && !shotMissed){
           // Block nat30: blocker crit fail — blocker fouled shooter
           // Fouled=shooter(offTeam), roller=shooter's opp=blocker's team
-          // Nat30 block = AUTO-FOUL on blocker, no foul check roll needed
+          // Nat30 block = AUTO-FOUL on blocker — defer foul commit until after shot resolves
           var offTeamBN30 = G.myTeam==='a'?'b':'a';
           var shooterBN30 = G.pendingShot?.player;
-          addLog(`🛡 BLOCK (${p.name}): 💀 NATURAL 30 — <b style="color:var(--red)">CRIT FAIL</b> · AUTO-FOUL on ${p.name} — shooting foul`, 'l-fo');
-          notify('Block nat 30 — auto shooting foul!','foul');
-          // Commit foul on blocker immediately — no roll
-          commitFoul(G.myTeam, p.id);
-          // Now resolve the shot: if pendingShot still had SR >= 0, basket pending → And-1
-          // If shot SR < 0 (would have missed) → 2 FT (fouled on miss)
+          var blockerTeamBN30 = G.myTeam;
+          addLog(`🛡 BLOCK (${p.name}): 💥 NATURAL 30 — <b style="color:var(--red)">CRIT FAIL</b> · AUTO-FOUL on ${p.name} — shot still resolves`, 'l-fo');
+          notify('Block nat 30 — auto shooting foul! Shot resolves first.','foul');
           if(shooterBN30 && G.pendingShot) {
             var bn30SR = G.pendingShot.sr;
-            G.pendingShot._blockSR = 30; // mark as blocked
+            G.pendingShot._blockSR = 30;
             if(bn30SR >= 0) {
-              // Shot was on target — resolve BD, if scores = And-1
+              G._pendingNat30Foul = {blockerTeam:blockerTeamBN30, blockerId:p.id};
               G._pendingBDFoul = {playerId:shooterBN30.id, playerName:shooterBN30.name,
                 team:offTeamBN30, _shootingFoul:true, _ftCount:1,
-                _foulerPid:p.id, _foulerTeam:G.myTeam};
-              // Set BD=5 (open after crit foul)
-              var bpfxBN30 = G.myTeam==='a'?'r':'l';
+                _foulerPid:p.id, _foulerTeam:blockerTeamBN30};
+              var bpfxBN30 = blockerTeamBN30==='a'?'r':'l';
               var bdElBN30 = document.getElementById(bpfxBN30+'bd-t');
               if(bdElBN30) bdElBN30.value = 5;
-              addLog('🏀 Shot still live — BD=5 (open). If basket: And-1 (1 FT). If miss: 1 FT.','l-ev');
+              addLog('🏀 Shot still live — BD=5. Blocker foul after BD. If basket: And-1. If miss: 1 FT.','l-ev');
               notify(G.teams[offTeamBN30].name+': roll BD (5)','foul');
             } else {
-              // Shot was already a miss — 2 FT for shooter
               G.pendingShot = null;
-              addLog('🎯 Fouled on missed shot — '+shooterBN30.name+' shoots 2 FTs','l-fo');
+              commitFoul(blockerTeamBN30, p.id);
+              addLog('🎯 Shot missed — '+shooterBN30.name+' shoots 2 FTs','l-fo');
               notify(shooterBN30.name+' shoots 2 FTs','foul');
-              G.ftPending = {player:shooterBN30, team:offTeamBN30, count:2};
-              if(typeof showFTPrompt==='function') showFTPrompt();
             }
           }
-        } else if(shotMissed){
+                } else if(shotMissed){
           // Shot missed, block irrelevant — go to rebound
           if(G.pendingShot) G.pendingShot._blockSR = sr; // prevent rollBDTeam re-triggering
-          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> — shot already missed — REBOUND`, 'l-ro');
+          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> (shot was d30→${G.pendingShot?.r||'?'} SR ${G.pendingShot?.sr||'?'}) — shot already missed — REBOUND`, 'l-ro');
           G.pendingShot = null;
           G.reboundPending = {a:null, b:null};
           addLog('🏀 <span style="color:var(--accent)">REBOUND — both teams press REBOUND</span>','l-ev');
@@ -5883,9 +5905,11 @@ function swingBall(team) {
   // Wing: x≈600, y≈150 or y≈370
   // Elbow: x≈630, y≈190 or y≈330
   // Top of key: x≈700, y≈260
+  // 3pt arc: corner→wing→elbow→top-of-key→elbow→wing→corner
+  // Team A attacks RIGHT (basket x≈703): arc curves rightward, corners near baselines
   var zone3Positions=team==='a'
-    ?[{x:560,y:75},{x:595,y:145},{x:625,y:190},{x:700,y:260},{x:625,y:330},{x:595,y:375},{x:560,y:445}]
-    :[{x:340,y:75},{x:305,y:145},{x:275,y:190},{x:200,y:260},{x:275,y:330},{x:305,y:375},{x:340,y:445}];
+    ?[{x:560,y:455},{x:612,y:388},{x:648,y:320},{x:705,y:260},{x:648,y:200},{x:612,y:132},{x:560,y:65}]
+    :[{x:340,y:455},{x:288,y:388},{x:252,y:320},{x:195,y:260},{x:252,y:200},{x:288,y:132},{x:340,y:65}];
   var zi2=0;
   ps.forEach(function(p,i){
     if(p.id===carrier.id) return;
@@ -7025,7 +7049,14 @@ function resolveHandleContest() {
     }
   } else {
     addLog('Ball retained — no advance','l-ev');notify('Ball retained','score');
-    if(!autoFoul&&Math.abs(srOff-srDef)<=3&&pairedDef){G.pendingFoulOn={playerId:pairedDef.id,playerName:pairedDef.name,team:defTeamR};G.foulCheckPending=true;}
+    // Tie (srOff===srDef) = no foul. Only check within-3 if there's a clear loser
+    var hcDiff=Math.abs(srOff-srDef);
+    if(!autoFoul&&hcDiff>0&&hcDiff<=3&&pairedDef){
+      // Handler won but barely — stealer may have fouled
+      G.pendingFoulOn={playerId:pairedDef.id,playerName:pairedDef.name,
+        team:defTeamR,_foulerPid:pairedDef.id,_foulerTeam:defTeamR};
+      G.foulCheckPending=true;
+    }
   }
   if(hf.critFail){G.pendingFoulOn={playerId:handler.id,playerName:handler.name,team:handlerTeam};G.foulCheckPending=true;addLog('CRIT FAIL — foul check on '+handler.name,'l-fo');}
 }
@@ -8756,6 +8787,12 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
+
+
+
+
 
 
 
