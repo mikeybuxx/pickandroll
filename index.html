@@ -1198,6 +1198,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -5220,16 +5221,16 @@ function act(a) {
         } else if(G.pendingShot?._nat1 && r!==1 && !shotMissed){
           // Shooter had nat 1, defender did NOT match → auto-basket confirmed
           const defName1 = G.pendingShot.defName||p.name;
-          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} — defender fails to match nat 1 · <b style="color:var(--green)">AUTO-BASKET CONFIRMED!</b> · Foul check on ${p.name} (defender)`, 'l-ev');
-          notify('AUTO-BASKET! Foul check on defender for shooting foul','score');
-          // Auto-basket: score for shooter, foul check on defender (shooting foul = and-1 if called)
+          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} — defender fails to match nat 1 · <b style="color:var(--green)">AUTO-BASKET CONFIRMED!</b>`, 'l-ev');
+          notify('AUTO-BASKET! Press +pts to record — foul check after','score');
+          // Score first, THEN foul check via _pendingBDFoul (pressScoreBtn picks it up)
           var ab_offTeam = G.myTeam==='a'?'b':'a';
           var ab_pts = (G.pendingShot && G.pendingShot.shotType && G.pendingShot.shotType.includes('3')) ? 3 : 2;
+          // Store shooting foul for after +pts is pressed
+          G._pendingBDFoul = {playerId:p.id, playerName:p.name,
+            team:G.myTeam, _shootingFoul:true, _ftCount:1,
+            _foulerPid:p.id, _foulerTeam:G.myTeam};
           G.shotJustScored = true;
-          G.pendingFoulOn = {playerId:p.id, playerName:p.name,
-            team:G.myTeam, _shootingFoul:true, _ftCount:1, _foulerPid:p.id, _foulerTeam:G.myTeam};
-          G.foulCheckPending = true;
-          G._pendingBDFoul = G.pendingFoulOn;
           G.pendingShot = null;
           setPendingScore(ab_offTeam, ab_pts, 'nat1 auto-basket');
         } else if(blockWins && !shotMissed){
@@ -8844,6 +8845,7 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
 
 
 
