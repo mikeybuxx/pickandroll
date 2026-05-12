@@ -1190,6 +1190,14 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
+
+
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -3056,36 +3064,52 @@ function resolveRandomHustle(inBackCourt2) {
   let locZone, locLabel;
   if(inBackCourt2){
     // Back court hustle — roll back court die (d10)
-    const bcRoll = d(10);
-    if(bcRoll <= 5){
+    // 1-5 = Back Court, 6-8 = Zone 4 (ball crossed half), 9-10 = Zone 3 (ball crossed half)
+    const bcRollFinal = d(10); // single roll — determines location
+    addLog(`💨 Back court hustle — d10→${bcRollFinal} → ${bcRollFinal<=5?'Back Court':bcRollFinal<=8?'Zone 4 (ball crossed half)':'Zone 3 (ball crossed half)'}`,'l-ro');
+    if(bcRollFinal <= 5){
+      // Ball stays in back court — winner recovers in THEIR back court
       locZone = 'back'; locLabel = 'Back Court';
-    } else if(bcRoll <= 8){
-      // Crossed to zone 4
-      locZone = 'zone4'; locLabel = 'Zone 4';
+      // BC violation only if possessing team wins AND they were already in front court
+      if(winTeam === G.possession && G._wasInBackCourt && !G._wasInBackCourt[winTeam]){
+        addLog(`⚠️ <b>BACK COURT VIOLATION</b> — ${winner.name} recovers in back court after crossing half · ball to ${G.teams[winTeam==='a'?'b':'a'].name}`,'l-fo');
+        notify('Back court violation — turnover!','foul');
+        winTeam = winTeam==='a'?'b':'a';
+        G.possession = winTeam;
+        G._hustleBCViolation = true;
+      }
     } else {
-      // Crossed to zone 3
-      locZone = 'zone3'; locLabel = 'Zone 3';
+      // Ball crossed halfcourt (Zone 3 or 4 result)
+      // Roll d4 to clarify which front court zone
+      const d4Zone = d(4);
+      locZone = ['zone1','zone2','zone3','zone4'][d4Zone-1];
+      locLabel = 'Zone '+d4Zone+' (front court — ball crossed half)';
+      addLog(`💨 Ball crossed half — d4→${d4Zone} → ${locLabel}`,'l-ro');
+      // Winner is now in their front court — legal regardless of who wins
+      // If possessing team wins: they used their last BC move to get here — no violation
     }
-    // If zone 3 or 4, regardless of who wins, ball in their front court
-    if(bcRoll > 5){
-      const frontD4 = d(4);
-      locZone = ['zone1','zone2','zone3','zone4'][frontD4-1];
-      locLabel = 'Zone '+(frontD4)+' (front court)';
-    }
-    addLog(`💨 Back court hustle — BC d10→${d(10)} → ${locLabel}`,'l-ro');
   } else {
     // Front court hustle — d6
     const fcRoll = d(6);
     const fcZones = ['zone1','zone2','zone3','zone4','zone1','back'];
-    const fcLabels = ['Zone 1','Zone 2','Zone 3','Zone 4','Zone 5 (under basket)','Back Court'];
+    const fcLabels = ['Zone 1','Zone 2','Zone 3','Zone 4','Zone 5 (under basket)','Back Court (winner\'s front court)'];
     locZone = fcZones[fcRoll-1]; locLabel = fcLabels[fcRoll-1];
     addLog(`💨 Front court hustle — d6→${fcRoll} → ${locLabel}`,'l-ro');
-    // Roll 6 = back court violation for offense
-    if(fcRoll===6 && winTeam===G.possession){
-      addLog(`⚠️ <b>BACK COURT VIOLATION</b> — ${winner.name} recovers but in back court · ball to ${G.teams[winTeam==='a'?'b':'a'].name}`,'l-fo');
-      notify('Back court violation!','foul');
-      winTeam = winTeam==='a'?'b':'a';
+    // d6=6: winner recovers in back court (their own back court = their front court)
+    // This is a back court violation ONLY if the possessing team wins AND
+    // they had already crossed halfcourt (G._wasInBackCourt was false)
+    if(fcRoll===6 && winTeam===G.possession && G._wasInBackCourt && !G._wasInBackCourt[winTeam]){
+      // Team was in front court, hustle sends them back — BC violation
+      addLog(`⚠️ <b>BACK COURT VIOLATION</b> — ${winner.name} recovers in back court after being in front court · ball to ${G.teams[winTeam==='a'?'b':'a'].name}`,'l-fo');
+      notify('Back court violation — turnover!','foul');
+      const bcvTeam = winTeam==='a'?'b':'a';
+      G.possession = bcvTeam;
       locZone='zone4'; locLabel='Zone 4 (half court)';
+      winTeam = bcvTeam;
+      G._hustleBCViolation = true;
+    } else if(fcRoll===6) {
+      // Recovers in their back court — legal, just place there
+      locZone = 'back'; locLabel = 'Back Court';
     }
   }
 
@@ -3097,7 +3121,9 @@ function resolveRandomHustle(inBackCourt2) {
     setActiveAndBall(winTeam, winIdx, winner.id);
   }
   G.reboundPending=null;
-  addLog(`💨 <b style="color:var(--green)">${winner.name} (${G.teams[winTeam].name}) recovers in ${locLabel}!</b>`,'l-ev');
+  if(locLabel && !(locLabel.includes('Back Court') && G.possession !== winTeam)) {
+    addLog(`💨 <b style="color:var(--green)">${winner.name} (${G.teams[winTeam].name}) recovers in ${locLabel}!</b>`,'l-ev');
+  }
   notify(winner.name+' gets the hustle ball!','score');
   // If same team that lost the ball wins the hustle, restore BC clock
   if(G._prHustleBC && G._prHustleBC.team === winTeam && G._prHustleBC.bc > 0) {
@@ -3107,6 +3133,12 @@ function resolveRandomHustle(inBackCourt2) {
   }
   G._prHustleBC = null;
   buildAPSel();
+  // If possession changed due to BC violation, trigger inbound flow
+  if(G._hustleBCViolation) {
+    G._hustleBCViolation = false;
+    addLog(`💨 ${G.teams[winTeam].name} ball — inbound from half court`,'l-ev');
+    showContinueButton(winTeam==='a'?'b':'a');
+  }
 }
 
 function startRandomHustle(inBack) {
@@ -4058,11 +4090,9 @@ function makeDraggable(el, id, team) {
         if(otherEl) otherEl.setAttribute('transform','translate('+nx+','+ny+')');
       }
     });
-    if(ablyChannel||bc_chan){
-    var _tm={type:'tok_move',id,x:tp.x,y:tp.y,_from:G._ablyMyId||'unknown'};
-    if(ablyChannel) ablyChannel.publish('msg',_tm);
-    else if(bc_chan) bc_chan.postMessage(_tm);
-  }
+    // Broadcast full state after drag to sync all position changes
+    // (covers dragged token, nudged tokens, and halfcourt sweep)
+    if(ablyChannel||bc_chan) setTimeout(broadcastGameState, 150);
   }
 
   el.addEventListener('mousedown', onDown);
@@ -4467,8 +4497,13 @@ function act(a) {
         const fbRoll = d(4);
         G.fastBreak = { team: G.myTeam, movesLeft: fbRoll, joiners: [] };
         resolveHustleJoinFastBreak(G.myTeam);
-        addLog(`🏃 HANDLE (${p.name}): ⭐ CRITICAL FAST BREAK! d4→${fbRoll} free move${fbRoll>1?'s':''} — no roll needed, shot clock ticks`, 'l-ev');
-        notify(`FAST BREAK! ${fbRoll} free moves!`,'score');
+        // Nat1 handle = foul check on defender (flagrant defensive contact)
+        const defTeamH1 = G.myTeam==='a'?'b':'a';
+        const defH1 = getShotContester(defTeamH1, G.myTeam, G.ap?.idx||0);
+        if(defH1){ G.pendingFoulOn={playerId:defH1.id,playerName:defH1.name,team:defTeamH1,_foulerPid:defH1.id,_foulerTeam:defTeamH1}; G.foulCheckPending=true; }
+        addLog(`🏃 HANDLE (${p.name}): ⭐ CRITICAL FAST BREAK! d4→${fbRoll} free move${fbRoll>1?'s':''} — foul check on defender first`, 'l-ev');
+        notify(`FAST BREAK! Foul check on defender first.`,'score');
+        G._pendingFastBreak = {team:G.myTeam, moves:fbRoll};
         syncFastBreak();
         useMv(1);
       } else if(r===30){
@@ -4545,9 +4580,12 @@ function act(a) {
       const rDef=d(30), srDef=defDEF2-rDef;
       setLastAction(G.myTeam,'HOLD DRB',r);
       if(r===30 || rDef===1){
-        // Double dribble risk
-        addLog(`🔄 HOLD DRB (${p.name}): BH d30→${r}(SR${sr}) vs ${defP2?.name||'Def'} DEF d30→${rDef}(SR${srDef}) — 💀 DOUBLE DRIBBLE RISK · Roll d12 (10-12 = ball to opponent at half court)`,'l-fo');
-        notify('Double dribble risk — roll foul check!','foul');
+        // Nat30 handler OR nat1 defender = foul check
+        var hldFouler = r===30 ? p : defP2; // nat30 handler fouled, nat1 defender fouled
+        var hldFoulerTeam = r===30 ? G.myTeam : (G.myTeam==='a'?'b':'a');
+        if(hldFouler){ G.pendingFoulOn={playerId:hldFouler.id,playerName:hldFouler.name,team:hldFoulerTeam,_foulerPid:hldFouler.id,_foulerTeam:hldFoulerTeam}; G.foulCheckPending=true; }
+        addLog(`🔄 HOLD DRB (${p.name}): BH d30→${r}(SR${sr}) vs ${defP2?.name||'Def'} DEF d30→${rDef}(SR${srDef}) — 💀 CRIT — foul check on ${hldFouler?.name||'fouler'}`,'l-fo');
+        notify('Crit on hold dribble — foul check!','foul');
       } else if(sr>=srDef){
         // Success — look chain reset, costs 0 moves
         G.lastAction=null; G.lookBothFailed=false;
@@ -4569,7 +4607,8 @@ function act(a) {
       setLastAction(G.myTeam,'HANDLE OUT',r);
       G.lookBothFailed=false; G.lastAction=null; // resets look chain
       if(r===30){
-        addLog(`🔙 HANDLE OUT (${p.name}): d30→30 — LOOSE BALL · Random Hustle`,'l-fo');
+        G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam,_foulerPid:p.id,_foulerTeam:G.myTeam};G.foulCheckPending=true;
+        addLog(`🔙 HANDLE OUT (${p.name}): d30→30 — LOOSE BALL · foul check on handler first`,'l-fo');
         notify('Loose ball — Random Hustle!','foul');
         startRandomHustle(inBackCourt(G.myTeam));
       } else if(sr>=0){
@@ -4610,7 +4649,8 @@ function act(a) {
       setLastAction(G.myTeam,'HANDLE AROUND',r);
       G.lookBothFailed=false; G.lastAction=null;
       if(r===30){
-        addLog(`🔄 HANDLE AROUND (${p.name}): d30→30 — LOOSE BALL · Random Hustle`,'l-fo');
+        G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam,_foulerPid:p.id,_foulerTeam:G.myTeam}; G.foulCheckPending=true;
+        addLog(`🔄 HANDLE AROUND (${p.name}): d30→30 — LOOSE BALL · foul check first`,'l-fo');
         notify('Loose ball — Random Hustle!','foul');
         startRandomHustle(inBackCourt(G.myTeam));
       } else if(sr>=0){
@@ -4643,8 +4683,14 @@ function act(a) {
     }
     case 'hfake': {
       if(!needAP())return; const r=d(30),sr=dv.OFF-r;
-      if(r===1) addLog(`🎭 HEAD FAKE (${p.name}): ⭐ CRITICAL — defender buys it! Open move.`, 'l-ev');
-      else if(r===30) addLog(`🎭 HEAD FAKE (${p.name}): 💀 CRIT FAIL — risk of travel!`, 'l-fo');
+      if(r===1){
+        const defTeamHF1=G.myTeam==='a'?'b':'a', defHF1=getShotContester(defTeamHF1,G.myTeam,G.ap?.idx||0);
+        if(defHF1){G.pendingFoulOn={playerId:defHF1.id,playerName:defHF1.name,team:defTeamHF1,_foulerPid:defHF1.id,_foulerTeam:defTeamHF1};G.foulCheckPending=true;}
+        addLog(`🎭 HEAD FAKE (${p.name}): ⭐ CRITICAL — defender buys it! Foul check on defender.`, 'l-ev');
+      } else if(r===30){
+        G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam,_foulerPid:p.id,_foulerTeam:G.myTeam};G.foulCheckPending=true;
+        addLog(`🎭 HEAD FAKE (${p.name}): 💀 CRIT FAIL — travel risk! Foul check on ${p.name}.`, 'l-fo');
+      }
       else addLog(`🎭 HEAD FAKE (${p.name}): d30→${r} vs OFF ${dv.OFF} → SR <b>${sr}</b>`, 'l-ro');
       break;
     }
@@ -4760,7 +4806,8 @@ function act(a) {
         const techOppTeam = G.myTeam==='a'?'b':'a';
         setTimeout(()=>showTechnicalFTPrompt(techOppTeam), 400);
       } else if(r===30){
-        // Natural 30 = auto-miss, no hustle needed
+        // Natural 30 = auto-miss + foul check on shooter
+        G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam,_chargeCandidate:true,_foulerPid:p.id,_foulerTeam:G.myTeam};G.foulCheckPending=true;
         addLog(`💥 SLAM (${p.name}): adj ${adj}${b?` (height ${b>0?'+':''}${b})`:''}${inZone2?' (Zone 2 −5)':''}, d30→${r} → SR <b>${sr}</b> — 💀 AUTO-MISS`,'l-ro');
         G.reboundPending={a:null,b:null};
         addLog(`🏀 <span style="color:var(--accent)">REBOUND — both teams press REBOUND</span>`,'l-ev');
@@ -5041,8 +5088,8 @@ function act(a) {
           const hustleDiff=ps2._hustleDiff||0;
           // Check if defender SR beats shooter SR (only relevant if SR within range)
           const defWinsContest=srBlk>shotSR && Math.abs(srBlk-shotSR)<=5;
-          if(foulRisk || defWinsContest){
-            // Foul check FIRST — basket pending, not yet scored
+          if((foulRisk || defWinsContest) && !ps2._missedShot && ps2.sr >= 0){
+            // Foul check FIRST — basket pending, not yet scored (only if shot was on target)
             G.pendingFoulOn={playerId:shooter.id,playerName:shooter.name,team:offTeam3};
             G.foulCheckPending=true;
             G.pendingSlamScore={team:offTeam3,pts:2,shooter:shooter,foulCheckTeam:offTeam3};
@@ -5267,6 +5314,8 @@ function act(a) {
           if(G.pendingShot) G.pendingShot._blockSR = sr; // prevent rollBDTeam re-triggering
           addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> (shot was d30→${G.pendingShot?.r||'?'} SR ${G.pendingShot?.sr||'?'}) — shot already missed — REBOUND`, 'l-ro');
           G.pendingShot = null;
+          G.pendingSlamScore = null; // slam missed — clear any pending slam score
+          G.pendingFoulOn = null; G.foulCheckPending = false; // clear stale foul state
           G.reboundPending = {a:null, b:null};
           addLog('🏀 <span style="color:var(--accent)">REBOUND — both teams press REBOUND</span>','l-ev');
           (()=>{const ballEl=document.getElementById('ball-g');G.ballTok=null;if(ballEl){const bx=200+Math.random()*500,by=210+Math.random()*100;ballEl.setAttribute('transform',`translate(${bx-450},${by-260})`);}})();
@@ -5726,8 +5775,11 @@ function resolvePnrScreener(screenerIdx) {
     G.foulCheckPending=true;
     return true;
   }
-  // Defender nat 1: perfect defensive read
+  // Defender nat 1: perfect defensive read — foul check on screener (offensive foul)
   if(rDef===1){
+    const pnrScreenerD1 = G._pnrPending ? G.teams[G._pnrPending.team].players.filter(p=>p.onCourt)[G._pnrPending.handlerIdx] : null;
+    if(pnrScreenerD1){G.pendingFoulOn={playerId:pnrScreenerD1.id,playerName:pnrScreenerD1.name,team:G.myTeam==='a'?'b':'a',_offensiveFoul:true,_foulerPid:pnrScreenerD1.id,_foulerTeam:G.myTeam==='a'?'b':'a'};G.foulCheckPending=true;}
+    addLog('⭐ PERFECT DEFENSIVE READ — screen denied! Foul check on screener (offensive foul?)','l-fo');
     addLog('⭐ PERFECT DEFENSIVE READ — screen denied before it sets! Play continues','l-ev');
     notify('Screen denied — play continues','foul');
     return true;
@@ -5962,6 +6014,11 @@ function swingContest(team,carrier,chain,ps,defPs,defTeam){
   var offWins=srOff>srDef;
   addLog('🏀 TEAM OFF (avg PAS '+avgPAS+'): d30→'+rOff+'(SR '+srOff+') vs TEAM DEF (avg DEF '+avgDEF+'): d30→'+rDef+'(SR '+srDef+') — '+(offWins?'<b style="color:var(--green)">SWING SUCCESS</b>':'<b style="color:var(--red)">DEFENSE HOLDS</b>'),'l-ro');
   if(rDef===30){
+    // Defense nat30 = foul check on defender
+    var swingDefTeam=team==='a'?'b':'a';
+    var swingDef30=defPs&&defPs[0];
+    if(swingDef30){G.pendingFoulOn={playerId:swingDef30.id,playerName:swingDef30.name,team:swingDefTeam,_foulerPid:swingDef30.id,_foulerTeam:swingDefTeam};G.foulCheckPending=true;}
+    addLog('🔥 DEFENSE COLLAPSES! Foul check on defense first.','l-fo');
     addLog('🔥 DEFENSE COLLAPSES! Click any teammate for an open 3pt shot','l-ev');
     notify('Defense collapses — pick your shooter!','score');
     setActiveAndBall(team,receiver.idx,receiver.player.id);
@@ -8787,6 +8844,14 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
+
+
+
+
+
+
 
 
 
