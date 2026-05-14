@@ -1211,6 +1211,15 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
+
+
+
+
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -3964,14 +3973,33 @@ function mkTok(player, team, idx, pos) {
             }
           }
         }
-        const foulOn1 = diff<=3 ? (srOff < srDef ? ` · Possible foul on <b>${player.name}</b>` : ` · Possible foul on <b>${defPlayer?defPlayer.name:'Defender'}</b>`) : '';
+        const foulOn1 = diff<=3 ? (srOff < srDef ? ` · Possible foul <b>by ${player.name}</b> (cutter)` : ` · Possible foul <b>by ${defPlayer?defPlayer.name:'Defender'}</b> (defender)`) : '';
         addLog(`👁 LOOK (1): ${lp.player.name} OFF (SR ${srOff}) looking for ${player.name} vs ${defPlayer?defPlayer.name:'Defender'} DEF (SR ${srDef}) — <b style="color:var(--green)">OPEN PASS</b>${foulOn1}<br><span style="font-size:10px;color:var(--text3)">Place ${player.name} in: </span>${zoneBtns}`, 'l-ev');
         notify('OPEN PASS — choose zone!', 'score');
       } else {
         G.lookResult = null;
         G.lastAction = 'look1_failed'; // block another Look(1) — must use Look All
         G.lookBothFailed = false; // reset: only one look failed so far
-        const foulOn2 = diff<=3 ? (srOff < srDef ? ` · Possible foul on <b>${player.name}</b>` : ` · Possible foul on <b>${defPlayer?defPlayer.name:'Defender'}</b>`) : '';
+        // Within-3 in COVERED path: set foul check same as OPEN PASS path
+        let foulOn2 = '';
+        if(diff<=3 && defPlayer) {
+          if(srOff < srDef) {
+            // Cutter lower SR — cutter fouled defender (offensive foul)
+            foulOn2 = ` · Possible foul <b>by ${player.name}</b> (cutter)`;
+            G.pendingFoulOn={playerId:player.id,playerName:player.name,
+              team:team,_offensiveFoul:true,_foulerPid:player.id,_foulerTeam:team};
+            G.foulCheckPending=true;
+          } else {
+            // Defender lower SR — defender fouled cutter (off-ball foul)
+            foulOn2 = ` · Possible foul <b>by ${defPlayer.name}</b> (defender)`;
+            G.pendingFoulOn={playerId:player.id,playerName:player.name,
+              team:defTeam,_foulerPid:defPlayer.id,_foulerTeam:defTeam,
+              _offBallFoul:true,_ftCount:1};
+            G._lookFoulPending={foulerPid:defPlayer.id,foulerName:defPlayer.name,foulerTeam:defTeam,
+              fouledPid:player.id,fouledName:player.name,fouledTeam:team};
+            G.foulCheckPending=true;
+          }
+        }
         addLog(`👁 LOOK (1): ${lp.player.name} OFF (SR ${srOff}) looking for ${player.name} vs ${defPlayer?defPlayer.name:'Defender'} DEF (SR ${srDef}) — <b>COVERED</b>${foulOn2}`, 'l-ro');
         notify('COVERED — use LOOK ALL next', '');
       }
@@ -4257,7 +4285,7 @@ function act(a) {
   if(G.gameOver){ notify('Game over!','foul'); return; 
   // Broadcast game state to remote after action
   if(ablyChannel||bc_chan) setTimeout(broadcastGameState, 100);}
-  const FC_EXEMPT = ['to_f','to_20','inbound','tipoff','free'];
+  const FC_EXEMPT = ['to_f','to_20','inbound','tipoff','free','stld','recoverhandle'];
   if(G.foulCheckPending && !FC_EXEMPT.includes(a)) {
     notify('⚖️ Resolve foul check first — DICE tab → ROLL FOUL CHECK', 'foul');
     addLog(`⚠️ Action blocked — roll <b>Foul Check</b> (DICE tab) first`, 'l-fo');
@@ -4334,6 +4362,13 @@ function act(a) {
         const tipZone = locRoll<=5?'back':locRoll<=8?'zone4':'zone3';
         moveTokenToZone(winTeam, recIdx, tipZone);
         setActiveAndBall(winTeam, recIdx, receiver.id);
+        // Only set BC clock if receiver lands in back court
+        if(tipZone === 'back') {
+          G._wasInBackCourt = {a:true, b:true};
+          G.clocks.bc = 3; syncClocks(); renderPips();
+        } else {
+          G._wasInBackCourt = {a:false, b:false};
+        }
         addLog(`🏀 d4→${tipRoll}: ${winJumper.name} tips to <b>${receiver.name}</b> (${receiver.position}) · d10→${locRoll}: <b>${loc}</b>`, 'l-ev');
         notify(receiver.name + ' receives tip — ' + loc, 'score');
       }
@@ -4575,11 +4610,12 @@ function act(a) {
       break;
     }
     case 'handle_recover': {
-      if(!needAP())return;
       const hf = G.handleFailed;
       if(!hf){ addLog('No failed handle to recover from','l-ro'); break; }
+      // Always use the original handler (hf.player), not G.ap
+      const hrHandler = hf.player;
       const rOff = d(30);
-      addLog('RECOVER HANDLE ('+p.name+'): BH d30→'+rOff+' vs HND '+p.stats.HND+' → SR '+(p.stats.HND-rOff),'l-ro');
+      addLog('RECOVER HANDLE ('+hrHandler.name+'): BH d30→'+rOff+' vs HND '+hrHandler.stats.HND+' → SR '+(hrHandler.stats.HND-rOff),'l-ro');
       G.handleFailed = Object.assign({}, hf, { recoverRoll: rOff });
       if(G.handleFailed.stealRoll !== undefined){
         resolveHandleContest();
@@ -4860,21 +4896,24 @@ function act(a) {
         notify(G.teams[defTeamSl].name+': press BLOCK','foul');
       } else {
         // Zone 1: auto HUS vs HUS+height comparison (silent, no button press)
-        const offHUS = p.stats.HUS + (b||0); // shooter HUS + height bonus
+        // HUS+ht ROLLING CONTEST — both sides roll d30 vs their HUS + height bonus
+        const offHUS = p.stats.HUS + (b||0);
         const defHUS = defSl ? defSl.stats.HUS + Math.max(0, Math.round((slamBonus(defSl.height)||0))) : 10;
-        const hustleDiff = offHUS - defHUS;
-        let slamContestNote = '';
-        let slamFoulRisk = false;
-        if(hustleDiff >= 5) {
-          slamContestNote = ' — offense dominates entry (HUS+ht: '+offHUS+' vs '+defHUS+')';
-        } else if(hustleDiff > 0) {
-          slamContestNote = ' — offense wins entry (HUS+ht: '+offHUS+' vs '+defHUS+')';
-        } else if(hustleDiff === 0) {
-          slamContestNote = ' — even contest (HUS+ht: '+offHUS+' vs '+defHUS+') — foul risk';
-          slamFoulRisk = true;
+        const husOffRoll = d(30), husDefRoll = d(30);
+        const husOffSR = offHUS - husOffRoll;
+        const husDefSR = defHUS - husDefRoll;
+        const husDiff = Math.abs(husOffSR - husDefSR);
+        const offWinsEntry = husOffSR >= husDefSR;
+        // Nat1 or nat30 on either side = crit + foul risk
+        const husNatCrit = husOffRoll===1||husOffRoll===30||husDefRoll===1||husDefRoll===30;
+        // Within-3 SR diff = foul risk on lower SR side
+        let slamFoulRisk = husNatCrit || husDiff <= 3;
+        let slamContestNote = ' — HUS+ht: '+offHUS+' d30→'+husOffRoll+' SR '+husOffSR
+          +' vs '+defHUS+' d30→'+husDefRoll+' SR '+husDefSR;
+        if(offWinsEntry) {
+          slamContestNote += husNatCrit ? ' — ⭐ CRIT — offense dominates' : husDiff<=3 ? ' — offense wins (close — foul risk)' : ' — offense wins entry';
         } else {
-          slamContestNote = ' — defender in position (HUS+ht: '+offHUS+' vs '+defHUS+') — foul risk on shooter';
-          slamFoulRisk = true;
+          slamContestNote += husNatCrit ? ' — 💥 CRIT — defender in position' : husDiff<=3 ? ' — defender in position (close — foul risk on shooter)' : ' — defender in position — foul risk on shooter';
         }
         // Set pending shot — defender presses BLOCK only (no BD roll)
         G.pendingShot = { player:p, shotType:'SLAM', r, sr, adj, base:0, defTeam:defTeamSl,
@@ -4982,16 +5021,21 @@ function act(a) {
       if(G.handleFailed) {
         const handlerTeam = G.teams.a.players.some(px=>px.id===G.handleFailed.player.id) ? 'a' : 'b';
         const stealTeam = handlerTeam==='a'?'b':'a';
-        if(G.myTeam !== stealTeam) {
-          // Wrong team pressed the button — silently switch to correct team
-          G.myTeam = stealTeam;
-          const stPs = G.teams[stealTeam].players.filter(px=>px.onCourt);
-          // Use paired defender if possible
-          const apIdx3 = G.ap?.team===handlerTeam ? G.ap.idx : 0;
-          const pairedTok = G.tokPos['T-'+stealTeam+'-'+apIdx3];
-          const pairedP = pairedTok ? stPs.find(px=>px.id===pairedTok.pid) : null;
-          const useP = pairedP || stPs[0];
-          if(useP) { const uidx=stPs.findIndex(px=>px.id===useP.id); G.ap={team:stealTeam,idx:uidx,id:useP.id}; }
+        // Always switch to correct steal team
+        G.myTeam = stealTeam;
+      }
+      // Resolve actual stealer: defender paired to the handler, not G.ap
+      if(G.handleFailed) {
+        const handlerTeam2 = G.teams.a.players.some(px=>px.id===G.handleFailed.player.id)?'a':'b';
+        const stealTeam2 = handlerTeam2==='a'?'b':'a';
+        const handlerIdx = G.teams[handlerTeam2].players.filter(px=>px.onCourt)
+          .findIndex(px=>px.id===G.handleFailed.player.id);
+        // Use getShotContester to find the correctly paired defender
+        const pairedDef2 = getShotContester(stealTeam2, handlerTeam2, handlerIdx);
+        if(pairedDef2) {
+          const stPs2 = G.teams[stealTeam2].players.filter(px=>px.onCourt);
+          const uidx2 = stPs2.findIndex(px=>px.id===pairedDef2.id);
+          if(uidx2 >= 0) G.ap = {team:stealTeam2, idx:uidx2, id:pairedDef2.id};
         }
       }
       // If responding to a failed handle, the stealer is the DEFENDING team
@@ -5036,6 +5080,10 @@ function act(a) {
         addLog('STEAL DRB ('+p.name+'): ½STL='+adj+', d30→'+r+' → SR <b>'+sr+'</b>'+foulNote,'l-ro');
         G.handleFailed = Object.assign({}, hf2, { stealRoll: r });
         if(G.handleFailed.recoverRoll !== undefined){
+          resolveHandleContest();
+        } else if(G.handleFailed.noRecover || G.handleFailed.rollWas===30) {
+          // Nat30 crit fail — handler can't recover, use original roll as recoverRoll
+          G.handleFailed = Object.assign({}, G.handleFailed, { recoverRoll: G.handleFailed.rollWas });
           resolveHandleContest();
         } else {
           var offTeamST3=G.myTeam==='a'?'b':'a';
@@ -8959,6 +9007,15 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
+
+
+
+
+
+
+
 
 
 
