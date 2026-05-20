@@ -1265,6 +1265,9 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -4663,6 +4666,8 @@ function act(a) {
     }
     case 'pass': {
       if(!needAP())return;
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
+
       G.lastAction=null;
       const r=d(30), sr=30-r;
       setLastAction(G.myTeam,'PASS',r);
@@ -4779,6 +4784,8 @@ function act(a) {
     }
     case 'handle': {
       if(!needAP())return;
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
+
       if(G.handleFailed && !G.handleFailed.critFail) { act('handle_recover'); break; }
       G.lastAction=null;
       var handleBonus=(p.specialty==='HANDLE'?4:p.specialty2==='HANDLE'?2:0);
@@ -4862,6 +4869,7 @@ function act(a) {
     }
     case 'forcepass': {
       if(!needAP()) return;
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
       if(inBackCourt(G.myTeam)) { addLog('❌ FORCE PASS — not available from back court','l-ro'); notify('Cannot force pass from back court','foul'); break; }
       useMv(1);
       const fpPAS = p.stats.PAS + (p.specialty==='PASS'?4:p.specialty2==='PASS'?2:0);
@@ -4893,6 +4901,8 @@ function act(a) {
     }
     case 'hold': {
       if(!needAP())return;
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
+
       // Zone check: hold dribble only available at Zone 3 or further (outside 3pt line)
       const holdTok = G.ballTok ? G.tokPos['T-'+G.myTeam+'-'+G.ballTok.idx] : null;
       const holdX = holdTok?.x ?? 450;
@@ -4931,6 +4941,7 @@ function act(a) {
       break;
     }
     case 'handleout': {
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
       // Handle Out: move to adjacent zone away from basket, BH=30, no steal on fail
       if(!needAP())return;
       const r=d(30), adj30=30, sr=adj30-r;
@@ -4972,6 +4983,7 @@ function act(a) {
       break;
     }
     case 'handlearound': {
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
       // Handle Around: stay in same zone, BH=30, but defender CAN steal on fail
       if(!needAP())return;
       const defTeamHA=G.myTeam==='a'?'b':'a';
@@ -5029,6 +5041,7 @@ function act(a) {
     }
     case 's3': {
       if(!needAP())return;
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
       G._swingNoBlock=false;
       resetClk();
       var specBonus3=(p.specialty==='3-PTR'?4:p.specialty2==='3-PTR'?2:0);
@@ -5084,6 +5097,8 @@ function act(a) {
     }
     case 'smid': {
       if(!needAP())return;
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
+
       resetClk();
       var specBonusM=(p.specialty==='MID'?4:p.specialty2==='MID'?2:0);
       // Zone check: MID only from Zone 2
@@ -5130,6 +5145,8 @@ function act(a) {
     }
     case 'slam': {
       if(!needAP())return;
+      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
+
       resetClk(); // shot attempt resets shot clock
       G.shotActive = { type: '2pt', team: G.myTeam, player: p };
       // Check zone: must be Zone 1 (paint) or Zone 2
@@ -9434,6 +9451,9 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
+
 
 
 
