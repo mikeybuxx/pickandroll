@@ -1307,6 +1307,7 @@ input::placeholder{color:var(--text3);}
 
 
 
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -7456,8 +7457,11 @@ function tryZonePair(offPlayer, offTeam) {
   var defPs = G.teams[defTeam].players.filter(function(p){return p.onCourt;});
   var offPs = G.teams[offTeam].players.filter(function(p){return p.onCourt;});
 
-  // Already paired?
+  // Already paired? Check both zonePairings and manPairings
   if(G.zonePairings[offPlayer.id]) return;
+  if(G.manPairings) {
+    for(var mk in G.manPairings) { if(G.manPairings[mk]===offPlayer.id) return; }
+  }
 
   // Find which zone this offensive player is in
   var offIdx = offPs.findIndex(function(p){return p.id===offPlayer.id;});
@@ -9575,13 +9579,21 @@ function placeZoneDefense() {
     var tid='T-'+defTeam+'-'+i, el=document.getElementById(tid);
     if(el&&G.tokPos[tid]){el.setAttribute('transform','translate('+x+','+y+')');G.tokPos[tid].x=x;G.tokPos[tid].y=y;}
   };
-  var slotIdx = 0;
+  var zoneToPos = {
+    'zone1': {x:nearPaintX, y:260},
+    'zone2': {x:zp.zone2.x, y:zp.zone2.y},
+    'zone3': {x:zp.zone3.x, y:175},
+    'zone4': {x:zp.zone4.x, y:260}
+  };
   defPs.forEach(function(p,i){
-    if(i===pairedDefIdx) return; // skip paired defender — leave on ball carrier
-    if(slotIdx >= zoneSlots.length) return;
-    var slot = zoneSlots[slotIdx++];
-    mv(i, slot.pos.x, slot.pos.y);
-    G.zoneAssignments[slot.key] = {defIdx:i, defId:p.id};
+    if(i===pairedDefIdx) return; // handler's defender stays put
+    var zone = G.zoneAssignments[p.id];
+    var pos = (zone && zoneToPos[zone]) ? zoneToPos[zone] : null;
+    if(pos) {
+      mv(i, pos.x, pos.y);
+      // Also store legacy zone key format for getShotContester
+      G.zoneAssignments[zone] = {defIdx:i, defId:p.id};
+    }
   });
   // Set G.ap to the paired defender so drag follow works immediately
   if(pairedDefIdx>=0){
@@ -10022,6 +10034,7 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
 
 
 
