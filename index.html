@@ -1308,6 +1308,8 @@ input::placeholder{color:var(--text3);}
 
 
 
+
+
 // ════════════════════════════════════════════
 //  TEAM EDITOR
 // ════════════════════════════════════════════
@@ -6228,6 +6230,7 @@ function showBCViolationModal(violatingTeam) {
 function doInbound(team,pid,x,y,doDisperseAfterFT){
   clearZonePairings();
   clearDoubleTeam();
+  G._critTipPending = null;
   const ps=G.teams[team].players.filter(p=>p.onCourt);
   const idx=ps.findIndex(p=>p.id===pid), pl=ps[idx]; if(!pl) return;
   const tid='T-'+team+'-'+idx, el=document.getElementById(tid);
@@ -7426,6 +7429,8 @@ function assignZoneDefense(defTeam) {
   if(rem.length){var pz3=best(rem,function(x){return x.stats.STL||0;},[function(x){return x.stats.DEF||0;}]);asgn[pz3.id]='zone3';rem=rem.filter(function(r){return r.id!==pz3.id;});}
   // Zone 4: highest DEF remaining
   if(rem.length){var pz4=best(rem,function(x){return x.stats.DEF||0;},[htIn]);asgn[pz4.id]='zone4';rem=rem.filter(function(r){return r.id!==pz4.id;});}
+  // 5th defender (no explicit handler pairing): assign to ball carrier
+  if(rem.length){asgn[rem[0].id]='handler';}
 
   // Apply
   G.zoneAssignments={};G.zonePairedTo={};
@@ -7690,6 +7695,7 @@ function foul(team) {
 }
 
 function commitFoul(team, pid) {
+  G._critTipPending = null; // tip-off foul cancels crit tip receiver selection
   G.fouls[team].team++;
   // Check if this is a CHARGE (foul on the possessing team, with no pending named defender foul)
   const isCharge = (G.pendingFoulOn && G.pendingFoulOn._offensiveFoul)
@@ -10034,6 +10040,8 @@ function rollBackCourtTeam(team) {
     _lastBtnTime = now;
   }, true);
 })();
+
+
 
 
 
