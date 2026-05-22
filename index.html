@@ -10,6 +10,10 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;}
 body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;overflow:hidden;}
+button,.btn{touch-action:manipulation;-webkit-tap-highlight-color:rgba(240,192,64,0.2);cursor:pointer;}
+/* Ensure lobby is interactive on mobile */
+#s-lobby{touch-action:pan-y;}
+.lobby-wrap{pointer-events:all;position:relative;z-index:10;}
 .screen{display:none;width:100%;height:100vh;}
 .screen.active{display:flex;}
 /* LOBBY */
@@ -26,7 +30,7 @@ input[type=text],input[type=number],select{width:100%;background:var(--surface2)
 input:focus,select:focus{border-color:var(--accent);}
 input::placeholder{color:var(--text3);}
 .btn{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:2px;border:none;border-radius:4px;cursor:pointer;transition:all .15s;display:inline-block;text-align:center;}
-.btn-lg{font-size:14px;padding:13px 24px;width:100%;}
+.btn-lg{font-size:14px;padding:13px 24px;width:100%;position:relative;z-index:5;}
 .btn-md{font-size:12px;padding:9px 18px;}
 .btn-sm{font-size:10px;padding:6px 14px;}
 .btn-xs{font-size:9px;padding:4px 10px;}
@@ -392,6 +396,103 @@ input::placeholder{color:var(--text3);}
 .editor-starter-warn { font-size:10px; color:var(--red); font-family:'Oswald',sans-serif; letter-spacing:1px; display:none; }
 .editor-starter-warn.visible { display:inline; }
 
+
+/* ── MOBILE LAYOUT (portrait phone) ───────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Hide sidebars — replaced by modals */
+  .sidebar { display: none !important; }
+  /* Hide top toolbar clutter */
+  .toolbar-row { display: none !important; }
+  /* Game body fills screen vertically */
+  .game-body { flex-direction: column; overflow: hidden; height: 100dvh; }
+  /* Court fills width, rotated 90° */
+  .court-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  #court-svg {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    width: 100vw !important;
+    height: calc(100vw * 520 / 900) !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: auto;
+    display: block;
+  }
+  /* Log strip above bottom bar */
+  .mobile-log-strip {
+    display: flex !important;
+    flex-direction: column;
+    background: rgba(0,0,0,0.85);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 4px 8px;
+    max-height: 60px;
+    overflow-y: auto;
+    font-size: 10px;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+  /* Bottom bar HOME / AWAY buttons */
+  .mobile-bottom-bar {
+    display: flex !important;
+    flex-direction: row;
+    height: 48px;
+    flex-shrink: 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .mobile-team-btn {
+    flex: 1;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    border: none;
+    cursor: pointer;
+  }
+  .mobile-team-btn-home {
+    background: rgba(42,110,232,0.15);
+    color: var(--blue);
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+  .mobile-team-btn-away {
+    background: rgba(232,48,48,0.15);
+    color: var(--red);
+  }
+  /* Modal overlay for sidebar */
+  .mobile-sidebar-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0,0,0,0.6);
+    align-items: flex-end;
+  }
+  .mobile-sidebar-modal.open { display: flex !important; }
+  .mobile-sidebar-inner {
+    width: 100%;
+    max-height: 75vh;
+    overflow-y: auto;
+    background: var(--surface1);
+    border-radius: 14px 14px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* Notify toast — fixed at top on mobile */
+  #notify-toast {
+    top: 8px !important;
+    bottom: auto !important;
+  }
+  /* Hide desktop-only elements */
+  .mobile-log-strip-desktop { display: none !important; }
+}
+/* On desktop, hide mobile-only elements */
+@media (min-width: 601px) {
+  .mobile-log-strip { display: none !important; }
+  .mobile-bottom-bar { display: none !important; }
+  .mobile-sidebar-modal { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -1061,62 +1162,227 @@ input::placeholder{color:var(--text3);}
           <div style="display:flex;gap:5px;align-items:center;margin-bottom:7px;flex-wrap:wrap"><span style="font-size:10px;color:var(--text3)">OFF</span><input type="number" id="rc-o" value="20" min="1" max="40" style="width:50px;padding:4px 6px;font-size:12px"><span style="font-size:10px;color:var(--text3)">DEF</span><input type="number" id="rc-d" value="20" min="1" max="40" style="width:50px;padding:4px 6px;font-size:12px"></div>
           <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:7px" onclick="rollContestTeam('b')">ROLL CONTEST</button>
           <div class="cresult" id="rdr-c">Enter stats and roll.</div>
-        
-        
-        <div class="dsec"><div class="dsec-title">Quick Roll</div>
-          <div class="dgrid"><button class="dbtn" onclick="qrTeam('b',3)">d3</button><button class="dbtn" onclick="qrTeam('b',4)">d4</button><button class="dbtn" onclick="qrTeam('b',6)">d6</button><button class="dbtn" onclick="qrTeam('b',10)">d10</button><button class="dbtn" onclick="qrTeam('b',12)">d12</button><button class="dbtn" onclick="qrTeam('b',20)">d20</button><button class="dbtn" onclick="qrTeam('b',30)">d30</button></div>
-          <div class="dresult" id="rdr-q"></div>
-        <div class="dsec" style="border-color:rgba(255,100,100,0.3);background:rgba(255,50,50,0.05)">
-          <div class="dsec-title" style="color:rgba(255,120,120,0.8)">&#9881; PLAYTESTING</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="playtestInbound('a')">INBOUND (HOME)</button>
-            <button class="dbtn" style="flex:1;color:rgba(255,180,100,0.9);border-color:rgba(255,180,100,0.3)" onclick="playtestInbound('b')">INBOUND (VISITORS)</button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <button class="dbtn" style="flex:1;color:rgba(180,180,255,0.9);border-color:rgba(180,180,255,0.3)" onclick="playtestJumpBall()">JUMP BALL</button>
-          </div>
-        </div>
+
+
+<!-- LEGACY TEAM BUILDER -->
+<!-- TEAM EDITOR SCREEN -->
+<div id="s-editor" class="screen">
+  <div class="editor-wrap">
+    <div class="editor-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-ghost btn-sm" onclick="show('lobby')">← BACK</button>
+        <span class="editor-title">TEAM EDITOR</span><span class="editor-dirty-badge">UNSAVED</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+          ⬆ LOAD JSON <input type="file" accept=".json" style="display:none" onchange="editorLoadJSON(this)">
+        </label>
+        <button class="btn btn-primary btn-sm" onclick="editorExport()">⬇ SAVE JSON</button>
+      </div>
+    </div>
+
+    <!-- Team meta row -->
+    <div class="editor-meta-row" id="editor-meta-row" style="display:none">
+      <div class="editor-meta-field">
+        <label class="editor-label">TEAM NAME</label>
+        <input type="text" id="editor-team-name" class="editor-input editor-name-input" maxlength="32" placeholder="Team name..." oninput="editorDirty()">
+      </div>
+      <div class="editor-meta-field">
+        <label class="editor-label">TEAM COLOR</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" id="editor-team-color" value="#2a6ee8" oninput="editorUpdateColor()" style="width:36px;height:30px;border:none;background:none;cursor:pointer;padding:0;border-radius:4px">
+          <span id="editor-color-preview" style="font-size:11px;font-family:'Oswald',sans-serif;color:var(--text3)"></span>
         </div>
       </div>
+      <div class="editor-meta-field">
+        <label class="editor-label">STARTERS <span id="editor-starter-count" style="color:var(--accent)">0/5</span></label>
+        <span style="font-size:10px;color:var(--text3)">Click player row to toggle</span> <span class="editor-starter-warn">⚠ must be exactly 5</span>
       </div>
-        
-            <div id="rt-team" class="tab-body"><div id="rteam-panel"><div class="empty">No team loaded.</div></div></div>
-      <div id="rt-log" class="tab-body"><div id="rglog-full"><div class="empty">Events will appear here.</div></div></div>
-      <div class="sidebar-minilog" id="minilog-b"></div>
+      <div class="editor-meta-field" style="margin-left:auto">
+        <label class="editor-label">FORMAT</label>
+        <span id="editor-format-badge" style="font-size:10px;color:var(--text3)">—</span>
+      </div>
+    </div>
+
+    <!-- No team loaded state -->
+    <div id="editor-empty" class="editor-empty">
+      <div style="font-size:48px;margin-bottom:12px">📋</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:2px;color:var(--text3);margin-bottom:8px">NO TEAM LOADED</div>
+      <div style="font-size:12px;color:var(--text3)">Upload a JSON team file to begin editing</div>
+    </div>
+
+    <!-- Player list -->
+    <div id="editor-player-list" style="display:none"></div>
+  </div>
+</div>
+
+
+<!-- LEGACY SCREEN -->
+<div id="s-legacy" class="screen">
+  <div class="gen-wrap">
+    <div class="gen-header">
+      <div>
+        <div class="gen-title" style="font-family:'Alfa Slab One',serif;color:var(--accent)">LEGACY</div>
+        <div style="font-size:11px;color:var(--text3);letter-spacing:3px">TEAM BUILDER</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" onclick="show('generate')">&#8592; BACK</button>
+      </div>
+    </div>
+    <div class="gen-cols">
+      <!-- Left: Player Entry Form -->
+      <div>
+        <div class="gen-panel">
+          <div class="gen-panel-title">&#128196; PLAYER SHEET</div>
+          <!-- Name + Position -->
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input id="lt-name" type="text" placeholder="Full name..." style="flex:2;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:13px;padding:5px 8px;border-radius:3px"/>
+            <select id="lt-pos" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:12px;padding:4px;border-radius:3px">
+              <option value="PG">PG</option><option value="SG">SG</option>
+              <option value="SF" selected>SF</option><option value="PF">PF</option><option value="C">C</option>
+            </select>
+          </div>
+          <!-- Height + Year -->
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input id="lt-height" type="text" placeholder='Height (e.g. 6ft8)' style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:12px;padding:5px 8px;border-radius:3px"/>
+            <select id="lt-year" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:12px;padding:4px;border-radius:3px">
+              <option value="FR">FR</option><option value="SO">SO</option>
+              <option value="JR" selected>JR</option><option value="SR">SR</option>
+            </select>
+          </div>
+          <!-- Specs -->
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <select id="lt-spec1" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:11px;padding:4px;border-radius:3px">
+              <option value="">Primary Spec (opt)</option>
+              <option>3-PTR</option><option>MID</option><option>SLAM</option><option>HANDLE</option>
+              <option>PASS</option><option>STEAL</option><option>REBOUND</option><option>HUSTLE</option>
+            </select>
+            <select id="lt-spec2" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:11px;padding:4px;border-radius:3px">
+              <option value="">Secondary Spec (opt)</option>
+              <option>3-PTR</option><option>MID</option><option>SLAM</option><option>HANDLE</option>
+              <option>PASS</option><option>STEAL</option><option>REBOUND</option><option>HUSTLE</option>
+            </select>
+          </div>
+          <!-- Stats grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
+            <div class="lt-stat-row"><label class="lt-stat-label">SHT</label><input class="lt-stat-inp" id="lt-SHT" type="number" min="1" max="30" placeholder="1-30"/></div>
+            <div class="lt-stat-row"><label class="lt-stat-label">HND</label><input class="lt-stat-inp" id="lt-HND" type="number" min="1" max="30" placeholder="1-30"/></div>
+            <div class="lt-stat-row"><label class="lt-stat-label">BLK</label><input class="lt-stat-inp" id="lt-BLK" type="number" min="1" max="30" placeholder="1-30"/></div>
+            <div class="lt-stat-row"><label class="lt-stat-label">PAS</label><input class="lt-stat-inp" id="lt-PAS" type="number" min="1" max="30" placeholder="1-30"/></div>
+            <div class="lt-stat-row"><label class="lt-stat-label">RBD</label><input class="lt-stat-inp" id="lt-RBD" type="number" min="1" max="30" placeholder="1-30"/></div>
+            <div class="lt-stat-row"><label class="lt-stat-label">STL</label><input class="lt-stat-inp" id="lt-STL" type="number" min="1" max="30" placeholder="1-30"/></div>
+            <div class="lt-stat-row"><label class="lt-stat-label">HUS</label><input class="lt-stat-inp" id="lt-HUS" type="number" min="1" max="30" placeholder="1-30"/></div>
+            <div class="lt-stat-row"><label class="lt-stat-label" style="color:var(--text3)">FAT</label><input class="lt-stat-inp" id="lt-FAT" type="number" min="0" max="30" placeholder="0" style="color:var(--text3)"/></div>
+          </div>
+          <!-- FT% -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <label style="font-family:'Oswald',sans-serif;font-size:11px;color:var(--text3);letter-spacing:1px;white-space:nowrap">FT%</label>
+            <input id="lt-ftpct" type="number" min="1" max="100" placeholder="65" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:13px;padding:4px 8px;border-radius:3px"/>
+            <span style="font-size:10px;color:var(--text3)">default 65</span>
+          </div>
+          <!-- Add button -->
+          <button class="btn btn-primary btn-lg" style="width:100%;background:var(--accent);border-color:var(--accent);color:#000;margin-bottom:6px" onclick="ltAddPlayer()">
+            + ADD TO LEGACY TEAM
+          </button>
+          <button class="btn btn-ghost btn-sm" style="width:100%;color:var(--text3)" onclick="ltClearForm()">Clear Form</button>
+        </div>
+      </div>
+      <!-- Right: Legacy Team Roster -->
+      <div>
+        <div class="gen-panel">
+          <div class="gen-panel-title" style="display:flex;justify-content:space-between;align-items:center">
+            <span>&#127942; LEGACY TEAM <span id="lt-team-name-display" style="color:var(--accent)"></span></span>
+            <span id="lt-count" style="color:var(--accent)">0</span>/12
+          </div>
+          <!-- Team name input -->
+          <input id="lt-team-name" type="text" placeholder="Team name..." style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--accent);font-family:'Alfa Slab One',serif;font-size:14px;padding:6px 10px;border-radius:3px;margin-bottom:8px"/>
+          <div id="lt-roster-list"><div class="empty">No players yet — fill out the sheet and add.</div></div>
+          <div style="margin-top:10px;display:flex;gap:6px">
+            <button class="btn btn-primary" style="flex:1" onclick="ltSaveTeam()">&#128190; SAVE LEGACY TEAM</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="ltClearRoster()">CLEAR</button>
+          </div>
+        </div>
+        <!-- Saved Legacy Teams -->
+        <div class="gen-panel" style="margin-top:10px">
+          <div class="gen-panel-title">&#128218; SAVED LEGACY TEAMS</div>
+          <div id="lt-saved-list"><div class="empty" style="font-size:11px">No saved teams yet.</div></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-<div id="notifs"></div>
-<div id="modal-bg" class="modal-bg"><div class="modal" id="modal-body"></div>
-        
-        
-        
-        </div>
+
+
+  <!-- MOBILE ONLY: log strip + bottom bar + sidebar modals -->
+  <div class="mobile-log-strip" id="mobile-log-strip"></div>
+  <div class="mobile-bottom-bar">
+    <button class="mobile-team-btn mobile-team-btn-home" onclick="openMobileSidebar('a')">HOME</button>
+    <button class="mobile-team-btn mobile-team-btn-away" onclick="openMobileSidebar('b')">AWAY</button>
+  </div>
+  <!-- HOME modal -->
+  <div class="mobile-sidebar-modal" id="mobile-modal-a" onclick="closeMobileSidebar(event,'a')">
+    <div class="mobile-sidebar-inner" id="mobile-modal-inner-a"></div>
+  </div>
+  <!-- AWAY modal -->
+  <div class="mobile-sidebar-modal" id="mobile-modal-b" onclick="closeMobileSidebar(event,'b')">
+    <div class="mobile-sidebar-inner" id="mobile-modal-inner-b"></div>
+  </div>
 <script>
-// Load Ably with CDN fallbacks
-(function(){
-  function loadScript(src, cb) {
-    var s = document.createElement('script');
-    s.src = src;
-    s.onload = cb;
-    s.onerror = function(){ cb(new Error('failed: '+src)); };
-    document.head.appendChild(s);
+// ── MOBILE LAYOUT ────────────────────────────────────────────────────────
+var _mobileModalOpen = null;
+
+function isMobile() {
+  return window.matchMedia('(max-width: 600px)').matches;
+}
+
+function openMobileSidebar(team) {
+  if(!isMobile()) return;
+  var modal = document.getElementById('mobile-modal-'+team);
+  var inner = document.getElementById('mobile-modal-inner-'+team);
+  var sidebar = document.querySelector('.sidebar-'+(team==='a'?'home':'away'));
+  if(!modal || !inner || !sidebar) return;
+  // Clone sidebar content into modal
+  inner.innerHTML = sidebar.innerHTML;
+  // Re-bind any onclick buttons (they already have onclick attrs — they work)
+  modal.classList.add('open');
+  _mobileModalOpen = team;
+}
+
+function closeMobileSidebar(e, team) {
+  if(e && e.target !== document.getElementById('mobile-modal-'+team)) return;
+  var modal = document.getElementById('mobile-modal-'+team);
+  if(modal) modal.classList.remove('open');
+  _mobileModalOpen = null;
+}
+
+function closeMobileModal() {
+  if(_mobileModalOpen) {
+    var modal = document.getElementById('mobile-modal-'+_mobileModalOpen);
+    if(modal) modal.classList.remove('open');
+    _mobileModalOpen = null;
   }
-  var cdns = [
-    'https://cdn.ably.com/lib/ably.min-2.js',
-    'https://unpkg.com/ably@latest/ably.min.js',
-    'https://cdn.jsdelivr.net/npm/ably/ably.min.js'
-  ];
-  var i = 0;
-  function tryNext(err) {
-    if(typeof Ably !== 'undefined') return;
-    if(i >= cdns.length){ console.error('All Ably CDNs failed'); return; }
-    loadScript(cdns[i++], function(e){ if(e instanceof Error) tryNext(); });
-  }
-  tryNext();
-})();
-</script>
-<script>
+}
+
+// Sync mobile log strip from main log
+function syncMobileLog() {
+  if(!isMobile()) return;
+  var strip = document.getElementById('mobile-log-strip');
+  var mainLog = document.getElementById('subcourt-log');
+  if(!strip || !mainLog) return;
+  // Show last 3 log entries
+  var entries = mainLog.querySelectorAll('.log-entry');
+  var last3 = Array.from(entries).slice(-3);
+  strip.innerHTML = last3.map(function(e){return '<div>'+e.innerHTML+'</div>';}).join('');
+  strip.scrollTop = strip.scrollHeight;
+}
+
+// Patch actTeam to close modal after action on mobile
+var _origActTeam = typeof actTeam !== 'undefined' ? actTeam : null;
+function actTeamMobileWrap(team, action) {
+  if(isMobile()) closeMobileModal();
+  actTeam(team, action);
+}
+
 
 
 
@@ -2873,6 +3139,7 @@ function renderLogEntry(e) {
 
 function addLog(msg, cls='') {
   snapshotState();
+  setTimeout(function(){if(typeof syncMobileLog==='function')syncMobileLog();},50);
   const ts = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
   G.log.unshift({ msg, cls, ts });
   const logHTML = G.log.slice(0,120).map(renderLogEntry).join('');
@@ -3536,7 +3803,8 @@ function autoFill() {
   }
   assignStarters(team);
   G.editPlayer = team.players[0];
-  renderPList(); renderPForm();
+  // Only render builder UI if builder screen is active
+  if(document.getElementById('plist')) { renderPList(); renderPForm(); }
   notify('Roster auto-filled!');
 }
 
@@ -4407,6 +4675,17 @@ function makeDraggable(el, id, team) {
 
   function svgPt(cx, cy) {
     const r = svg.getBoundingClientRect();
+    if(window.matchMedia('(max-width:600px)').matches) {
+      // Court rotated 90° CW: screen-x maps to SVG-y (inverted), screen-y maps to SVG-x
+      // Screen origin is top-left of bounding rect
+      const screenX = cx - r.left; // 0..r.width
+      const screenY = cy - r.top;  // 0..r.height
+      // After rotate(90deg): SVG x = screenY scaled, SVG y = (r.width - screenX) scaled
+      return {
+        x: screenY * (900 / r.height),
+        y: (r.width - screenX) * (520 / r.width)
+      };
+    }
     return { x:(cx-r.left)*(900/r.width), y:(cy-r.top)*(520/r.height) };
   }
 
@@ -10041,6 +10320,34 @@ function rollBackCourtTeam(team) {
   }, true);
 })();
 
+  // Global player name click → show card
+  document.addEventListener('mousedown', e => {
+    // Close mini cards on ANY mousedown outside the card (fires before click/tok handlers)
+    ['mini-card-a','mini-card-b'].forEach(id => {
+      const wrap = document.getElementById(id);
+      if (!wrap || wrap.style.display === 'none') return;
+      if (!wrap.contains(e.target)) { wrap.style.display = 'none'; }
+    });
+    const clickedTok = e.target.closest('.tok');
+    if (clickedTok) return; // token handler fires separately
+    // Cancel look-pending or pass-pending if clicking SVG background
+    if ((G.lookPending || G.passPending) && (e.target.tagName === 'svg' || e.target.tagName === 'rect')) {
+      G.lookPending = null; G.passPending = null; G.lookResult = null;
+      document.querySelectorAll('.tok').forEach(el => {
+        el.classList.remove('look-target'); el.classList.remove('look-origin'); el.classList.remove('look-locked');
+      });
+    }
+    // If a pass is pending, don't show player card — let token click handler resolve it
+    if (G.passPending || G.lookPending) return;
+    const el = e.target.closest('[data-player-id]');
+    if (!el) return;
+    const pid = el.dataset.playerId;
+    const team = el.dataset.team;
+    if (!pid || !team) return;
+    const p = G.teams[team]?.players.find(x => x.id === pid);
+    if (p) showMiniCard(p, team);
+  });
+
 
 
 
@@ -10217,154 +10524,5 @@ function rollBackCourtTeam(team) {
 
 
 </script>
-
-<!-- LEGACY TEAM BUILDER -->
-<!-- TEAM EDITOR SCREEN -->
-<div id="s-editor" class="screen">
-  <div class="editor-wrap">
-    <div class="editor-header">
-      <div style="display:flex;align-items:center;gap:12px">
-        <button class="btn btn-ghost btn-sm" onclick="show('lobby')">← BACK</button>
-        <span class="editor-title">TEAM EDITOR</span><span class="editor-dirty-badge">UNSAVED</span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-          ⬆ LOAD JSON <input type="file" accept=".json" style="display:none" onchange="editorLoadJSON(this)">
-        </label>
-        <button class="btn btn-primary btn-sm" onclick="editorExport()">⬇ SAVE JSON</button>
-      </div>
-    </div>
-
-    <!-- Team meta row -->
-    <div class="editor-meta-row" id="editor-meta-row" style="display:none">
-      <div class="editor-meta-field">
-        <label class="editor-label">TEAM NAME</label>
-        <input type="text" id="editor-team-name" class="editor-input editor-name-input" maxlength="32" placeholder="Team name..." oninput="editorDirty()">
-      </div>
-      <div class="editor-meta-field">
-        <label class="editor-label">TEAM COLOR</label>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input type="color" id="editor-team-color" value="#2a6ee8" oninput="editorUpdateColor()" style="width:36px;height:30px;border:none;background:none;cursor:pointer;padding:0;border-radius:4px">
-          <span id="editor-color-preview" style="font-size:11px;font-family:'Oswald',sans-serif;color:var(--text3)"></span>
-        </div>
-      </div>
-      <div class="editor-meta-field">
-        <label class="editor-label">STARTERS <span id="editor-starter-count" style="color:var(--accent)">0/5</span></label>
-        <span style="font-size:10px;color:var(--text3)">Click player row to toggle</span> <span class="editor-starter-warn">⚠ must be exactly 5</span>
-      </div>
-      <div class="editor-meta-field" style="margin-left:auto">
-        <label class="editor-label">FORMAT</label>
-        <span id="editor-format-badge" style="font-size:10px;color:var(--text3)">—</span>
-      </div>
-    </div>
-
-    <!-- No team loaded state -->
-    <div id="editor-empty" class="editor-empty">
-      <div style="font-size:48px;margin-bottom:12px">📋</div>
-      <div style="font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:2px;color:var(--text3);margin-bottom:8px">NO TEAM LOADED</div>
-      <div style="font-size:12px;color:var(--text3)">Upload a JSON team file to begin editing</div>
-    </div>
-
-    <!-- Player list -->
-    <div id="editor-player-list" style="display:none"></div>
-  </div>
-</div>
-
-
-<!-- LEGACY SCREEN -->
-<div id="s-legacy" class="screen">
-  <div class="gen-wrap">
-    <div class="gen-header">
-      <div>
-        <div class="gen-title" style="font-family:'Alfa Slab One',serif;color:var(--accent)">LEGACY</div>
-        <div style="font-size:11px;color:var(--text3);letter-spacing:3px">TEAM BUILDER</div>
-      </div>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-        <button class="btn btn-ghost" onclick="show('generate')">&#8592; BACK</button>
-      </div>
-    </div>
-    <div class="gen-cols">
-      <!-- Left: Player Entry Form -->
-      <div>
-        <div class="gen-panel">
-          <div class="gen-panel-title">&#128196; PLAYER SHEET</div>
-          <!-- Name + Position -->
-          <div style="display:flex;gap:6px;margin-bottom:8px">
-            <input id="lt-name" type="text" placeholder="Full name..." style="flex:2;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:13px;padding:5px 8px;border-radius:3px"/>
-            <select id="lt-pos" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:12px;padding:4px;border-radius:3px">
-              <option value="PG">PG</option><option value="SG">SG</option>
-              <option value="SF" selected>SF</option><option value="PF">PF</option><option value="C">C</option>
-            </select>
-          </div>
-          <!-- Height + Year -->
-          <div style="display:flex;gap:6px;margin-bottom:8px">
-            <input id="lt-height" type="text" placeholder='Height (e.g. 6ft8)' style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:12px;padding:5px 8px;border-radius:3px"/>
-            <select id="lt-year" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:12px;padding:4px;border-radius:3px">
-              <option value="FR">FR</option><option value="SO">SO</option>
-              <option value="JR" selected>JR</option><option value="SR">SR</option>
-            </select>
-          </div>
-          <!-- Specs -->
-          <div style="display:flex;gap:6px;margin-bottom:10px">
-            <select id="lt-spec1" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:11px;padding:4px;border-radius:3px">
-              <option value="">Primary Spec (opt)</option>
-              <option>3-PTR</option><option>MID</option><option>SLAM</option><option>HANDLE</option>
-              <option>PASS</option><option>STEAL</option><option>REBOUND</option><option>HUSTLE</option>
-            </select>
-            <select id="lt-spec2" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:11px;padding:4px;border-radius:3px">
-              <option value="">Secondary Spec (opt)</option>
-              <option>3-PTR</option><option>MID</option><option>SLAM</option><option>HANDLE</option>
-              <option>PASS</option><option>STEAL</option><option>REBOUND</option><option>HUSTLE</option>
-            </select>
-          </div>
-          <!-- Stats grid -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
-            <div class="lt-stat-row"><label class="lt-stat-label">SHT</label><input class="lt-stat-inp" id="lt-SHT" type="number" min="1" max="30" placeholder="1-30"/></div>
-            <div class="lt-stat-row"><label class="lt-stat-label">HND</label><input class="lt-stat-inp" id="lt-HND" type="number" min="1" max="30" placeholder="1-30"/></div>
-            <div class="lt-stat-row"><label class="lt-stat-label">BLK</label><input class="lt-stat-inp" id="lt-BLK" type="number" min="1" max="30" placeholder="1-30"/></div>
-            <div class="lt-stat-row"><label class="lt-stat-label">PAS</label><input class="lt-stat-inp" id="lt-PAS" type="number" min="1" max="30" placeholder="1-30"/></div>
-            <div class="lt-stat-row"><label class="lt-stat-label">RBD</label><input class="lt-stat-inp" id="lt-RBD" type="number" min="1" max="30" placeholder="1-30"/></div>
-            <div class="lt-stat-row"><label class="lt-stat-label">STL</label><input class="lt-stat-inp" id="lt-STL" type="number" min="1" max="30" placeholder="1-30"/></div>
-            <div class="lt-stat-row"><label class="lt-stat-label">HUS</label><input class="lt-stat-inp" id="lt-HUS" type="number" min="1" max="30" placeholder="1-30"/></div>
-            <div class="lt-stat-row"><label class="lt-stat-label" style="color:var(--text3)">FAT</label><input class="lt-stat-inp" id="lt-FAT" type="number" min="0" max="30" placeholder="0" style="color:var(--text3)"/></div>
-          </div>
-          <!-- FT% -->
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <label style="font-family:'Oswald',sans-serif;font-size:11px;color:var(--text3);letter-spacing:1px;white-space:nowrap">FT%</label>
-            <input id="lt-ftpct" type="number" min="1" max="100" placeholder="65" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Oswald',sans-serif;font-size:13px;padding:4px 8px;border-radius:3px"/>
-            <span style="font-size:10px;color:var(--text3)">default 65</span>
-          </div>
-          <!-- Add button -->
-          <button class="btn btn-primary btn-lg" style="width:100%;background:var(--accent);border-color:var(--accent);color:#000;margin-bottom:6px" onclick="ltAddPlayer()">
-            + ADD TO LEGACY TEAM
-          </button>
-          <button class="btn btn-ghost btn-sm" style="width:100%;color:var(--text3)" onclick="ltClearForm()">Clear Form</button>
-        </div>
-      </div>
-      <!-- Right: Legacy Team Roster -->
-      <div>
-        <div class="gen-panel">
-          <div class="gen-panel-title" style="display:flex;justify-content:space-between;align-items:center">
-            <span>&#127942; LEGACY TEAM <span id="lt-team-name-display" style="color:var(--accent)"></span></span>
-            <span id="lt-count" style="color:var(--accent)">0</span>/12
-          </div>
-          <!-- Team name input -->
-          <input id="lt-team-name" type="text" placeholder="Team name..." style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--accent);font-family:'Alfa Slab One',serif;font-size:14px;padding:6px 10px;border-radius:3px;margin-bottom:8px"/>
-          <div id="lt-roster-list"><div class="empty">No players yet — fill out the sheet and add.</div></div>
-          <div style="margin-top:10px;display:flex;gap:6px">
-            <button class="btn btn-primary" style="flex:1" onclick="ltSaveTeam()">&#128190; SAVE LEGACY TEAM</button>
-            <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="ltClearRoster()">CLEAR</button>
-          </div>
-        </div>
-        <!-- Saved Legacy Teams -->
-        <div class="gen-panel" style="margin-top:10px">
-          <div class="gen-panel-title">&#128218; SAVED LEGACY TEAMS</div>
-          <div id="lt-saved-list"><div class="empty" style="font-size:11px">No saved teams yet.</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
