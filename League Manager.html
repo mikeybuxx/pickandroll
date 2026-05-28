@@ -22,20 +22,20 @@
   --text3: #505868;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',sans-serif; font-size:14px; min-height:100vh; }
+body { background:var(--bg); color:var(--text); font-family:sans-serif,sans-serif; font-size:14px; min-height:100vh; }
 
 /* NAV */
 .nav { background:var(--panel); border-bottom:2px solid var(--accent); padding:0 20px; display:flex; align-items:center; gap:0; position:sticky; top:0; z-index:100; }
-.nav-title { font-family:'Oswald',sans-serif; font-size:18px; font-weight:700; letter-spacing:3px; color:var(--accent); padding:14px 20px 14px 0; border-right:1px solid var(--border); margin-right:12px; }
-.nav-tab { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:2px; padding:16px 16px; cursor:pointer; color:var(--text3); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
+.nav-title { font-family:Oswald,sans-serif; font-size:18px; font-weight:700; letter-spacing:3px; color:var(--accent); padding:14px 20px 14px 0; border-right:1px solid var(--border); margin-right:12px; }
+.nav-tab { font-family:Oswald,sans-serif; font-size:11px; letter-spacing:2px; padding:16px 16px; cursor:pointer; color:var(--text3); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
 .nav-tab:hover { color:var(--text2); }
 .nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 .nav-actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
-.back-link { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--text3); text-decoration:none; padding:6px 12px; border:1px solid var(--border); border-radius:3px; transition:all 0.15s; }
+.back-link { font-family:monospace,monospace; font-size:10px; letter-spacing:1px; color:var(--text3); text-decoration:none; padding:6px 12px; border:1px solid var(--border); border-radius:3px; transition:all 0.15s; }
 .back-link:hover { color:var(--text2); border-color:var(--border2); }
 
 /* BUTTONS */
-.btn { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:1.5px; padding:7px 16px; border-radius:3px; cursor:pointer; border:1px solid; transition:all 0.15s; }
+.btn { font-family:Oswald,sans-serif; font-size:11px; letter-spacing:1.5px; padding:7px 16px; border-radius:3px; cursor:pointer; border:1px solid; transition:all 0.15s; }
 .btn-primary { background:var(--accent); border-color:var(--accent); color:#000; font-weight:700; }
 .btn-primary:hover { background:#ffd040; }
 .btn-ghost { background:transparent; border-color:var(--border); color:var(--text2); }
@@ -50,21 +50,21 @@ body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',s
 
 /* SECTION HEADER */
 .section-head { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
-.section-title { font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:3px; color:var(--accent); }
-.section-sub { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text3); letter-spacing:1px; }
+.section-title { font-family:Oswald,sans-serif; font-size:16px; letter-spacing:3px; color:var(--accent); }
+.section-sub { font-family:monospace,monospace; font-size:10px; color:var(--text3); letter-spacing:1px; }
 
 /* CARD */
 .card { background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-bottom:16px; }
 .card-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
-.card-title { font-family:'Oswald',sans-serif; font-size:13px; letter-spacing:2px; }
+.card-title { font-family:Oswald,sans-serif; font-size:13px; letter-spacing:2px; }
 .card-body { padding:16px; }
 
 /* FORM */
 .form-group { margin-bottom:14px; }
-.form-label { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--text3); margin-bottom:5px; display:block; }
-.form-input { width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'Barlow Condensed',sans-serif; font-size:14px; }
+.form-label { font-family:monospace,monospace; font-size:10px; letter-spacing:1px; color:var(--text3); margin-bottom:5px; display:block; }
+.form-input { width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:sans-serif,sans-serif; font-size:14px; }
 .form-input:focus { outline:none; border-color:var(--accent); }
-.form-select { width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'Barlow Condensed',sans-serif; font-size:14px; cursor:pointer; }
+.form-select { width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:sans-serif,sans-serif; font-size:14px; cursor:pointer; }
 .form-select:focus { outline:none; border-color:var(--accent); }
 .form-row { display:flex; gap:12px; }
 .form-row .form-group { flex:1; }
@@ -73,9 +73,9 @@ body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',s
 .league-card { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:16px; margin-bottom:12px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:all 0.15s; }
 .league-card:hover { border-color:var(--border2); background:var(--panel2); }
 .league-card.selected { border-color:var(--accent); }
-.league-name { font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:2px; }
-.league-meta { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text3); margin-top:3px; }
-.league-badge { font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:1px; padding:3px 8px; border-radius:2px; border:1px solid; margin-left:auto; }
+.league-name { font-family:Oswald,sans-serif; font-size:16px; letter-spacing:2px; }
+.league-meta { font-family:monospace,monospace; font-size:10px; color:var(--text3); margin-top:3px; }
+.league-badge { font-family:Oswald,sans-serif; font-size:10px; letter-spacing:1px; padding:3px 8px; border-radius:2px; border:1px solid; margin-left:auto; }
 .badge-season { color:var(--blue); border-color:rgba(58,140,245,0.4); background:rgba(58,140,245,0.1); }
 .badge-playoffs { color:var(--accent); border-color:rgba(240,192,64,0.4); background:rgba(240,192,64,0.1); }
 .badge-complete { color:var(--green); border-color:rgba(62,200,122,0.4); background:rgba(62,200,122,0.1); }
@@ -83,9 +83,9 @@ body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',s
 
 /* STANDINGS TABLE */
 .standings-table { width:100%; border-collapse:collapse; }
-.standings-table th { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--text3); text-align:center; padding:8px; border-bottom:1px solid var(--border); }
+.standings-table th { font-family:monospace,monospace; font-size:10px; letter-spacing:1px; color:var(--text3); text-align:center; padding:8px; border-bottom:1px solid var(--border); }
 .standings-table th.left { text-align:left; }
-.standings-table td { font-family:'Oswald',sans-serif; font-size:14px; text-align:center; padding:9px 8px; border-bottom:1px solid rgba(255,255,255,0.04); }
+.standings-table td { font-family:Oswald,sans-serif; font-size:14px; text-align:center; padding:9px 8px; border-bottom:1px solid rgba(255,255,255,0.04); }
 .standings-table td.left { text-align:left; }
 .standings-table tbody tr:hover { background:rgba(255,255,255,0.03); }
 .standings-table td.seed { color:var(--text3); font-size:11px; width:28px; }
@@ -96,19 +96,19 @@ body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',s
 .standings-table .playoff-line td { border-top:2px solid rgba(240,192,64,0.3); }
 
 /* SCHEDULE */
-.week-header { font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:3px; color:var(--text3); padding:10px 0 6px; border-bottom:1px solid var(--border); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
-.week-badge { font-family:'Share Tech Mono',monospace; font-size:9px; padding:2px 6px; border:1px solid var(--border); border-radius:2px; color:var(--text3); }
+.week-header { font-family:Oswald,sans-serif; font-size:12px; letter-spacing:3px; color:var(--text3); padding:10px 0 6px; border-bottom:1px solid var(--border); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.week-badge { font-family:monospace,monospace; font-size:9px; padding:2px 6px; border:1px solid var(--border); border-radius:2px; color:var(--text3); }
 .week-badge.current { border-color:rgba(240,192,64,0.4); color:var(--accent); background:rgba(240,192,64,0.08); }
 .matchup-row { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:4px; margin-bottom:4px; background:var(--panel); border:1px solid var(--border); }
 .matchup-row.played { opacity:0.7; }
-.matchup-team { flex:1; font-family:'Oswald',sans-serif; font-size:13px; letter-spacing:1px; }
+.matchup-team { flex:1; font-family:Oswald,sans-serif; font-size:13px; letter-spacing:1px; }
 .matchup-team.home { text-align:right; }
-.matchup-vs { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text3); width:30px; text-align:center; }
-.matchup-score { font-family:'Oswald',sans-serif; font-size:16px; font-weight:600; width:80px; text-align:center; }
+.matchup-vs { font-family:monospace,monospace; font-size:10px; color:var(--text3); width:30px; text-align:center; }
+.matchup-score { font-family:Oswald,sans-serif; font-size:16px; font-weight:600; width:80px; text-align:center; }
 .matchup-score.w { color:var(--green); }
 .matchup-score.l { color:var(--red); }
 .matchup-report { margin-left:auto; }
-.score-input { width:36px; padding:4px 6px; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'Oswald',sans-serif; font-size:14px; text-align:center; }
+.score-input { width:36px; padding:4px 6px; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:Oswald,sans-serif; font-size:14px; text-align:center; }
 .score-input:focus { outline:none; border-color:var(--accent); }
 .matchup-inputs { display:flex; align-items:center; gap:4px; }
 
@@ -116,25 +116,25 @@ body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',s
 .bracket-wrap { overflow-x:auto; padding-bottom:20px; }
 .bracket { display:flex; gap:0; align-items:flex-start; min-width:700px; }
 .bracket-round { display:flex; flex-direction:column; min-width:180px; }
-.bracket-round-title { font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:2px; color:var(--text3); text-align:center; padding:8px 0; margin-bottom:12px; border-bottom:1px solid var(--border); }
+.bracket-round-title { font-family:Oswald,sans-serif; font-size:10px; letter-spacing:2px; color:var(--text3); text-align:center; padding:8px 0; margin-bottom:12px; border-bottom:1px solid var(--border); }
 .bracket-matchup { margin-bottom:20px; position:relative; }
-.bracket-team { background:var(--panel); border:1px solid var(--border); border-radius:3px; padding:8px 12px; display:flex; align-items:center; gap:8px; margin:2px 0; font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:1px; transition:all 0.15s; }
+.bracket-team { background:var(--panel); border:1px solid var(--border); border-radius:3px; padding:8px 12px; display:flex; align-items:center; gap:8px; margin:2px 0; font-family:Oswald,sans-serif; font-size:12px; letter-spacing:1px; transition:all 0.15s; }
 .bracket-team.winner { border-color:rgba(240,192,64,0.5); background:rgba(240,192,64,0.08); color:var(--accent); }
 .bracket-team.loser { opacity:0.5; }
-.bracket-team .seed-num { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text3); width:16px; }
+.bracket-team .seed-num { font-family:monospace,monospace; font-size:9px; color:var(--text3); width:16px; }
 .bracket-connector { width:20px; border-top:1px solid var(--border); border-right:1px solid var(--border); position:absolute; right:-20px; }
-.bracket-score-input { width:30px; margin-left:auto; padding:2px 4px; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:2px; color:var(--text); font-family:'Oswald',sans-serif; font-size:11px; text-align:center; }
+.bracket-score-input { width:30px; margin-left:auto; padding:2px 4px; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:2px; color:var(--text); font-family:Oswald,sans-serif; font-size:11px; text-align:center; }
 
 /* MODAL */
 .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; display:none; align-items:center; justify-content:center; }
 .modal-bg.on { display:flex; }
 .modal { background:var(--panel); border:1px solid var(--border2); border-radius:8px; padding:24px; width:480px; max-width:95vw; max-height:90vh; overflow-y:auto; }
-.modal h2 { font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:3px; color:var(--accent); margin-bottom:16px; }
+.modal h2 { font-family:Oswald,sans-serif; font-size:16px; letter-spacing:3px; color:var(--accent); margin-bottom:16px; }
 .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
 
 /* EMPTY */
 .empty { text-align:center; padding:60px 20px; color:var(--text3); }
-.empty h2 { font-family:'Oswald',sans-serif; font-size:18px; letter-spacing:3px; color:var(--text2); margin-bottom:8px; }
+.empty h2 { font-family:Oswald,sans-serif; font-size:18px; letter-spacing:3px; color:var(--text2); margin-bottom:8px; }
 .empty p { font-size:13px; line-height:1.7; }
 
 /* GRID */
@@ -143,21 +143,21 @@ body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',s
 
 /* STAT PILL */
 .stat-pill { display:inline-flex; flex-direction:column; align-items:center; background:var(--panel2); border:1px solid var(--border); border-radius:4px; padding:8px 16px; min-width:80px; }
-.stat-pill-label { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:1px; color:var(--text3); }
-.stat-pill-val { font-family:'Oswald',sans-serif; font-size:22px; font-weight:600; line-height:1.2; }
+.stat-pill-label { font-family:monospace,monospace; font-size:9px; letter-spacing:1px; color:var(--text3); }
+.stat-pill-val { font-family:Oswald,sans-serif; font-size:22px; font-weight:600; line-height:1.2; }
 
 /* TABS inside screens */
 .inner-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:20px; }
-.inner-tab { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:1.5px; padding:8px 16px; cursor:pointer; color:var(--text3); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.15s; }
+.inner-tab { font-family:Oswald,sans-serif; font-size:11px; letter-spacing:1.5px; padding:8px 16px; cursor:pointer; color:var(--text3); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.15s; }
 .inner-tab:hover { color:var(--text2); }
 .inner-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 
 /* REPORT modal */
 .report-score-row { display:flex; align-items:center; gap:16px; justify-content:center; margin:20px 0; }
-.report-team-name { font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:2px; flex:1; text-align:center; }
-.report-score-input { width:60px; padding:10px 8px; font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; text-align:center; background:rgba(0,0,0,0.4); border:1px solid var(--border2); border-radius:4px; color:var(--text); }
+.report-team-name { font-family:Oswald,sans-serif; font-size:16px; letter-spacing:2px; flex:1; text-align:center; }
+.report-score-input { width:60px; padding:10px 8px; font-family:Oswald,sans-serif; font-size:24px; font-weight:700; text-align:center; background:rgba(0,0,0,0.4); border:1px solid var(--border2); border-radius:4px; color:var(--text); }
 .report-score-input:focus { outline:none; border-color:var(--accent); }
-.report-dash { font-family:'Oswald',sans-serif; font-size:20px; color:var(--text3); }
+.report-dash { font-family:Oswald,sans-serif; font-size:20px; color:var(--text3); }
 </style>
 </head>
 <body>
@@ -304,25 +304,30 @@ function renderLeagues() {
   var empty = document.getElementById('leagues-empty');
   if(ls.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  list.innerHTML = ls.map(function(l) {
+  list.innerHTML = '';
+  ls.forEach(function(l) {
     var selected = l.id === currentLeagueId;
     var statusClass = {season:'badge-season',playoffs:'badge-playoffs',complete:'badge-complete',draft:'badge-draft'}[l.status]||'badge-draft';
     var statusLabel = {season:'IN SEASON',playoffs:'PLAYOFFS',complete:'COMPLETE',draft:'DRAFT'}[l.status]||'DRAFT';
     var teams = l.teams ? l.teams.length : 0;
     var week = l.currentWeek || 0;
     var totalWeeks = l.schedule ? l.schedule.length : 0;
-    return '<div class="league-card' + (selected?' selected':'') + '" onclick="selectLeague('' + l.id + '')">' +
-      '<div>' +
-        '<div class="league-name">' + escH(l.name) + '</div>' +
-        '<div class="league-meta">' + teams + ' TEAMS &nbsp;·&nbsp; ' + (l.settings&&l.settings.elimination==='double'?'DOUBLE ELIM':'SINGLE ELIM') + (totalWeeks?' &nbsp;·&nbsp; WEEK ' + week + '/' + totalWeeks:'') + '</div>' +
+    var card = document.createElement('div');
+    card.className = 'league-card' + (selected ? ' selected' : '');
+    card.innerHTML = '<div>' +
+      '<div class="league-name">' + escH(l.name) + '</div>' +
+      '<div class="league-meta">' + teams + ' TEAMS · ' + (l.settings&&l.settings.elimination==='double'?'DOUBLE ELIM':'SINGLE ELIM') + (totalWeeks?' · WEEK ' + week + '/' + totalWeeks:'') + '</div>' +
       '</div>' +
       '<span class="league-badge ' + statusClass + '">' + statusLabel + '</span>' +
       '<div style="display:flex;gap:6px;margin-left:8px">' +
-        '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditLeague('' + l.id + '')">EDIT</button>' +
-        '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();confirmDelete('' + l.id + '')">DEL</button>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+        '<button class="btn btn-ghost btn-sm edit-btn">EDIT</button>' +
+        '<button class="btn btn-danger btn-sm del-btn">DEL</button>' +
+      '</div>';
+    card.querySelector('.edit-btn').addEventListener('click', function(e) { e.stopPropagation(); openEditLeague(l.id); });
+    card.querySelector('.del-btn').addEventListener('click', function(e) { e.stopPropagation(); confirmDelete(l.id); });
+    card.addEventListener('click', function() { selectLeague(l.id); });
+    list.appendChild(card);
+  });;
 }
 
 // ── STANDINGS ────────────────────────────────────────────────────────────────
@@ -419,10 +424,10 @@ function renderSchedule() {
   // Week navigation
   var weekNums = l.schedule.map(function(w,i){ return i+1; });
   var curW = l.currentWeek || 1;
-  nav.innerHTML = '<button class="btn btn-ghost btn-sm" onclick="changeWeekView(-1)">&#8592;</button>' +
-    '<span style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text2);padding:0 8px">WEEK <span id="week-display">' + curW + '</span></span>' +
+    nav.innerHTML = '<button class="btn btn-ghost btn-sm" onclick="changeWeekView(-1)">&#8592;</button>' +
+    '<span style="font-size:12px;font-family:Oswald,sans-serif;letter-spacing:2px;color:var(--text2);padding:0 8px">WEEK <span id="week-display">' + curW + '</span></span>' +
     '<button class="btn btn-ghost btn-sm" onclick="changeWeekView(1)">&#8594;</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="changeWeekView('all')" style="margin-left:8px">ALL</button>';
+    '<button class="btn btn-ghost btn-sm" onclick="changeWeekView(999)" style="margin-left:8px">ALL</button>';
 
   renderWeek(l, curW);
 }
@@ -431,7 +436,7 @@ var _weekDisplay = 1;
 function changeWeekView(dir) {
   var l = currentLeague();
   if(!l) return;
-  if(dir === 'all') { renderAllWeeks(l); return; }
+  if(dir === 'all' || dir === 999) { renderAllWeeks(l); return; }
   _weekDisplay = Math.max(1, Math.min(l.schedule.length, _weekDisplay + dir));
   var el = document.getElementById('week-display');
   if(el) el.textContent = _weekDisplay;
@@ -475,14 +480,14 @@ function renderMatchupRow(l, g, weekNum) {
       '<div class="matchup-vs">—</div>' +
       '<div class="matchup-score ' + (!hw?'w':'l') + '">' + g.result.awayScore + '</div>' +
       '<div class="matchup-team" style="' + (!hw?'color:var(--green)':'color:var(--text2)') + '">' + escH(away.name) + '</div>' +
-      '<button class="btn btn-ghost btn-sm matchup-report" onclick="openReportGame('' + g.id + '',' + weekNum + ')">EDIT</button>' +
+      '<button class="btn btn-ghost btn-sm matchup-report" data-gid="' + g.id + '" data-week="' + weekNum + '" onclick="openReportGame(this.dataset.gid,+this.dataset.week)">EDIT</button>' +
     '</div>';
   }
   return '<div class="matchup-row">' +
     '<div class="matchup-team home">' + escH(home.name) + '</div>' +
     '<div class="matchup-vs">vs</div>' +
     '<div class="matchup-team">' + escH(away.name) + '</div>' +
-    '<button class="btn btn-primary btn-sm matchup-report" onclick="openReportGame('' + g.id + '',' + weekNum + ')">REPORT</button>' +
+    '<button class="btn btn-primary btn-sm matchup-report" data-gid="' + g.id + '" data-week="' + weekNum + '" onclick="openReportGame(this.dataset.gid,+this.dataset.week)">REPORT</button>' +
   '</div>';
 }
 
@@ -560,12 +565,12 @@ function renderBracket(l, container) {
       html += '<div class="bracket-team' + (m.winnerId===m.homeId?' winner':m.winnerId?' loser':'') + '">' +
         '<span class="seed-num">' + homeSeed + '</span>' +
         '<span>' + (home?escH(home.name):'TBD') + '</span>' +
-        (home ? '<input class="bracket-score-input" type="number" placeholder="—" value="' + (m.homeScore!==null?m.homeScore:'') + '" onchange="updatePlayoffScore('' + m.id + '',this.value,true,' + ri + ')">' : '') +
+        (home ? '<input class="bracket-score-input" type="number" placeholder="—" value="' + (m.homeScore!==null?m.homeScore:'') + '" data-mid="' + m.id + '" data-ri="' + ri + '" onchange="updatePlayoffScore(this.dataset.mid,this.value,true,+this.dataset.ri)">' : '') +
       '</div>';
       html += '<div class="bracket-team' + (m.winnerId===m.awayId?' winner':m.winnerId?' loser':'') + '">' +
         '<span class="seed-num">' + awaySeed + '</span>' +
         '<span>' + (away?escH(away.name):'TBD') + '</span>' +
-        (away ? '<input class="bracket-score-input" type="number" placeholder="—" value="' + (m.awayScore!==null?m.awayScore:'') + '" onchange="updatePlayoffScore('' + m.id + '',this.value,false,' + ri + ')">' : '') +
+        (away ? '<input class="bracket-score-input" type="number" placeholder="—" value="' + (m.awayScore!==null?m.awayScore:'') + '" data-mid="' + m.id + '" data-ri="' + ri + '" onchange="updatePlayoffScore(this.dataset.mid,this.value,false,+this.dataset.ri)">' : '') +
       '</div>';
       html += '</div>';
     });
@@ -579,8 +584,8 @@ function renderBracket(l, container) {
   if(champion) {
     var champTeam = l.teams.find(function(t){ return t.id===champion; });
     html += '<div style="text-align:center;padding:30px;margin-top:20px">' +
-      '<div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;color:var(--text3);margin-bottom:8px">🏆 CHAMPION</div>' +
-      '<div style="font-family:'Oswald',sans-serif;font-size:32px;font-weight:700;letter-spacing:4px;color:var(--accent)">' + (champTeam?escH(champTeam.name):'') + '</div>' +
+      '<div style="font-family:Oswald,sans-serif;font-size:11px;letter-spacing:3px;color:var(--text3);margin-bottom:8px">🏆 CHAMPION</div>' +
+      '<div style="font-family:Oswald,sans-serif;font-size:32px;font-weight:700;letter-spacing:4px;color:var(--accent)">' + (champTeam?escH(champTeam.name):'') + '</div>' +
     '</div>';
   }
 
@@ -646,7 +651,7 @@ function addTeamInput() {
   _teamCount++;
   var div = document.createElement('div');
   div.style.cssText = 'display:flex;gap:6px;margin-top:6px;align-items:center';
-  div.innerHTML = '<span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text3);width:20px">' + _teamCount + '</span>' +
+  div.innerHTML = '<span style="font-family:monospace,monospace;font-size:10px;color:var(--text3);width:20px">' + _teamCount + '</span>' +
     '<input class="form-input team-name-input" placeholder="Team name" style="flex:1" maxlength="30">' +
     '<button class="btn btn-danger btn-sm" onclick="this.parentElement.remove();updateTeamCount()">✕</button>';
   document.getElementById('team-inputs').appendChild(div);
@@ -740,16 +745,16 @@ function openReportGame(gameId, weekNum) {
 
   var html = '<h2>REPORT GAME — WEEK ' + weekNum + '</h2>' +
     '<div class="report-score-row">' +
-      '<div class="report-team-name" style="color:var(--blue)">' + escH(home.name) + '<br><span style="font-size:10px;color:var(--text3);font-family:'Share Tech Mono',monospace">HOME</span></div>' +
+      '<div class="report-team-name" style="color:var(--blue)">' + escH(home.name) + '<br><span style="font-size:10px;color:var(--text3);font-family:monospace,monospace">HOME</span></div>' +
       '<input class="report-score-input" id="rpt-home" type="number" min="0" max="200" value="' + (g.result?g.result.homeScore:'') + '" placeholder="0">' +
       '<div class="report-dash">—</div>' +
       '<input class="report-score-input" id="rpt-away" type="number" min="0" max="200" value="' + (g.result?g.result.awayScore:'') + '" placeholder="0">' +
-      '<div class="report-team-name" style="color:var(--red)">' + escH(away.name) + '<br><span style="font-size:10px;color:var(--text3);font-family:'Share Tech Mono',monospace">AWAY</span></div>' +
+      '<div class="report-team-name" style="color:var(--red)">' + escH(away.name) + '<br><span style="font-size:10px;color:var(--text3);font-family:monospace,monospace">AWAY</span></div>' +
     '</div>' +
     '<div class="modal-actions">' +
-      (g.result ? '<button class="btn btn-danger" onclick="clearResult('' + gameId + '',' + weekNum + ')">CLEAR RESULT</button>' : '') +
+      (g.result ? '<button class="btn btn-danger" onclick="clearResult('+gameId+','+weekNum+')">CLEAR RESULT</button>' : '') +
       '<button class="btn btn-ghost" onclick="closeReport()">CANCEL</button>' +
-      '<button class="btn btn-primary" onclick="submitReport('' + gameId + '',' + weekNum + ')">CONFIRM RESULT</button>' +
+      '<button class="btn btn-primary" onclick="submitReport('+gameId+','+weekNum+')">CONFIRM RESULT</button>' +
     '</div>';
 
   document.getElementById('report-body').innerHTML = html;
@@ -801,9 +806,9 @@ function openEditLeague(lid) {
         ['draft','season','playoffs','complete'].map(function(s){ return '<option value="'+s+'"'+(l.status===s?' selected':'')+'>'+s.toUpperCase()+'</option>'; }).join('') +
       '</select></div>' +
     '<div class="modal-actions">' +
-      '<button class="btn btn-danger" onclick="confirmDelete('' + l.id + '');closeModal()">DELETE LEAGUE</button>' +
+      '<button class="btn btn-danger" onclick="confirmDelete('+l.id+');closeModal()">DELETE LEAGUE</button>' +
       '<button class="btn btn-ghost" onclick="closeModal()">CANCEL</button>' +
-      '<button class="btn btn-primary" onclick="saveLeagueSettings('' + l.id + '')">SAVE</button>' +
+      '<button class="btn btn-primary" onclick="saveLeagueSettings('+l.id+')">SAVE</button>' +
     '</div>';
   openModal(html);
 }
