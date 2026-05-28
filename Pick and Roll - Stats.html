@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PICK & ROLL — Season Stats</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --court: #1a1a2e;
+  --panel: #12121f;
+  --border: rgba(255,255,255,0.08);
+  --accent: #f0a500;
+  --accent2: #e05050;
+  --green: #3ec87a;
+  --blue: #4a9eff;
+  --text1: #f0ede8;
+  --text2: #a0a0b0;
+  --text3: #606080;
+  --home: #4a9eff;
+  --away: #e05050;
+  --row-odd: rgba(255,255,255,0.02);
+  --row-hover: rgba(240,165,0,0.06);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--court);
+  color: var(--text1);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--panel);
+  border-bottom: 2px solid var(--accent);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--accent);
+}
+.header-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 2px;
+}
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  padding: 6px 14px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+.btn-primary:hover { background: #ffc020; }
+.btn-ghost { background: transparent; border-color: var(--border); color: var(--text2); }
+.btn-ghost:hover { border-color: var(--text2); color: var(--text1); }
+.btn-danger { background: transparent; border-color: rgba(224,80,80,0.4); color: var(--away); }
+.btn-danger:hover { background: rgba(224,80,80,0.1); }
+
+/* ── GAME IMPORT PANEL ── */
+.import-panel {
+  background: linear-gradient(135deg, rgba(240,165,0,0.06), rgba(240,165,0,0.02));
+  border: 1px solid rgba(240,165,0,0.2);
+  border-radius: 6px;
+  margin: 20px 24px;
+  padding: 20px;
+}
+.import-panel h3 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.import-row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.import-row textarea {
+  flex: 1;
+  min-width: 300px;
+  height: 80px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text1);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 8px;
+  resize: vertical;
+}
+.import-row textarea:focus { outline: none; border-color: var(--accent); }
+.import-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+/* ── SEASON SUMMARY ── */
+.season-bar {
+  display: flex;
+  gap: 16px;
+  margin: 0 24px 20px;
+  flex-wrap: wrap;
+}
+.season-stat {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 16px;
+  min-width: 100px;
+}
+.season-stat-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+.season-stat-val {
+  font-family: 'Oswald', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text1);
+  line-height: 1.1;
+}
+.season-stat-val.wins { color: var(--green); }
+.season-stat-val.losses { color: var(--away); }
+
+/* ── GAME TABS ── */
+.tabs-section { margin: 0 24px 20px; }
+.tabs-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.tab {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  padding: 6px 14px;
+  cursor: pointer;
+  border-radius: 3px 3px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  color: var(--text3);
+  background: transparent;
+  transition: all 0.15s;
+  position: relative;
+  bottom: -1px;
+}
+.tab:hover { color: var(--text2); }
+.tab.active {
+  color: var(--accent);
+  border-color: var(--border);
+  border-bottom-color: var(--court);
+  background: var(--court);
+}
+.tab .result-w { color: var(--green); font-size: 9px; }
+.tab .result-l { color: var(--away); font-size: 9px; }
+
+/* ── MAIN CONTENT ── */
+.content { padding: 0 24px 40px; }
+
+/* ── TEAM BLOCK ── */
+.team-block {
+  margin-bottom: 28px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.team-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.team-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.team-name-big {
+  font-family: 'Oswald', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.team-role {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+.team-role.home { color: var(--home); border-color: rgba(74,158,255,0.3); background: rgba(74,158,255,0.08); }
+.team-role.away { color: var(--away); border-color: rgba(224,80,80,0.3); background: rgba(224,80,80,0.08); }
+.team-score-big {
+  margin-left: auto;
+  font-family: 'Oswald', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ── STATS TABLE ── */
+.stats-table { width: 100%; border-collapse: collapse; }
+.stats-table th {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text3);
+  text-align: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.stats-table th.left { text-align: left; }
+.stats-table td {
+  font-family: 'Oswald', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: center;
+  padding: 7px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  white-space: nowrap;
+}
+.stats-table td.left {
+  text-align: left;
+  font-weight: 500;
+}
+.stats-table tbody tr:nth-child(odd) { background: var(--row-odd); }
+.stats-table tbody tr:hover { background: var(--row-hover); }
+.stats-table td.pts { color: var(--accent); font-weight: 600; font-size: 15px; }
+.stats-table td.pos {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+}
+.stats-table td.zero { color: var(--text3); }
+.stats-table td.hi { color: var(--green); }
+.stats-table tfoot td {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  padding: 8px;
+  text-align: center;
+}
+.stats-table tfoot td.left { text-align: left; }
+
+/* Season totals table */
+.season-totals .stats-table tfoot td { background: rgba(240,165,0,0.06); color: var(--accent); }
+
+/* Shot detail: made/att */
+.shot-detail {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text2);
+}
+.shot-detail .made { color: var(--text1); font-weight: 600; }
+
+/* ── GAME META ROW ── */
+.game-meta {
+  display: flex;
+  gap: 20px;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.meta-item { font-size: 12px; color: var(--text2); }
+.meta-item strong { color: var(--text1); font-family: 'Oswald', sans-serif; letter-spacing: 1px; }
+.result-badge {
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 2px;
+}
+.result-badge.win { background: rgba(62,200,122,0.15); color: var(--green); border: 1px solid rgba(62,200,122,0.3); }
+.result-badge.loss { background: rgba(224,80,80,0.1); color: var(--away); border: 1px solid rgba(224,80,80,0.3); }
+
+/* ── PLAYER OF THE WEEK ── */
+.potw-section {
+  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.potw-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  white-space: nowrap;
+  padding-top: 4px;
+  min-width: 130px;
+}
+.potw-input {
+  flex: 1;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text1);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  padding: 6px 10px;
+  resize: none;
+  min-height: 36px;
+}
+.potw-input:focus { outline: none; border-color: var(--accent); }
+
+/* ── SEASON VIEW ── */
+.season-view .team-block { margin-bottom: 32px; }
+.season-ppg {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text3);
+}
+.empty-state h2 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.empty-state p { font-size: 13px; line-height: 1.6; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── GAME LIST SIDEBAR (season view) ── */
+.game-result-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">PICK &amp; ROLL</div>
+    <div class="header-sub">SEASON STATISTICS</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="showView('season')">SEASON TOTALS</button>
+    <button class="btn btn-ghost" onclick="clearAll()" style="color:var(--away);border-color:rgba(224,80,80,0.3)">CLEAR ALL</button>
+    <button class="btn btn-primary" onclick="document.getElementById('import-area').focus()">+ ADD GAME</button>
+  </div>
+</div>
+
+<!-- IMPORT PANEL -->
+<div class="import-panel">
+  <h3>IMPORT GAME DATA</h3>
+  <div class="import-row">
+    <textarea id="import-area" placeholder='Paste game JSON exported from Pick &amp; Roll here, then click IMPORT GAME...'></textarea>
+    <div>
+      <button class="btn btn-primary" onclick="importGame()">IMPORT GAME</button>
+      <div class="import-hint">Export from Pick &amp; Roll game:<br>Game end → EXPORT STATS button</div>
+      <div style="margin-top:10px">
+        <button class="btn btn-ghost" onclick="loadSample()" style="font-size:10px">LOAD SAMPLE DATA</button>
+      </div>
+    </div>
+  </div>
+  <div id="import-msg" style="margin-top:8px;font-size:12px;color:var(--green);display:none"></div>
+</div>
+
+<!-- SEASON SUMMARY BAR -->
+<div class="season-bar" id="season-bar" style="display:none">
+  <div class="season-stat">
+    <div class="season-stat-label">GAMES</div>
+    <div class="season-stat-val" id="s-games">0</div>
+  </div>
+  <div class="season-stat">
+    <div class="season-stat-label">WINS</div>
+    <div class="season-stat-val wins" id="s-wins">0</div>
+  </div>
+  <div class="season-stat">
+    <div class="season-stat-label">LOSSES</div>
+    <div class="season-stat-val losses" id="s-losses">0</div>
+  </div>
+  <div class="season-stat">
+    <div class="season-stat-label">PTS FOR</div>
+    <div class="season-stat-val" id="s-pf">0</div>
+  </div>
+  <div class="season-stat">
+    <div class="season-stat-label">PTS AGAINST</div>
+    <div class="season-stat-val" id="s-pa">0</div>
+  </div>
+  <div class="season-stat">
+    <div class="season-stat-label">AVG MARGIN</div>
+    <div class="season-stat-val" id="s-margin">—</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-section" id="tabs-section" style="display:none">
+  <div class="tabs-label">VIEW</div>
+  <div class="tabs" id="tabs-row">
+    <div class="tab active" onclick="showView('season')" id="tab-season">SEASON</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content" id="main-content">
+  <div class="empty-state">
+    <h2>NO GAMES YET</h2>
+    <p>Import game stats exported from Pick &amp; Roll to start tracking your season.<br>
+    At game end, press <strong style="color:var(--accent)">EXPORT STATS</strong> in the game log.</p>
+  </div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────
+var games = JSON.parse(localStorage.getItem('pr_games') || '[]');
+var potwNotes = JSON.parse(localStorage.getItem('pr_potw') || '{}');
+var currentView = 'season';
+
+function save() {
+  localStorage.setItem('pr_games', JSON.stringify(games));
+  localStorage.setItem('pr_potw', JSON.stringify(potwNotes));
+}
+
+// ── IMPORT ────────────────────────────────────────────────────────────────
+function importGame() {
+  var raw = document.getElementById('import-area').value.trim();
+  if(!raw) { showMsg('Paste game JSON first', true); return; }
+  try {
+    var g = JSON.parse(raw);
+    if(!g.players || !g.score) throw new Error('Invalid game data');
+    g.id = 'g' + Date.now();
+    g.gameNum = games.length + 1;
+    games.push(g);
+    save();
+    document.getElementById('import-area').value = '';
+    showMsg('Game ' + g.gameNum + ' imported! (' + g.score + ')', false);
+    render();
+  } catch(e) {
+    showMsg('Invalid JSON: ' + e.message, true);
+  }
+}
+
+function showMsg(msg, err) {
+  var el = document.getElementById('import-msg');
+  el.textContent = msg;
+  el.style.color = err ? 'var(--away)' : 'var(--green)';
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display='none'; }, 3000);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function render() {
+  updateSeasonBar();
+  buildTabs();
+  if(currentView === 'season') renderSeasonView();
+  else renderGameView(currentView);
+}
+
+function showView(v) {
+  currentView = v;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  var tid = v === 'season' ? 'tab-season' : 'tab-g' + v;
+  var el = document.getElementById(tid);
+  if(el) el.classList.add('active');
+  render();
+}
+
+function updateSeasonBar() {
+  if(games.length === 0) {
+    document.getElementById('season-bar').style.display = 'none';
+    document.getElementById('tabs-section').style.display = 'none';
+    return;
+  }
+  document.getElementById('season-bar').style.display = 'flex';
+  document.getElementById('tabs-section').style.display = 'block';
+
+  // Determine which team is "our team" — use team a by default (HOME)
+  var wins = 0, losses = 0, pf = 0, pa = 0;
+  games.forEach(function(g) {
+    var sc = g.score.split('-');
+    var sa = parseInt(sc[0])||0, sb = parseInt(sc[1])||0;
+    pf += sa; pa += sb;
+    if(sa > sb) wins++; else losses++;
+  });
+  document.getElementById('s-games').textContent = games.length;
+  document.getElementById('s-wins').textContent = wins;
+  document.getElementById('s-losses').textContent = losses;
+  document.getElementById('s-pf').textContent = pf;
+  document.getElementById('s-pa').textContent = pa;
+  var margin = games.length > 0 ? ((pf-pa)/games.length).toFixed(1) : '—';
+  var mEl = document.getElementById('s-margin');
+  mEl.textContent = (pf-pa >= 0 ? '+' : '') + margin;
+  mEl.style.color = pf >= pa ? 'var(--green)' : 'var(--away)';
+}
+
+function buildTabs() {
+  var row = document.getElementById('tabs-row');
+  row.innerHTML = '<div class="tab ' + (currentView==='season'?'active':'') + '" onclick="showView(\'season\')" id="tab-season">SEASON</div>';
+  games.forEach(function(g, i) {
+    var sc = g.score.split('-');
+    var win = parseInt(sc[0]) > parseInt(sc[1]);
+    var res = win ? '<span class="result-w">W</span>' : '<span class="result-l">L</span>';
+    var active = currentView === g.id ? 'active' : '';
+    row.innerHTML += '<div class="tab ' + active + '" onclick="showView(\'' + g.id + '\')" id="tab-g' + g.id + '">G' + g.gameNum + ' ' + res + '</div>';
+  });
+}
+
+// ── GAME VIEW ─────────────────────────────────────────────────────────────
+function renderGameView(gid) {
+  var g = games.find(function(x){ return x.id === gid; });
+  if(!g) return;
+  var sc = g.score.split('-');
+  var win = parseInt(sc[0]) > parseInt(sc[1]);
+
+  var html = '';
+  // Game meta
+  html += '<div class="game-meta">';
+  html += '<div class="meta-item">GAME <strong>' + g.gameNum + '</strong></div>';
+  html += '<div class="meta-item">DATE <strong>' + (g.date||'—') + '</strong></div>';
+  html += '<div class="meta-item">SCORE <strong>' + g.score + '</strong></div>';
+  html += '<span class="result-badge ' + (win?'win':'loss') + '">' + (win?'WIN':'LOSS') + '</span>';
+  html += '</div>';
+
+  // Group players by team
+  var teams = {};
+  Object.values(g.players).forEach(function(p) {
+    if(!teams[p.team]) teams[p.team] = [];
+    teams[p.team].push(p);
+  });
+
+  Object.keys(teams).forEach(function(teamName) {
+    var players = teams[teamName];
+    var isHome = players[0] && players[0].role === 'home';
+    var color = isHome ? 'var(--home)' : 'var(--away)';
+    var roleClass = isHome ? 'home' : 'away';
+    var sc2 = g.score.split('-');
+    var teamScore = isHome ? sc2[0] : sc2[1];
+
+    html += '<div class="team-block">';
+    html += '<div class="team-header">';
+    html += '<div class="team-dot" style="background:' + color + '"></div>';
+    html += '<div class="team-name-big" style="color:' + color + '">' + teamName + '</div>';
+    html += '<span class="team-role ' + roleClass + '">' + (isHome?'HOME':'AWAY') + '</span>';
+    html += '<div class="team-score-big" style="color:' + color + '">' + teamScore + '</div>';
+    html += '</div>';
+
+    html += renderPlayerTable(players, false);
+
+    // Player of the week
+    var potwKey = g.id + '_' + teamName;
+    var potwVal = potwNotes[potwKey] || '';
+    html += '<div class="potw-section">';
+    html += '<div class="potw-label">★ PLAYER OF THE WEEK</div>';
+    html += '<textarea class="potw-input" rows="1" placeholder="Enter player name and note..." onchange="savePotw(\'' + potwKey + '\', this.value)">' + escHtml(potwVal) + '</textarea>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+// ── SEASON VIEW ───────────────────────────────────────────────────────────
+function renderSeasonView() {
+  if(games.length === 0) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><h2>NO GAMES YET</h2><p>Import game stats exported from Pick &amp; Roll to start tracking your season.<br>At game end, press <strong style="color:var(--accent)">EXPORT STATS</strong> in the game log.</p></div>';
+    return;
+  }
+
+  // Aggregate by player across all games
+  var playerSeason = {};
+  var teamMeta = {};
+
+  games.forEach(function(g) {
+    Object.values(g.players).forEach(function(p) {
+      if(!playerSeason[p.name]) {
+        playerSeason[p.name] = {
+          name: p.name, position: p.position, team: p.team, role: p.role,
+          games: 0,
+          ft:[0,0], two:[0,0], three:[0,0], pts:0,
+          ast:0, blk:0, reb:0, stl:0, fouls:0, to:0
+        };
+      }
+      var s = playerSeason[p.name];
+      s.games++;
+      addArr(s.ft, p.ft); addArr(s.two, p.two); addArr(s.three, p.three);
+      s.pts += p.pts||0; s.ast += p.ast||0; s.blk += p.blk||0;
+      s.reb += p.reb||0; s.stl += p.stl||0; s.fouls += p.fouls||0;
+      s.to += p.to||0;
+      if(!teamMeta[p.team]) teamMeta[p.team] = { role: p.role, pf:0, pa:0, wins:0, losses:0, fouls:0 };
+    });
+
+    // Team record
+    var sc = g.score.split('-');
+    var sa = parseInt(sc[0])||0, sb = parseInt(sc[1])||0;
+    // find team names
+    var teamNames = {};
+    Object.values(g.players).forEach(function(p){ teamNames[p.team] = p.role; });
+    Object.keys(teamNames).forEach(function(tn) {
+      if(!teamMeta[tn]) teamMeta[tn] = {role:teamNames[tn],pf:0,pa:0,wins:0,losses:0,fouls:0};
+      var isHome = teamNames[tn]==='home';
+      var myScore = isHome ? sa : sb;
+      var oppScore = isHome ? sb : sa;
+      teamMeta[tn].pf += myScore;
+      teamMeta[tn].pa += oppScore;
+      if(myScore > oppScore) teamMeta[tn].wins++;
+      else teamMeta[tn].losses++;
+    });
+
+    // Team fouls
+    Object.values(g.players).forEach(function(p) {
+      if(teamMeta[p.team]) teamMeta[p.team].fouls += (p.fouls||0);
+    });
+  });
+
+  var html = '<div class="season-view">';
+
+  // Group by team
+  var byTeam = {};
+  Object.values(playerSeason).forEach(function(p) {
+    if(!byTeam[p.team]) byTeam[p.team] = [];
+    byTeam[p.team].push(p);
+  });
+
+  Object.keys(byTeam).sort().forEach(function(teamName) {
+    var players = byTeam[teamName];
+    var tm = teamMeta[teamName] || {};
+    var isHome = tm.role === 'home';
+    var color = isHome ? 'var(--home)' : 'var(--away)';
+    var roleClass = isHome ? 'home' : 'away';
+    var record = (tm.wins||0) + 'W – ' + (tm.losses||0) + 'L';
+
+    html += '<div class="team-block season-totals">';
+    html += '<div class="team-header">';
+    html += '<div class="team-dot" style="background:' + color + '"></div>';
+    html += '<div class="team-name-big" style="color:' + color + '">' + teamName + '</div>';
+    html += '<span class="team-role ' + roleClass + '">' + (isHome?'HOME':'AWAY') + '</span>';
+    html += '<div style="margin-left:12px;font-family:Oswald,sans-serif;font-size:14px;color:var(--text2)">' + record + '</div>';
+    html += '<div style="margin-left:auto;font-family:Oswald,sans-serif;font-size:13px;color:var(--text2)">';
+    html += 'PF: <strong style="color:var(--green)">' + (tm.pf||0) + '</strong>&nbsp; PA: <strong style="color:var(--away)">' + (tm.pa||0) + '</strong>&nbsp; TEAM FOULS: <strong>' + (tm.fouls||0) + '</strong>';
+    html += '</div>';
+    html += '</div>';
+    html += renderPlayerTable(players, true);
+
+    // Season POTW
+    var potwKey = 'season_' + teamName;
+    var potwVal = potwNotes[potwKey] || '';
+    html += '<div class="potw-section">';
+    html += '<div class="potw-label">★ PLAYER OF THE SEASON</div>';
+    html += '<textarea class="potw-input" rows="1" placeholder="Enter player name and note..." onchange="savePotw(\'' + potwKey + '\', this.value)">' + escHtml(potwVal) + '</textarea>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  html += '</div>';
+  document.getElementById('main-content').innerHTML = html;
+}
+
+// ── TABLE RENDERER ────────────────────────────────────────────────────────
+function renderPlayerTable(players, isSeason) {
+  var html = '<table class="stats-table"><thead><tr>';
+  html += '<th class="left">PLAYER</th><th>POS</th>';
+  if(isSeason) html += '<th>GP</th>';
+  html += '<th>PTS</th>';
+  if(isSeason) html += '<th>PPG</th>';
+  html += '<th>1P M/A</th><th>2P M/A</th><th>3P M/A</th>';
+  html += '<th>AST</th><th>BLK</th><th>REB</th><th>STL</th><th>TO</th><th>FOULS</th>';
+  html += '</tr></thead><tbody>';
+
+  // Sort by pts descending
+  var sorted = players.slice().sort(function(a,b){ return (b.pts||0)-(a.pts||0); });
+
+  // Team totals
+  var tot = { gp:0, pts:0, ft:[0,0], two:[0,0], three:[0,0], ast:0, blk:0, reb:0, stl:0, to:0, fouls:0 };
+
+  sorted.forEach(function(p) {
+    var g = isSeason ? (p.games||1) : 1;
+    var ppg = (p.pts/g).toFixed(1);
+    tot.pts += p.pts||0; addArr(tot.ft, p.ft||[0,0]); addArr(tot.two, p.two||[0,0]); addArr(tot.three, p.three||[0,0]);
+    tot.ast+=p.ast||0; tot.blk+=p.blk||0; tot.reb+=p.reb||0; tot.stl+=p.stl||0; tot.to+=p.to||0; tot.fouls+=p.fouls||0;
+    if(isSeason) tot.gp = Math.max(tot.gp, p.games||0);
+
+    html += '<tr>';
+    html += '<td class="left">' + escHtml(p.name) + '</td>';
+    html += '<td class="pos">' + (p.position||'—') + '</td>';
+    if(isSeason) html += '<td>' + g + '</td>';
+    html += '<td class="pts">' + (p.pts||0) + '</td>';
+    if(isSeason) html += '<td style="color:var(--text2);font-size:12px">' + ppg + '</td>';
+    html += '<td class="shot-detail">' + shotStr(p.ft||[0,0]) + '</td>';
+    html += '<td class="shot-detail">' + shotStr(p.two||[0,0]) + '</td>';
+    html += '<td class="shot-detail">' + shotStr(p.three||[0,0]) + '</td>';
+    html += '<td class="' + (p.ast?'hi':'zero') + '">' + (p.ast||0) + '</td>';
+    html += '<td class="' + (p.blk?'hi':'zero') + '">' + (p.blk||0) + '</td>';
+    html += '<td class="' + (p.reb?'hi':'zero') + '">' + (p.reb||0) + '</td>';
+    html += '<td class="' + (p.stl?'hi':'zero') + '">' + (p.stl||0) + '</td>';
+    html += '<td class="' + (p.to?'':'zero') + '" style="' + (p.to?'color:var(--away)':'') + '">' + (p.to||0) + '</td>';
+    html += '<td class="' + (p.fouls?'':'zero') + '" style="' + (p.fouls?'color:var(--accent)':'') + '">' + (p.fouls||0) + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody><tfoot><tr>';
+  html += '<td class="left" colspan="' + (isSeason?3:2) + '">TEAM TOTALS</td>';
+  html += '<td class="pts">' + tot.pts + '</td>';
+  if(isSeason) html += '<td style="color:var(--accent);font-size:12px">' + (tot.gp>0?(tot.pts/tot.gp).toFixed(1):'—') + '</td>';
+  html += '<td class="shot-detail">' + shotStr(tot.ft) + '</td>';
+  html += '<td class="shot-detail">' + shotStr(tot.two) + '</td>';
+  html += '<td class="shot-detail">' + shotStr(tot.three) + '</td>';
+  html += '<td>' + tot.ast + '</td><td>' + tot.blk + '</td><td>' + tot.reb + '</td>';
+  html += '<td>' + tot.stl + '</td><td style="color:var(--away)">' + tot.to + '</td>';
+  html += '<td style="color:var(--accent)">' + tot.fouls + '</td>';
+  html += '</tr></tfoot></table>';
+  return html;
+}
+
+function shotStr(arr) {
+  if(!arr || arr[1]===0) return '<span class="zero">—</span>';
+  var pct = arr[1]>0 ? Math.round(arr[0]/arr[1]*100) : 0;
+  return '<span class="made">' + arr[0] + '</span>/' + arr[1] + '<br><span style="font-size:9px;color:var(--text3)">' + pct + '%</span>';
+}
+
+function addArr(a, b) {
+  if(!b) return;
+  a[0] += (b[0]||0); a[1] += (b[1]||0);
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function savePotw(key, val) {
+  potwNotes[key] = val;
+  save();
+}
+
+function clearAll() {
+  if(!confirm('Clear all game data? This cannot be undone.')) return;
+  games = []; potwNotes = {};
+  save(); currentView = 'season';
+  render();
+}
+
+// ── SAMPLE DATA ───────────────────────────────────────────────────────────
+function loadSample() {
+  var sample = {
+    date: '5/13/2026', score: '21-15', gameNum: 1,
+    players: {
+      p1: { name:'Bryson Nexus', team:'RAVENS', role:'home', position:'PG', pts:8, ft:[1,2], two:[2,4], three:[1,3], ast:4, blk:0, reb:1, stl:2, fouls:1, to:1 },
+      p2: { name:'Lyra Cosmyc', team:'RAVENS', role:'home', position:'SG', pts:6, ft:[0,0], two:[1,2], three:[1,2], ast:1, blk:1, reb:2, stl:0, fouls:2, to:0 },
+      p3: { name:'Tavian Ashford', team:'RAVENS', role:'home', position:'SF', pts:4, ft:[2,2], two:[1,3], three:[0,1], ast:2, blk:0, reb:3, stl:1, fouls:1, to:1 },
+      p4: { name:'Dawnveil Eryndoran', team:'RAVENS', role:'home', position:'PF', pts:2, ft:[0,0], two:[1,2], three:[0,0], ast:0, blk:2, reb:5, stl:0, fouls:3, to:0 },
+      p5: { name:'Garrison Vortex', team:'RAVENS', role:'home', position:'C', pts:1, ft:[1,2], two:[0,2], three:[0,0], ast:0, blk:3, reb:6, stl:0, fouls:2, to:1 },
+      p6: { name:'Ciara Goldmantle', team:'STORM', role:'away', position:'PG', pts:6, ft:[0,0], two:[1,3], three:[1,2], ast:3, blk:0, reb:1, stl:3, fouls:0, to:2 },
+      p7: { name:'Malik Phaser', team:'STORM', role:'away', position:'SG', pts:3, ft:[1,1], two:[1,2], three:[0,2], ast:1, blk:0, reb:0, stl:1, fouls:1, to:1 },
+      p8: { name:'Nova Silversong', team:'STORM', role:'away', position:'SF', pts:3, ft:[0,0], two:[0,1], three:[1,3], ast:2, blk:1, reb:2, stl:0, fouls:2, to:0 },
+      p9: { name:'Devon Darkhollow', team:'STORM', role:'away', position:'PF', pts:2, ft:[0,0], two:[1,2], three:[0,1], ast:0, blk:1, reb:4, stl:0, fouls:1, to:1 },
+      p10: { name:'Wado Calloway', team:'STORM', role:'away', position:'C', pts:1, ft:[1,2], two:[0,3], three:[0,0], ast:0, blk:2, reb:7, stl:0, fouls:3, to:0 }
+    }
+  };
+  sample.id = 'g' + Date.now();
+  sample.gameNum = games.length + 1;
+  games.push(sample);
+  save();
+  showMsg('Sample game loaded!', false);
+  render();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

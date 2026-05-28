@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PICK & ROLL — League Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0c0f;
+  --panel: #13151a;
+  --panel2: #1a1d26;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --accent: #f0c040;
+  --accent-dim: #a07c1a;
+  --red: #e04535;
+  --blue: #3a8cf5;
+  --green: #3ec87a;
+  --text: #e8e4d8;
+  --text2: #9098a8;
+  --text3: #505868;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',sans-serif; font-size:14px; min-height:100vh; }
+
+/* NAV */
+.nav { background:var(--panel); border-bottom:2px solid var(--accent); padding:0 20px; display:flex; align-items:center; gap:0; position:sticky; top:0; z-index:100; }
+.nav-title { font-family:'Oswald',sans-serif; font-size:18px; font-weight:700; letter-spacing:3px; color:var(--accent); padding:14px 20px 14px 0; border-right:1px solid var(--border); margin-right:12px; }
+.nav-tab { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:2px; padding:16px 16px; cursor:pointer; color:var(--text3); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
+.nav-tab:hover { color:var(--text2); }
+.nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.nav-actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.back-link { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--text3); text-decoration:none; padding:6px 12px; border:1px solid var(--border); border-radius:3px; transition:all 0.15s; }
+.back-link:hover { color:var(--text2); border-color:var(--border2); }
+
+/* BUTTONS */
+.btn { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:1.5px; padding:7px 16px; border-radius:3px; cursor:pointer; border:1px solid; transition:all 0.15s; }
+.btn-primary { background:var(--accent); border-color:var(--accent); color:#000; font-weight:700; }
+.btn-primary:hover { background:#ffd040; }
+.btn-ghost { background:transparent; border-color:var(--border); color:var(--text2); }
+.btn-ghost:hover { border-color:var(--border2); color:var(--text); }
+.btn-danger { background:transparent; border-color:rgba(224,69,53,0.4); color:var(--red); }
+.btn-danger:hover { background:rgba(224,69,53,0.1); }
+.btn-sm { padding:4px 10px; font-size:10px; }
+
+/* SCREENS */
+.screen { display:none; padding:24px; max-width:1100px; margin:0 auto; }
+.screen.active { display:block; }
+
+/* SECTION HEADER */
+.section-head { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.section-title { font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:3px; color:var(--accent); }
+.section-sub { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text3); letter-spacing:1px; }
+
+/* CARD */
+.card { background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-bottom:16px; }
+.card-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+.card-title { font-family:'Oswald',sans-serif; font-size:13px; letter-spacing:2px; }
+.card-body { padding:16px; }
+
+/* FORM */
+.form-group { margin-bottom:14px; }
+.form-label { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--text3); margin-bottom:5px; display:block; }
+.form-input { width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'Barlow Condensed',sans-serif; font-size:14px; }
+.form-input:focus { outline:none; border-color:var(--accent); }
+.form-select { width:100%; padding:8px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'Barlow Condensed',sans-serif; font-size:14px; cursor:pointer; }
+.form-select:focus { outline:none; border-color:var(--accent); }
+.form-row { display:flex; gap:12px; }
+.form-row .form-group { flex:1; }
+
+/* LEAGUE LIST */
+.league-card { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:16px; margin-bottom:12px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:all 0.15s; }
+.league-card:hover { border-color:var(--border2); background:var(--panel2); }
+.league-card.selected { border-color:var(--accent); }
+.league-name { font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:2px; }
+.league-meta { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text3); margin-top:3px; }
+.league-badge { font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:1px; padding:3px 8px; border-radius:2px; border:1px solid; margin-left:auto; }
+.badge-season { color:var(--blue); border-color:rgba(58,140,245,0.4); background:rgba(58,140,245,0.1); }
+.badge-playoffs { color:var(--accent); border-color:rgba(240,192,64,0.4); background:rgba(240,192,64,0.1); }
+.badge-complete { color:var(--green); border-color:rgba(62,200,122,0.4); background:rgba(62,200,122,0.1); }
+.badge-draft { color:var(--text3); border-color:var(--border); background:transparent; }
+
+/* STANDINGS TABLE */
+.standings-table { width:100%; border-collapse:collapse; }
+.standings-table th { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:1px; color:var(--text3); text-align:center; padding:8px; border-bottom:1px solid var(--border); }
+.standings-table th.left { text-align:left; }
+.standings-table td { font-family:'Oswald',sans-serif; font-size:14px; text-align:center; padding:9px 8px; border-bottom:1px solid rgba(255,255,255,0.04); }
+.standings-table td.left { text-align:left; }
+.standings-table tbody tr:hover { background:rgba(255,255,255,0.03); }
+.standings-table td.seed { color:var(--text3); font-size:11px; width:28px; }
+.standings-table td.team-name { font-weight:600; letter-spacing:1px; }
+.standings-table td.wins { color:var(--green); }
+.standings-table td.losses { color:var(--red); }
+.standings-table td.gb { color:var(--text3); font-size:12px; }
+.standings-table .playoff-line td { border-top:2px solid rgba(240,192,64,0.3); }
+
+/* SCHEDULE */
+.week-header { font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:3px; color:var(--text3); padding:10px 0 6px; border-bottom:1px solid var(--border); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.week-badge { font-family:'Share Tech Mono',monospace; font-size:9px; padding:2px 6px; border:1px solid var(--border); border-radius:2px; color:var(--text3); }
+.week-badge.current { border-color:rgba(240,192,64,0.4); color:var(--accent); background:rgba(240,192,64,0.08); }
+.matchup-row { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:4px; margin-bottom:4px; background:var(--panel); border:1px solid var(--border); }
+.matchup-row.played { opacity:0.7; }
+.matchup-team { flex:1; font-family:'Oswald',sans-serif; font-size:13px; letter-spacing:1px; }
+.matchup-team.home { text-align:right; }
+.matchup-vs { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text3); width:30px; text-align:center; }
+.matchup-score { font-family:'Oswald',sans-serif; font-size:16px; font-weight:600; width:80px; text-align:center; }
+.matchup-score.w { color:var(--green); }
+.matchup-score.l { color:var(--red); }
+.matchup-report { margin-left:auto; }
+.score-input { width:36px; padding:4px 6px; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:'Oswald',sans-serif; font-size:14px; text-align:center; }
+.score-input:focus { outline:none; border-color:var(--accent); }
+.matchup-inputs { display:flex; align-items:center; gap:4px; }
+
+/* BRACKET */
+.bracket-wrap { overflow-x:auto; padding-bottom:20px; }
+.bracket { display:flex; gap:0; align-items:flex-start; min-width:700px; }
+.bracket-round { display:flex; flex-direction:column; min-width:180px; }
+.bracket-round-title { font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:2px; color:var(--text3); text-align:center; padding:8px 0; margin-bottom:12px; border-bottom:1px solid var(--border); }
+.bracket-matchup { margin-bottom:20px; position:relative; }
+.bracket-team { background:var(--panel); border:1px solid var(--border); border-radius:3px; padding:8px 12px; display:flex; align-items:center; gap:8px; margin:2px 0; font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:1px; transition:all 0.15s; }
+.bracket-team.winner { border-color:rgba(240,192,64,0.5); background:rgba(240,192,64,0.08); color:var(--accent); }
+.bracket-team.loser { opacity:0.5; }
+.bracket-team .seed-num { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text3); width:16px; }
+.bracket-connector { width:20px; border-top:1px solid var(--border); border-right:1px solid var(--border); position:absolute; right:-20px; }
+.bracket-score-input { width:30px; margin-left:auto; padding:2px 4px; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:2px; color:var(--text); font-family:'Oswald',sans-serif; font-size:11px; text-align:center; }
+
+/* MODAL */
+.modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; display:none; align-items:center; justify-content:center; }
+.modal-bg.on { display:flex; }
+.modal { background:var(--panel); border:1px solid var(--border2); border-radius:8px; padding:24px; width:480px; max-width:95vw; max-height:90vh; overflow-y:auto; }
+.modal h2 { font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:3px; color:var(--accent); margin-bottom:16px; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
+
+/* EMPTY */
+.empty { text-align:center; padding:60px 20px; color:var(--text3); }
+.empty h2 { font-family:'Oswald',sans-serif; font-size:18px; letter-spacing:3px; color:var(--text2); margin-bottom:8px; }
+.empty p { font-size:13px; line-height:1.7; }
+
+/* GRID */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:600px) { .grid-2 { grid-template-columns:1fr; } }
+
+/* STAT PILL */
+.stat-pill { display:inline-flex; flex-direction:column; align-items:center; background:var(--panel2); border:1px solid var(--border); border-radius:4px; padding:8px 16px; min-width:80px; }
+.stat-pill-label { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:1px; color:var(--text3); }
+.stat-pill-val { font-family:'Oswald',sans-serif; font-size:22px; font-weight:600; line-height:1.2; }
+
+/* TABS inside screens */
+.inner-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.inner-tab { font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:1.5px; padding:8px 16px; cursor:pointer; color:var(--text3); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.15s; }
+.inner-tab:hover { color:var(--text2); }
+.inner-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* REPORT modal */
+.report-score-row { display:flex; align-items:center; gap:16px; justify-content:center; margin:20px 0; }
+.report-team-name { font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:2px; flex:1; text-align:center; }
+.report-score-input { width:60px; padding:10px 8px; font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; text-align:center; background:rgba(0,0,0,0.4); border:1px solid var(--border2); border-radius:4px; color:var(--text); }
+.report-score-input:focus { outline:none; border-color:var(--accent); }
+.report-dash { font-family:'Oswald',sans-serif; font-size:20px; color:var(--text3); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-title">PICK &amp; ROLL</div>
+  <div class="nav-tab active" onclick="showScreen('leagues')" id="ntab-leagues">LEAGUES</div>
+  <div class="nav-tab" onclick="showScreen('standings')" id="ntab-standings">STANDINGS</div>
+  <div class="nav-tab" onclick="showScreen('schedule')" id="ntab-schedule">SCHEDULE</div>
+  <div class="nav-tab" onclick="showScreen('playoffs')" id="ntab-playoffs">PLAYOFFS</div>
+  <div class="nav-actions">
+    <a href="index.html" class="back-link">&#8592; HUB</a>
+  </div>
+</div>
+
+<!-- LEAGUES SCREEN -->
+<div class="screen active" id="screen-leagues">
+  <div class="section-head">
+    <div>
+      <div class="section-title">LEAGUES</div>
+      <div class="section-sub">SELECT OR CREATE A LEAGUE</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="importLeague()">IMPORT JSON</button>
+      <button class="btn btn-primary" onclick="openCreateLeague()">+ CREATE LEAGUE</button>
+    </div>
+  </div>
+  <div id="leagues-list"></div>
+  <div id="leagues-empty" class="empty" style="display:none">
+    <h2>NO LEAGUES YET</h2>
+    <p>Create a new league to get started.<br>Leagues persist in your browser storage.</p>
+  </div>
+</div>
+
+<!-- STANDINGS SCREEN -->
+<div class="screen" id="screen-standings">
+  <div class="section-head">
+    <div>
+      <div class="section-title" id="standings-league-name">STANDINGS</div>
+      <div class="section-sub" id="standings-sub">SELECT A LEAGUE FIRST</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="exportLeague()">EXPORT JSON</button>
+      <button class="btn btn-ghost btn-sm" onclick="openEditLeague()">SETTINGS</button>
+    </div>
+  </div>
+  <div id="standings-content">
+    <div class="empty"><h2>NO LEAGUE SELECTED</h2><p>Go to LEAGUES tab to select or create a league.</p></div>
+  </div>
+</div>
+
+<!-- SCHEDULE SCREEN -->
+<div class="screen" id="screen-schedule">
+  <div class="section-head">
+    <div>
+      <div class="section-title">SCHEDULE</div>
+      <div class="section-sub" id="schedule-sub">SELECT A LEAGUE FIRST</div>
+    </div>
+    <div id="schedule-week-nav" style="margin-left:auto;display:flex;gap:8px;align-items:center"></div>
+  </div>
+  <div id="schedule-content">
+    <div class="empty"><h2>NO LEAGUE SELECTED</h2><p>Go to LEAGUES tab to select or create a league.</p></div>
+  </div>
+</div>
+
+<!-- PLAYOFFS SCREEN -->
+<div class="screen" id="screen-playoffs">
+  <div class="section-head">
+    <div>
+      <div class="section-title">PLAYOFFS</div>
+      <div class="section-sub" id="playoffs-sub">SELECT A LEAGUE FIRST</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" id="playoffs-start-btn" onclick="initPlayoffs()" style="display:none">GENERATE BRACKET</button>
+    </div>
+  </div>
+  <div id="playoffs-content">
+    <div class="empty"><h2>NO LEAGUE SELECTED</h2><p>Go to LEAGUES tab to select or create a league.</p></div>
+  </div>
+</div>
+
+<!-- CREATE LEAGUE MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal-body">
+  </div>
+</div>
+
+<!-- REPORT GAME MODAL -->
+<div class="modal-bg" id="report-bg">
+  <div class="modal" id="report-body">
+  </div>
+</div>
+
+<script>
+// ── STORAGE ─────────────────────────────────────────────────────────────────
+function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } }
+function lsSet(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+var LEAGUES_KEY = 'pr_leagues';
+var currentLeagueId = lsGet('pr_current_league') || null;
+
+function getLeagues() { return lsGet(LEAGUES_KEY) || []; }
+function saveLeagues(ls) { lsSet(LEAGUES_KEY, ls); }
+
+function getLeague(id) {
+  return getLeagues().find(function(l){ return l.id === id; }) || null;
+}
+
+function saveLeague(league) {
+  var ls = getLeagues();
+  var idx = ls.findIndex(function(l){ return l.id === league.id; });
+  if(idx >= 0) ls[idx] = league;
+  else ls.push(league);
+  saveLeagues(ls);
+}
+
+function deleteLeague(id) {
+  var ls = getLeagues().filter(function(l){ return l.id !== id; });
+  saveLeagues(ls);
+  if(currentLeagueId === id) { currentLeagueId = null; lsSet('pr_current_league', null); }
+}
+
+function selectLeague(id) {
+  currentLeagueId = id;
+  lsSet('pr_current_league', id);
+  renderAll();
+}
+
+function currentLeague() { return currentLeagueId ? getLeague(currentLeagueId) : null; }
+
+// ── SCREEN NAV ───────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('screen-' + id).classList.add('active');
+  document.getElementById('ntab-' + id).classList.add('active');
+}
+
+// ── LEAGUES LIST ─────────────────────────────────────────────────────────────
+function renderLeagues() {
+  var ls = getLeagues();
+  var list = document.getElementById('leagues-list');
+  var empty = document.getElementById('leagues-empty');
+  if(ls.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = ls.map(function(l) {
+    var selected = l.id === currentLeagueId;
+    var statusClass = {season:'badge-season',playoffs:'badge-playoffs',complete:'badge-complete',draft:'badge-draft'}[l.status]||'badge-draft';
+    var statusLabel = {season:'IN SEASON',playoffs:'PLAYOFFS',complete:'COMPLETE',draft:'DRAFT'}[l.status]||'DRAFT';
+    var teams = l.teams ? l.teams.length : 0;
+    var week = l.currentWeek || 0;
+    var totalWeeks = l.schedule ? l.schedule.length : 0;
+    return '<div class="league-card' + (selected?' selected':'') + '" onclick="selectLeague('' + l.id + '')">' +
+      '<div>' +
+        '<div class="league-name">' + escH(l.name) + '</div>' +
+        '<div class="league-meta">' + teams + ' TEAMS &nbsp;·&nbsp; ' + (l.settings&&l.settings.elimination==='double'?'DOUBLE ELIM':'SINGLE ELIM') + (totalWeeks?' &nbsp;·&nbsp; WEEK ' + week + '/' + totalWeeks:'') + '</div>' +
+      '</div>' +
+      '<span class="league-badge ' + statusClass + '">' + statusLabel + '</span>' +
+      '<div style="display:flex;gap:6px;margin-left:8px">' +
+        '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditLeague('' + l.id + '')">EDIT</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();confirmDelete('' + l.id + '')">DEL</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── STANDINGS ────────────────────────────────────────────────────────────────
+function computeStandings(league) {
+  var standings = {};
+  league.teams.forEach(function(t) {
+    standings[t.id] = { id:t.id, name:t.name, w:0, l:0, pf:0, pa:0 };
+  });
+  league.schedule.forEach(function(week) {
+    week.games.forEach(function(g) {
+      if(g.result) {
+        var hs = g.result.homeScore, as = g.result.awayScore;
+        if(standings[g.homeId]) { standings[g.homeId].pf+=hs; standings[g.homeId].pa+=as; if(hs>as) standings[g.homeId].w++; else standings[g.homeId].l++; }
+        if(standings[g.awayId]) { standings[g.awayId].pf+=as; standings[g.awayId].pa+=hs; if(as>hs) standings[g.awayId].w++; else standings[g.awayId].l++; }
+      }
+    });
+  });
+  return Object.values(standings).sort(function(a,b) {
+    var wa = a.w/(a.w+a.l||1), wb = b.w/(b.w+b.l||1);
+    if(wb !== wa) return wb - wa;
+    return (b.pf-b.pa) - (a.pf-a.pa); // tiebreaker: point diff
+  });
+}
+
+function renderStandings() {
+  var l = currentLeague();
+  var el = document.getElementById('standings-content');
+  var name = document.getElementById('standings-league-name');
+  var sub = document.getElementById('standings-sub');
+  if(!l) { name.textContent='STANDINGS'; sub.textContent='SELECT A LEAGUE FIRST'; el.innerHTML='<div class="empty"><h2>NO LEAGUE SELECTED</h2><p>Go to LEAGUES tab to select or create a league.</p></div>'; return; }
+  name.textContent = l.name.toUpperCase();
+  var gamesPlayed = 0;
+  l.schedule.forEach(function(w){ w.games.forEach(function(g){ if(g.result) gamesPlayed++; }); });
+  sub.textContent = 'WEEK ' + (l.currentWeek||0) + ' · ' + gamesPlayed + ' GAMES PLAYED';
+
+  var rows = computeStandings(l);
+  var topTeam = rows[0];
+  var html = '<div class="card"><table class="standings-table"><thead><tr>' +
+    '<th class="left" style="width:28px">#</th><th class="left">TEAM</th>' +
+    '<th>W</th><th>L</th><th>PCT</th><th>GB</th><th>PF</th><th>PA</th><th>DIFF</th>' +
+    '</tr></thead><tbody>';
+
+  var playoffLine = Math.ceil(l.teams.length / 2); // top half makes playoffs (all teams actually, but show divider)
+
+  rows.forEach(function(t, i) {
+    var pct = (t.w+t.l===0) ? '.000' : '.' + ('000'+Math.round(t.w/(t.w+t.l)*1000)).slice(-3);
+    var gb = i===0 ? '—' : (((topTeam.w - topTeam.l) - (t.w - t.l))/2).toFixed(1);
+    var diff = t.pf - t.pa;
+    var diffStr = (diff >= 0 ? '+' : '') + diff;
+    var diffCol = diff > 0 ? 'color:var(--green)' : diff < 0 ? 'color:var(--red)' : '';
+    html += '<tr>' +
+      '<td class="seed">' + (i+1) + '</td>' +
+      '<td class="left team-name">' + escH(t.name) + '</td>' +
+      '<td class="wins">' + t.w + '</td>' +
+      '<td class="losses">' + t.l + '</td>' +
+      '<td>' + pct + '</td>' +
+      '<td class="gb">' + gb + '</td>' +
+      '<td>' + t.pf + '</td>' +
+      '<td>' + t.pa + '</td>' +
+      '<td style="' + diffCol + '">' + diffStr + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // Summary pills
+  var totalGames = l.schedule.reduce(function(n,w){ return n + w.games.length; }, 0);
+  html = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">' +
+    pill('TEAMS', l.teams.length, '') +
+    pill('WEEKS', l.schedule.length, '') +
+    pill('GAMES PLAYED', gamesPlayed, 'color:var(--accent)') +
+    pill('REMAINING', totalGames - gamesPlayed, 'color:var(--text2)') +
+    pill('ELIM', l.settings.elimination==='double'?'DOUBLE':'SINGLE', 'color:var(--text3);font-size:14px') +
+  '</div>' + html;
+
+  el.innerHTML = html;
+}
+
+function pill(label, val, valStyle) {
+  return '<div class="stat-pill"><span class="stat-pill-label">' + label + '</span><span class="stat-pill-val" style="' + valStyle + '">' + val + '</span></div>';
+}
+
+// ── SCHEDULE ──────────────────────────────────────────────────────────────────
+var scheduleWeekView = 'current';
+
+function renderSchedule() {
+  var l = currentLeague();
+  var el = document.getElementById('schedule-content');
+  var sub = document.getElementById('schedule-sub');
+  var nav = document.getElementById('schedule-week-nav');
+
+  if(!l) { sub.textContent='SELECT A LEAGUE FIRST'; el.innerHTML='<div class="empty"><h2>NO LEAGUE SELECTED</h2></div>'; nav.innerHTML=''; return; }
+  sub.textContent = l.name.toUpperCase() + ' · ' + l.schedule.length + ' WEEKS';
+
+  // Week navigation
+  var weekNums = l.schedule.map(function(w,i){ return i+1; });
+  var curW = l.currentWeek || 1;
+  nav.innerHTML = '<button class="btn btn-ghost btn-sm" onclick="changeWeekView(-1)">&#8592;</button>' +
+    '<span style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text2);padding:0 8px">WEEK <span id="week-display">' + curW + '</span></span>' +
+    '<button class="btn btn-ghost btn-sm" onclick="changeWeekView(1)">&#8594;</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="changeWeekView('all')" style="margin-left:8px">ALL</button>';
+
+  renderWeek(l, curW);
+}
+
+var _weekDisplay = 1;
+function changeWeekView(dir) {
+  var l = currentLeague();
+  if(!l) return;
+  if(dir === 'all') { renderAllWeeks(l); return; }
+  _weekDisplay = Math.max(1, Math.min(l.schedule.length, _weekDisplay + dir));
+  var el = document.getElementById('week-display');
+  if(el) el.textContent = _weekDisplay;
+  renderWeek(l, _weekDisplay);
+}
+
+function renderWeek(l, weekNum) {
+  var week = l.schedule[weekNum-1];
+  if(!week) return;
+  var el = document.getElementById('schedule-content');
+  var isCurrent = weekNum === (l.currentWeek||1);
+  var html = '<div class="week-header"><span>WEEK ' + weekNum + '</span>' +
+    '<span class="week-badge' + (isCurrent?' current':'') + '">' + (isCurrent?'CURRENT':'COMPLETED') + '</span></div>';
+  html += week.games.map(function(g) { return renderMatchupRow(l, g, weekNum); }).join('');
+  el.innerHTML = html;
+}
+
+function renderAllWeeks(l) {
+  var el = document.getElementById('schedule-content');
+  var html = '';
+  l.schedule.forEach(function(week, i) {
+    var weekNum = i+1;
+    var isCurrent = weekNum === (l.currentWeek||1);
+    var allPlayed = week.games.every(function(g){ return g.result; });
+    html += '<div class="week-header"><span>WEEK ' + weekNum + '</span>' +
+      '<span class="week-badge' + (isCurrent?' current':allPlayed?' '  :'') + '">' + (isCurrent?'CURRENT':allPlayed?'COMPLETE':'UPCOMING') + '</span></div>';
+    html += week.games.map(function(g){ return renderMatchupRow(l, g, weekNum); }).join('');
+  });
+  el.innerHTML = html;
+}
+
+function renderMatchupRow(l, g, weekNum) {
+  var home = l.teams.find(function(t){ return t.id===g.homeId; });
+  var away = l.teams.find(function(t){ return t.id===g.awayId; });
+  if(!home||!away) return '';
+  if(g.result) {
+    var hw = g.result.homeScore > g.result.awayScore;
+    return '<div class="matchup-row played">' +
+      '<div class="matchup-team home" style="' + (hw?'color:var(--green)':'color:var(--text2)') + '">' + escH(home.name) + '</div>' +
+      '<div class="matchup-score ' + (hw?'w':'l') + '">' + g.result.homeScore + '</div>' +
+      '<div class="matchup-vs">—</div>' +
+      '<div class="matchup-score ' + (!hw?'w':'l') + '">' + g.result.awayScore + '</div>' +
+      '<div class="matchup-team" style="' + (!hw?'color:var(--green)':'color:var(--text2)') + '">' + escH(away.name) + '</div>' +
+      '<button class="btn btn-ghost btn-sm matchup-report" onclick="openReportGame('' + g.id + '',' + weekNum + ')">EDIT</button>' +
+    '</div>';
+  }
+  return '<div class="matchup-row">' +
+    '<div class="matchup-team home">' + escH(home.name) + '</div>' +
+    '<div class="matchup-vs">vs</div>' +
+    '<div class="matchup-team">' + escH(away.name) + '</div>' +
+    '<button class="btn btn-primary btn-sm matchup-report" onclick="openReportGame('' + g.id + '',' + weekNum + ')">REPORT</button>' +
+  '</div>';
+}
+
+// ── PLAYOFFS ──────────────────────────────────────────────────────────────────
+function renderPlayoffs() {
+  var l = currentLeague();
+  var el = document.getElementById('playoffs-content');
+  var sub = document.getElementById('playoffs-sub');
+  var startBtn = document.getElementById('playoffs-start-btn');
+
+  if(!l) { sub.textContent='SELECT A LEAGUE FIRST'; el.innerHTML='<div class="empty"><h2>NO LEAGUE SELECTED</h2></div>'; startBtn.style.display='none'; return; }
+  sub.textContent = l.name.toUpperCase();
+
+  // Check if season is done
+  var allPlayed = l.schedule.every(function(w){ return w.games.every(function(g){ return g.result; }); });
+
+  if(!l.playoffs || !l.playoffs.rounds) {
+    if(allPlayed) {
+      startBtn.style.display = 'inline-block';
+      el.innerHTML = '<div class="empty"><h2>SEASON COMPLETE</h2><p>All games played. Generate the playoff bracket to begin.</p></div>';
+    } else {
+      startBtn.style.display = 'none';
+      var remaining = l.schedule.reduce(function(n,w){ return n + w.games.filter(function(g){ return !g.result; }).length; }, 0);
+      el.innerHTML = '<div class="empty"><h2>SEASON IN PROGRESS</h2><p>' + remaining + ' games remaining before playoffs.</p></div>';
+    }
+    return;
+  }
+
+  startBtn.style.display = 'none';
+  renderBracket(l, el);
+}
+
+function initPlayoffs() {
+  var l = currentLeague();
+  if(!l) return;
+  var seeded = computeStandings(l);
+  var n = seeded.length;
+  // Create first round matchups: 1 vs n, 2 vs n-1, etc.
+  var round1 = [];
+  for(var i=0; i<Math.floor(n/2); i++) {
+    round1.push({ id:'r1m'+(i+1), homeId:seeded[i].id, awayId:seeded[n-1-i].id, homeScore:null, awayScore:null, winnerId:null });
+  }
+  var totalRounds = Math.ceil(Math.log2(n));
+  var rounds = [round1];
+  for(var r=1; r<totalRounds; r++) {
+    var prevRound = rounds[r-1];
+    var nextRound = [];
+    for(var j=0; j<Math.ceil(prevRound.length/2); j++) {
+      nextRound.push({ id:'r'+(r+1)+'m'+(j+1), homeId:null, awayId:null, homeScore:null, awayScore:null, winnerId:null });
+    }
+    rounds.push(nextRound);
+  }
+  l.playoffs = { rounds: rounds, elimination: l.settings.elimination };
+  l.status = 'playoffs';
+  saveLeague(l);
+  renderAll();
+}
+
+function renderBracket(l, container) {
+  var rounds = l.playoffs.rounds;
+  var roundNames = ['FIRST ROUND','QUARTERFINALS','SEMIFINALS','FINALS','CHAMPIONSHIP'];
+
+  var html = '<div class="bracket-wrap"><div class="bracket">';
+  rounds.forEach(function(round, ri) {
+    var rName = roundNames[Math.min(ri, roundNames.length-1)];
+    if(ri === rounds.length-1) rName = 'CHAMPIONSHIP';
+    html += '<div class="bracket-round"><div class="bracket-round-title">' + rName + '</div>';
+    round.forEach(function(m) {
+      var home = m.homeId ? l.teams.find(function(t){ return t.id===m.homeId; }) : null;
+      var away = m.awayId ? l.teams.find(function(t){ return t.id===m.awayId; }) : null;
+      var homeSeed = home ? computeStandings(l).findIndex(function(s){ return s.id===m.homeId; })+1 : '?';
+      var awaySeed = away ? computeStandings(l).findIndex(function(s){ return s.id===m.awayId; })+1 : '?';
+
+      html += '<div class="bracket-matchup" id="bm-' + m.id + '">';
+      html += '<div class="bracket-team' + (m.winnerId===m.homeId?' winner':m.winnerId?' loser':'') + '">' +
+        '<span class="seed-num">' + homeSeed + '</span>' +
+        '<span>' + (home?escH(home.name):'TBD') + '</span>' +
+        (home ? '<input class="bracket-score-input" type="number" placeholder="—" value="' + (m.homeScore!==null?m.homeScore:'') + '" onchange="updatePlayoffScore('' + m.id + '',this.value,true,' + ri + ')">' : '') +
+      '</div>';
+      html += '<div class="bracket-team' + (m.winnerId===m.awayId?' winner':m.winnerId?' loser':'') + '">' +
+        '<span class="seed-num">' + awaySeed + '</span>' +
+        '<span>' + (away?escH(away.name):'TBD') + '</span>' +
+        (away ? '<input class="bracket-score-input" type="number" placeholder="—" value="' + (m.awayScore!==null?m.awayScore:'') + '" onchange="updatePlayoffScore('' + m.id + '',this.value,false,' + ri + ')">' : '') +
+      '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Champion display
+  var lastRound = rounds[rounds.length-1];
+  var champion = lastRound && lastRound[0] && lastRound[0].winnerId;
+  if(champion) {
+    var champTeam = l.teams.find(function(t){ return t.id===champion; });
+    html += '<div style="text-align:center;padding:30px;margin-top:20px">' +
+      '<div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;color:var(--text3);margin-bottom:8px">🏆 CHAMPION</div>' +
+      '<div style="font-family:'Oswald',sans-serif;font-size:32px;font-weight:700;letter-spacing:4px;color:var(--accent)">' + (champTeam?escH(champTeam.name):'') + '</div>' +
+    '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function updatePlayoffScore(matchId, val, isHome, roundIdx) {
+  var l = currentLeague();
+  if(!l || !l.playoffs) return;
+  var match = null;
+  l.playoffs.rounds.forEach(function(r){ r.forEach(function(m){ if(m.id===matchId) match=m; }); });
+  if(!match) return;
+  if(isHome) match.homeScore = parseInt(val)||0;
+  else match.awayScore = parseInt(val)||0;
+  // Determine winner if both scores set
+  if(match.homeScore !== null && match.awayScore !== null) {
+    if(match.homeScore > match.awayScore) match.winnerId = match.homeId;
+    else if(match.awayScore > match.homeScore) match.winnerId = match.awayId;
+    // Advance winner to next round
+    advanceWinner(l, matchId, roundIdx);
+  }
+  saveLeague(l);
+  renderBracket(l, document.getElementById('playoffs-content'));
+}
+
+function advanceWinner(l, matchId, roundIdx) {
+  var round = l.playoffs.rounds[roundIdx];
+  var mIdx = round.findIndex(function(m){ return m.id===matchId; });
+  var match = round[mIdx];
+  if(!match || !match.winnerId) return;
+  var nextRound = l.playoffs.rounds[roundIdx+1];
+  if(!nextRound) { l.status='complete'; return; }
+  var nextMatchIdx = Math.floor(mIdx/2);
+  var nextMatch = nextRound[nextMatchIdx];
+  if(!nextMatch) return;
+  if(mIdx%2===0) nextMatch.homeId = match.winnerId;
+  else nextMatch.awayId = match.winnerId;
+}
+
+// ── CREATE / EDIT LEAGUE ──────────────────────────────────────────────────────
+function openCreateLeague() {
+  var html = '<h2>CREATE LEAGUE</h2>' +
+    '<div class="form-group"><label class="form-label">LEAGUE NAME</label><input class="form-input" id="cl-name" placeholder="e.g. Metro Classic 2026" maxlength="40"></div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">ELIMINATION FORMAT</label>' +
+        '<select class="form-select" id="cl-elim"><option value="single">Single Elimination</option><option value="double">Double Elimination</option></select></div>' +
+    '</div>' +
+    '<div class="form-group"><label class="form-label">TEAMS <span id="team-count-label" style="color:var(--accent)">0</span></label>' +
+      '<div id="team-inputs"></div>' +
+      '<button class="btn btn-ghost btn-sm" onclick="addTeamInput()" style="margin-top:8px">+ ADD TEAM</button>' +
+    '</div>' +
+    '<div class="modal-actions">' +
+      '<button class="btn btn-ghost" onclick="closeModal()">CANCEL</button>' +
+      '<button class="btn btn-primary" onclick="createLeague()">CREATE LEAGUE + SCHEDULE</button>' +
+    '</div>';
+  openModal(html);
+  // Pre-add 8 team slots
+  for(var i=0;i<8;i++) addTeamInput();
+}
+
+var _teamCount = 0;
+function addTeamInput() {
+  _teamCount++;
+  var div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:6px;margin-top:6px;align-items:center';
+  div.innerHTML = '<span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text3);width:20px">' + _teamCount + '</span>' +
+    '<input class="form-input team-name-input" placeholder="Team name" style="flex:1" maxlength="30">' +
+    '<button class="btn btn-danger btn-sm" onclick="this.parentElement.remove();updateTeamCount()">✕</button>';
+  document.getElementById('team-inputs').appendChild(div);
+  updateTeamCount();
+}
+
+function updateTeamCount() {
+  var n = document.querySelectorAll('.team-name-input').length;
+  var el = document.getElementById('team-count-label');
+  if(el) el.textContent = n;
+}
+
+function createLeague() {
+  var name = document.getElementById('cl-name').value.trim();
+  if(!name) { alert('Enter a league name'); return; }
+  var elim = document.getElementById('cl-elim').value;
+  var teamInputs = document.querySelectorAll('.team-name-input');
+  var teams = [];
+  teamInputs.forEach(function(inp) {
+    var n = inp.value.trim();
+    if(n) teams.push({ id: 'team_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name: n });
+  });
+  if(teams.length < 2) { alert('Add at least 2 teams'); return; }
+
+  var schedule = generateSchedule(teams);
+  var league = {
+    id: 'lg_' + Date.now(),
+    name: name,
+    teams: teams,
+    settings: { elimination: elim },
+    schedule: schedule,
+    currentWeek: 1,
+    playoffs: null,
+    status: 'season',
+    created: new Date().toISOString()
+  };
+  saveLeague(league);
+  selectLeague(league.id);
+  closeModal();
+  showScreen('standings');
+}
+
+// ── SCHEDULE GENERATION ───────────────────────────────────────────────────────
+function generateSchedule(teams) {
+  var n = teams.length;
+  var schedule = [];
+  var gameId = 0;
+
+  // Round-robin algorithm: each team plays every other team twice (home+away)
+  // Uses circle method for even n
+  var ids = teams.map(function(t){ return t.id; });
+  if(n % 2 === 1) ids.push('BYE');
+  var rounds = [];
+
+  // Generate one complete round-robin (each pair once)
+  for(var r=0; r<ids.length-1; r++) {
+    var round = [];
+    for(var i=0; i<ids.length/2; i++) {
+      var h = ids[i], a = ids[ids.length-1-i];
+      if(h !== 'BYE' && a !== 'BYE') round.push({h:h, a:a});
+    }
+    rounds.push(round);
+    // Rotate all except first
+    ids = [ids[0]].concat(ids.slice(-1)).concat(ids.slice(1,-1));
+  }
+
+  // Double: add reverse home/away
+  var allRounds = rounds.concat(rounds.map(function(r){ return r.map(function(g){ return {h:g.a, a:g.h}; }); }));
+
+  allRounds.forEach(function(roundGames, ri) {
+    var weekGames = roundGames.map(function(g) {
+      gameId++;
+      return { id:'g'+gameId, homeId:g.h, awayId:g.a, result:null };
+    });
+    schedule.push({ week: ri+1, games: weekGames });
+  });
+
+  return schedule;
+}
+
+// ── REPORT GAME ───────────────────────────────────────────────────────────────
+function openReportGame(gameId, weekNum) {
+  var l = currentLeague();
+  if(!l) return;
+  var week = l.schedule[weekNum-1];
+  if(!week) return;
+  var g = week.games.find(function(x){ return x.id===gameId; });
+  if(!g) return;
+  var home = l.teams.find(function(t){ return t.id===g.homeId; });
+  var away = l.teams.find(function(t){ return t.id===g.awayId; });
+
+  var html = '<h2>REPORT GAME — WEEK ' + weekNum + '</h2>' +
+    '<div class="report-score-row">' +
+      '<div class="report-team-name" style="color:var(--blue)">' + escH(home.name) + '<br><span style="font-size:10px;color:var(--text3);font-family:'Share Tech Mono',monospace">HOME</span></div>' +
+      '<input class="report-score-input" id="rpt-home" type="number" min="0" max="200" value="' + (g.result?g.result.homeScore:'') + '" placeholder="0">' +
+      '<div class="report-dash">—</div>' +
+      '<input class="report-score-input" id="rpt-away" type="number" min="0" max="200" value="' + (g.result?g.result.awayScore:'') + '" placeholder="0">' +
+      '<div class="report-team-name" style="color:var(--red)">' + escH(away.name) + '<br><span style="font-size:10px;color:var(--text3);font-family:'Share Tech Mono',monospace">AWAY</span></div>' +
+    '</div>' +
+    '<div class="modal-actions">' +
+      (g.result ? '<button class="btn btn-danger" onclick="clearResult('' + gameId + '',' + weekNum + ')">CLEAR RESULT</button>' : '') +
+      '<button class="btn btn-ghost" onclick="closeReport()">CANCEL</button>' +
+      '<button class="btn btn-primary" onclick="submitReport('' + gameId + '',' + weekNum + ')">CONFIRM RESULT</button>' +
+    '</div>';
+
+  document.getElementById('report-body').innerHTML = html;
+  document.getElementById('report-bg').classList.add('on');
+}
+
+function submitReport(gameId, weekNum) {
+  var hs = parseInt(document.getElementById('rpt-home').value);
+  var as = parseInt(document.getElementById('rpt-away').value);
+  if(isNaN(hs) || isNaN(as)) { alert('Enter scores for both teams'); return; }
+  if(hs === as) { alert('No ties allowed — enter different scores'); return; }
+  var l = currentLeague();
+  var g = l.schedule[weekNum-1].games.find(function(x){ return x.id===gameId; });
+  g.result = { homeScore:hs, awayScore:as };
+  // Advance week if all current week games done
+  var curWeek = l.schedule[l.currentWeek-1];
+  if(curWeek && curWeek.games.every(function(gm){ return gm.result; })) {
+    if(l.currentWeek < l.schedule.length) l.currentWeek++;
+    else l.status = 'playoffs';
+  }
+  saveLeague(l);
+  closeReport();
+  renderAll();
+}
+
+function clearResult(gameId, weekNum) {
+  var l = currentLeague();
+  var g = l.schedule[weekNum-1].games.find(function(x){ return x.id===gameId; });
+  g.result = null;
+  saveLeague(l);
+  closeReport();
+  renderAll();
+}
+
+// ── EDIT LEAGUE ───────────────────────────────────────────────────────────────
+function openEditLeague(lid) {
+  var l = getLeague(lid||currentLeagueId);
+  if(!l) return;
+  var html = '<h2>LEAGUE SETTINGS</h2>' +
+    '<div class="form-group"><label class="form-label">LEAGUE NAME</label>' +
+      '<input class="form-input" id="el-name" value="' + escH(l.name) + '" maxlength="40"></div>' +
+    '<div class="form-group"><label class="form-label">ELIMINATION FORMAT</label>' +
+      '<select class="form-select" id="el-elim">' +
+        '<option value="single"' + (l.settings.elimination==='single'?' selected':'') + '>Single Elimination</option>' +
+        '<option value="double"' + (l.settings.elimination==='double'?' selected':'') + '>Double Elimination</option>' +
+      '</select></div>' +
+    '<div class="form-group"><label class="form-label">STATUS</label>' +
+      '<select class="form-select" id="el-status">' +
+        ['draft','season','playoffs','complete'].map(function(s){ return '<option value="'+s+'"'+(l.status===s?' selected':'')+'>'+s.toUpperCase()+'</option>'; }).join('') +
+      '</select></div>' +
+    '<div class="modal-actions">' +
+      '<button class="btn btn-danger" onclick="confirmDelete('' + l.id + '');closeModal()">DELETE LEAGUE</button>' +
+      '<button class="btn btn-ghost" onclick="closeModal()">CANCEL</button>' +
+      '<button class="btn btn-primary" onclick="saveLeagueSettings('' + l.id + '')">SAVE</button>' +
+    '</div>';
+  openModal(html);
+}
+
+function saveLeagueSettings(lid) {
+  var l = getLeague(lid);
+  if(!l) return;
+  l.name = document.getElementById('el-name').value.trim() || l.name;
+  l.settings.elimination = document.getElementById('el-elim').value;
+  l.status = document.getElementById('el-status').value;
+  saveLeague(l);
+  closeModal();
+  renderAll();
+}
+
+// ── IMPORT / EXPORT ───────────────────────────────────────────────────────────
+function exportLeague() {
+  var l = currentLeague();
+  if(!l) { alert('Select a league first'); return; }
+  var json = JSON.stringify(l, null, 2);
+  var blob = new Blob([json], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = l.name.replace(/\s+/g,'_') + '_league.json';
+  a.click();
+}
+
+function importLeague() {
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = function(e) {
+    var f = e.target.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(ev) {
+      try {
+        var l = JSON.parse(ev.target.result);
+        if(!l.id || !l.teams || !l.schedule) throw new Error('Invalid league file');
+        saveLeague(l);
+        selectLeague(l.id);
+        alert('League imported: ' + l.name);
+      } catch(err) { alert('Import failed: ' + err.message); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────────────
+function confirmDelete(lid) {
+  var l = getLeague(lid);
+  if(!l) return;
+  if(!confirm('Delete league "' + l.name + '"? This cannot be undone.')) return;
+  deleteLeague(lid);
+  renderAll();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal(html) {
+  _teamCount = 0;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('on');
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('on'); }
+function closeReport() { document.getElementById('report-bg').classList.remove('on'); }
+document.getElementById('modal-bg').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+document.getElementById('report-bg').addEventListener('click', function(e){ if(e.target===this) closeReport(); });
+
+// ── UTIL ──────────────────────────────────────────────────────────────────────
+function escH(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderLeagues();
+  renderStandings();
+  renderSchedule();
+  renderPlayoffs();
+  // Init week display
+  var l = currentLeague();
+  _weekDisplay = l ? (l.currentWeek||1) : 1;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>
