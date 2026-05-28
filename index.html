@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PICK &amp; ROLL &#8212; College Basketball Simulator</title>
+<title>PICK &amp; ROLL v563 &#8212; College Basketball Simulator</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Oswald:wght@400;600;700&display=swap');
 :root{--bg:#0b0c0e;--surface:#13151a;--surface2:#1a1d24;--surface3:#22262f;--border:#2a2e3a;--border2:#363c4a;--accent:#f0c040;--accent-dim:#a07c1a;--red:#e04535;--blue:#3a8cf5;--green:#3ec87a;--text:#e8e4d8;--text2:#9098a8;--text3:#5a6070;}
@@ -230,6 +230,11 @@ input::placeholder{color:var(--text3);}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:24px;max-width:560px;width:90%;max-height:85vh;overflow-y:auto;}
 .modal h2{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);letter-spacing:3px;margin-bottom:14px;}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.fat-pips{display:inline-flex;gap:1px;flex-wrap:wrap;max-width:120px;vertical-align:middle;}
+.fat-pip{font-size:7px;color:var(--border2);line-height:1;}
+.fat-pip-full{color:var(--accent);}
+.fat-pip-maxed{color:var(--red)!important;}
+.sub-row-fatigued{opacity:0.5;cursor:not-allowed!important;}
 /* Substitution modal */
 .sub-row{padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;cursor:pointer;font-size:11px;margin-bottom:4px;transition:all .12s;}
 .sub-row:hover{border-color:var(--accent);}
@@ -399,93 +404,124 @@ input::placeholder{color:var(--text3);}
 
 /* ── MOBILE LAYOUT (portrait phone) ───────────────────────────────────── */
 @media (max-width: 600px) {
-  /* Hide sidebars — replaced by modals */
   .sidebar { display: none !important; }
-  /* Hide top toolbar clutter */
   .toolbar-row { display: none !important; }
-  /* Game body fills screen vertically */
-  .game-body { flex-direction: column; overflow: hidden; height: 100dvh; }
-  /* Court fills width, rotated 90° */
-  .court-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
+  .topbar .btn-xs { display: none !important; }
+  .topbar { flex-wrap: wrap !important; justify-content: center !important; padding: 2px 4px !important; }
+
+  /* Always rotate the court SVG on mobile */
   #court-svg {
-    transform: rotate(90deg);
-    transform-origin: center center;
-    width: 100vw !important;
-    height: calc(100vw * 520 / 900) !important;
+    transform: rotate(90deg) !important;
+    transform-origin: center center !important;
+    width: calc(100vw * 520 / 900) !important;
+    height: 100vw !important;
     max-width: none !important;
     max-height: none !important;
-    margin: auto;
-    display: block;
+    display: block !important;
   }
-  /* Log strip above bottom bar */
-  .mobile-log-strip {
+
+  /* Game layout — using body.game-active since we know that class fires */
+  body.game-active #s-game {
     display: flex !important;
-    flex-direction: column;
-    background: rgba(0,0,0,0.85);
-    border-top: 1px solid rgba(255,255,255,0.08);
-    padding: 4px 8px;
-    max-height: 60px;
-    overflow-y: auto;
-    font-size: 10px;
-    color: var(--text2);
-    flex-shrink: 0;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+    padding-bottom: 96px !important;
+    box-sizing: border-box !important;
   }
-  /* Bottom bar HOME / AWAY buttons */
+
+  body.game-active .game-body {
+    flex: 1 1 auto !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100vw !important;
+    min-height: 0 !important;
+  }
+
+  body.game-active .court-col {
+    width: 100vw !important;
+    height: calc(100vw * 520 / 900) !important;
+    overflow: visible !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* HUD */
+  .mobile-hud { display: none !important; }
+  body.game-active .mobile-hud {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 200 !important;
+    background: rgba(9,10,14,0.97) !important;
+    max-height: 96px !important;
+  }
+
+  /* Log strip */
+  .mobile-log-strip {
+    display: block !important;
+    height: 48px !important;
+    overflow: hidden !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    padding: 2px 8px !important;
+    font-size: 10px !important;
+    color: var(--text2) !important;
+    box-sizing: border-box !important;
+  }
+  .mobile-log-strip div {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Bottom bar */
   .mobile-bottom-bar {
     display: flex !important;
-    flex-direction: row;
-    height: 48px;
-    flex-shrink: 0;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    flex-direction: row !important;
+    height: 48px !important;
+    flex-shrink: 0 !important;
+    border-top: 1px solid rgba(255,255,255,0.1) !important;
   }
   .mobile-team-btn {
-    flex: 1;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 18px;
-    letter-spacing: 3px;
-    border: none;
-    cursor: pointer;
+    flex: 1 !important;
+    height: 48px !important;
+    border: none !important;
+    font-family: 'Bebas Neue', sans-serif !important;
+    font-size: 18px !important;
+    letter-spacing: 3px !important;
+    cursor: pointer !important;
   }
-  .mobile-team-btn-home {
-    background: rgba(42,110,232,0.15);
-    color: var(--blue);
-    border-right: 1px solid rgba(255,255,255,0.08);
-  }
-  .mobile-team-btn-away {
-    background: rgba(232,48,48,0.15);
-    color: var(--red);
-  }
-  /* Modal overlay for sidebar */
+  .mobile-team-btn-home { background: rgba(42,110,232,0.2) !important; color: #6699ff !important; }
+  .mobile-team-btn-away { background: rgba(232,48,48,0.2) !important; color: #ff6666 !important; }
+
+  /* Sidebar modals */
   .mobile-sidebar-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 999;
-    background: rgba(0,0,0,0.6);
-    align-items: flex-end;
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    z-index: 1001 !important;
+    background: rgba(0,0,0,0.6) !important;
+    align-items: flex-end !important;
   }
   .mobile-sidebar-modal.open { display: flex !important; }
   .mobile-sidebar-inner {
-    width: 100%;
-    max-height: 75vh;
-    overflow-y: auto;
-    background: var(--surface1);
-    border-radius: 14px 14px 0 0;
-    padding-bottom: env(safe-area-inset-bottom);
+    width: 100% !important;
+    max-height: 75vh !important;
+    overflow-y: auto !important;
+    background: var(--surface1) !important;
+    border-radius: 14px 14px 0 0 !important;
   }
-  /* Notify toast — fixed at top on mobile */
-  #notify-toast {
-    top: 8px !important;
-    bottom: auto !important;
-  }
-  /* Hide desktop-only elements */
-  .mobile-log-strip-desktop { display: none !important; }
+
+  #notify-toast { top: 8px !important; bottom: auto !important; }
 }
 /* On desktop, hide mobile-only elements */
 @media (min-width: 601px) {
@@ -493,6 +529,7 @@ input::placeholder{color:var(--text3);}
   .mobile-bottom-bar { display: none !important; }
   .mobile-sidebar-modal { display: none !important; }
 }
+.modal-card{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:24px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;}
 </style>
 </head>
 <body>
@@ -910,15 +947,6 @@ input::placeholder{color:var(--text3);}
           <button class="abtn blue" onclick="rollTeamDEF('a')">TEAM DEF</button>
           <button class="abtn red" onclick="rollTeamOFF('a')">TEAM OFF</button>
         </div></div>
-        <div class="agroup"><div class="agroup-title">Coach</div><div class="agrid">
-          <button class="abtn" onclick="setDefenseStrategy('man','a')">MAN 2 MAN</button>
-          <button class="abtn" onclick="setDefenseStrategy('zone','a')">ZONE DEF</button>
-          <button class="abtn span2" onclick="openManPairModal('a')">SET MAN2MAN</button>
-          <button class="abtn red span2" onclick="intentionalFoul('a')">INT FOUL</button>
-          <button class="abtn span2" style="color:#aaddff;border-color:rgba(100,180,255,0.4);background:rgba(100,180,255,0.08)" onclick="trySwingBall('a')">SWING BALL</button>
-          <button class="abtn" onclick="actTeam('a','to_f')">FULL T/O</button>
-          <button class="abtn" onclick="actTeam('a','to_20')">20-SEC T/O</button>
-        </div></div>
         <div class="agroup"><div class="agroup-title">Ref</div><div class="agrid">
           <div style="grid-column:span 2;display:flex;gap:4px;align-items:center;margin-bottom:3px">
             <span style="font-size:9px;color:var(--text3);white-space:nowrap">BD:</span>
@@ -927,6 +955,15 @@ input::placeholder{color:var(--text3);}
           </div>
           <button class="abtn span2" onclick="rollFoulTeam('a')" style="font-size:9px">ROLL FOUL CHECK</button>
           <div id="ldr-f2" style="grid-column:span 2;background:var(--surface3);border:1px solid var(--border);border-radius:3px;padding:4px;min-height:28px;display:flex;align-items:center;justify-content:center;font-size:11px"></div>
+        </div></div>
+        <div class="agroup"><div class="agroup-title">Coach</div><div class="agrid">
+          <button class="abtn" onclick="setDefenseStrategy('man','a')">MAN 2 MAN</button>
+          <button class="abtn" onclick="setDefenseStrategy('zone','a')">ZONE DEF</button>
+          <button class="abtn span2" onclick="openManPairModal('a')">SET MAN2MAN</button>
+          <button class="abtn red span2" onclick="intentionalFoul('a')">INT FOUL</button>
+          <button class="abtn span2" style="color:#aaddff;border-color:rgba(100,180,255,0.4);background:rgba(100,180,255,0.08)" onclick="trySwingBall('a')">SWING BALL</button>
+          <button class="abtn" onclick="actTeam('a','to_f')">FULL T/O</button>
+          <button class="abtn" onclick="actTeam('a','to_20')">20-SEC T/O</button>
         </div></div>
 <div class="agroup"><div class="agroup-title">Score</div><div class="agrid">
           <button class="abtn blue span2" onclick="pressScoreBtn('a',1)">+1 HOME</button>
@@ -1113,15 +1150,6 @@ input::placeholder{color:var(--text3);}
           <button class="abtn blue" onclick="rollTeamDEF('b')">TEAM DEF</button>
           <button class="abtn red" onclick="rollTeamOFF('b')">TEAM OFF</button>
         </div></div>
-        <div class="agroup"><div class="agroup-title">Coach</div><div class="agrid">
-          <button class="abtn" onclick="setDefenseStrategy('man','b')">MAN 2 MAN</button>
-          <button class="abtn" onclick="setDefenseStrategy('zone','b')">ZONE DEF</button>
-          <button class="abtn span2" onclick="openManPairModal('b')">SET MAN2MAN</button>
-          <button class="abtn red span2" onclick="intentionalFoul('b')">INT FOUL</button>
-          <button class="abtn span2" style="color:#aaddff;border-color:rgba(100,180,255,0.4);background:rgba(100,180,255,0.08)" onclick="trySwingBall('b')">SWING BALL</button>
-          <button class="abtn" onclick="actTeam('b','to_f')">FULL T/O</button>
-          <button class="abtn" onclick="actTeam('b','to_20')">20-SEC T/O</button>
-        </div></div>
         <div class="agroup"><div class="agroup-title">Ref</div><div class="agrid">
           <div style="grid-column:span 2;display:flex;gap:4px;align-items:center;margin-bottom:3px">
             <span style="font-size:9px;color:var(--text3);white-space:nowrap">BD:</span>
@@ -1130,6 +1158,15 @@ input::placeholder{color:var(--text3);}
           </div>
           <button class="abtn span2" onclick="rollFoulTeam('b')" style="font-size:9px">ROLL FOUL CHECK</button>
           <div id="rdr-f2" style="grid-column:span 2;background:var(--surface3);border:1px solid var(--border);border-radius:3px;padding:4px;min-height:28px;display:flex;align-items:center;justify-content:center;font-size:11px"></div>
+        </div></div>
+        <div class="agroup"><div class="agroup-title">Coach</div><div class="agrid">
+          <button class="abtn" onclick="setDefenseStrategy('man','b')">MAN 2 MAN</button>
+          <button class="abtn" onclick="setDefenseStrategy('zone','b')">ZONE DEF</button>
+          <button class="abtn span2" onclick="openManPairModal('b')">SET MAN2MAN</button>
+          <button class="abtn red span2" onclick="intentionalFoul('b')">INT FOUL</button>
+          <button class="abtn span2" style="color:#aaddff;border-color:rgba(100,180,255,0.4);background:rgba(100,180,255,0.08)" onclick="trySwingBall('b')">SWING BALL</button>
+          <button class="abtn" onclick="actTeam('b','to_f')">FULL T/O</button>
+          <button class="abtn" onclick="actTeam('b','to_20')">20-SEC T/O</button>
         </div></div>
 <div class="agroup"><div class="agroup-title">Score</div><div class="agrid">
           <button class="abtn red span2" onclick="pressScoreBtn('b',1)">+1 AWAY</button>
@@ -1162,7 +1199,13 @@ input::placeholder{color:var(--text3);}
           <div style="display:flex;gap:5px;align-items:center;margin-bottom:7px;flex-wrap:wrap"><span style="font-size:10px;color:var(--text3)">OFF</span><input type="number" id="rc-o" value="20" min="1" max="40" style="width:50px;padding:4px 6px;font-size:12px"><span style="font-size:10px;color:var(--text3)">DEF</span><input type="number" id="rc-d" value="20" min="1" max="40" style="width:50px;padding:4px 6px;font-size:12px"></div>
           <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:7px" onclick="rollContestTeam('b')">ROLL CONTEST</button>
           <div class="cresult" id="rdr-c">Enter stats and roll.</div>
-
+        </div>
+      </div>
+            <div id="rt-team" class="tab-body"><div id="rteam-panel"><div class="empty">No team loaded.</div></div></div>
+            <div id="rt-log" class="tab-body"><div id="rglog-full"><div class="empty">Events will appear here.</div></div></div>
+    </div>
+  </div>
+</div>
 
 <!-- LEGACY TEAM BUILDER -->
 <!-- TEAM EDITOR SCREEN -->
@@ -1313,20 +1356,10 @@ input::placeholder{color:var(--text3);}
 </div>
 
 
-  <!-- MOBILE ONLY: log strip + bottom bar + sidebar modals -->
-  <div class="mobile-log-strip" id="mobile-log-strip"></div>
-  <div class="mobile-bottom-bar">
-    <button class="mobile-team-btn mobile-team-btn-home" onclick="openMobileSidebar('a')">HOME</button>
-    <button class="mobile-team-btn mobile-team-btn-away" onclick="openMobileSidebar('b')">AWAY</button>
-  </div>
-  <!-- HOME modal -->
-  <div class="mobile-sidebar-modal" id="mobile-modal-a" onclick="closeMobileSidebar(event,'a')">
-    <div class="mobile-sidebar-inner" id="mobile-modal-inner-a"></div>
-  </div>
-  <!-- AWAY modal -->
-  <div class="mobile-sidebar-modal" id="mobile-modal-b" onclick="closeMobileSidebar(event,'b')">
-    <div class="mobile-sidebar-inner" id="mobile-modal-inner-b"></div>
-  </div>
+  <!-- Modal overlay -->
+<div id="notifs"></div>
+<div id="modal-bg" class="modal-bg"><div class="modal" id="modal-body"></div>
+</div>
 <script>
 // ── MOBILE LAYOUT ────────────────────────────────────────────────────────
 var _mobileModalOpen = null;
@@ -1336,17 +1369,39 @@ function isMobile() {
 }
 
 function openMobileSidebar(team) {
-  if(!isMobile()) return;
   var modal = document.getElementById('mobile-modal-'+team);
   var inner = document.getElementById('mobile-modal-inner-'+team);
   var sidebar = document.querySelector('.sidebar-'+(team==='a'?'home':'away'));
   if(!modal || !inner || !sidebar) return;
-  // Clone sidebar content into modal
+  // Clone sidebar content
+  var prevDisplay = sidebar.style.display;
+  sidebar.style.setProperty('display','block','important');
   inner.innerHTML = sidebar.innerHTML;
-  // Re-bind any onclick buttons (they already have onclick attrs — they work)
+  sidebar.style.setProperty('display', prevDisplay||'none', 'important');
+  // Fix tab switching in cloned modal — re-bind onclick to operate on inner div
+  inner.querySelectorAll('.tab').forEach(function(tab) {
+    tab.onclick = function() {
+      var oc = tab.getAttribute('onclick') || '';
+      var m = oc.match(/swTab[LR]\(event\s*,\s*['"]([^'"]+)['"]\)/);
+      if(!m) return;
+      var targetId = m[1];
+      inner.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
+      inner.querySelectorAll('.tab-body').forEach(function(b){ b.classList.remove('on'); });
+      tab.classList.add('on');
+      // Find target within inner by matching id suffix, not exact id
+      // (cloned elements may have duplicate ids)
+      var allBodies = inner.querySelectorAll('.tab-body');
+      allBodies.forEach(function(b){
+        if(b.id === targetId || b.getAttribute('id') === targetId) {
+          b.classList.add('on');
+        }
+      });
+    };
+  });
   modal.classList.add('open');
   _mobileModalOpen = team;
 }
+
 
 function closeMobileSidebar(e, team) {
   if(e && e.target !== document.getElementById('mobile-modal-'+team)) return;
@@ -1354,6 +1409,7 @@ function closeMobileSidebar(e, team) {
   if(modal) modal.classList.remove('open');
   _mobileModalOpen = null;
 }
+
 
 function closeMobileModal() {
   if(_mobileModalOpen) {
@@ -1365,14 +1421,14 @@ function closeMobileModal() {
 
 // Sync mobile log strip from main log
 function syncMobileLog() {
-  if(!isMobile()) return;
   var strip = document.getElementById('mobile-log-strip');
   var mainLog = document.getElementById('subcourt-log');
   if(!strip || !mainLog) return;
-  // Show last 3 log entries
-  var entries = mainLog.querySelectorAll('.log-entry');
-  var last3 = Array.from(entries).slice(-3);
-  strip.innerHTML = last3.map(function(e){return '<div>'+e.innerHTML+'</div>';}).join('');
+  var entries = mainLog.querySelectorAll('.lentry');
+  var last5 = Array.from(entries).slice(-5);
+  strip.innerHTML = last5.map(function(e){
+    return '<div style="padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.04)">'+e.innerHTML+'</div>';
+  }).join('');
   strip.scrollTop = strip.scrollHeight;
 }
 
@@ -2588,6 +2644,7 @@ let G = {
   lastActiveDefender: {a:null, b:null},
   doubleTeam: null,
   _dtPending: null,
+  paintMoves: {a:0, b:0}, // 3-second clock: moves while in Zone 1/5
   zonePairings: {}  // offPlayerId → defPlayerId, per-possession zone pairings
 };
 
@@ -2652,6 +2709,9 @@ function skipStealPass() {
 function resolvePassReceive(team, idx, player, pp) {
   G.passPending = null;
   G.stealPassPending = null;
+  G.holdDribble=false; G.freshDribble=true; G.dribbleLive=false;
+  if(!G.zone1Gate) G.zone1Gate={a:false,b:false}; G.zone1Gate[team]=false;
+  G.openShot=false;
   // Double team: if receiver is double teamed, log the open man opportunity
   if(G.doubleTeam && player && player.id===G.doubleTeam.offPlayerId) {
     addLog('🤜 Pass to double-teamed player! Both defenders contest at receiver\'s location','l-fo');
@@ -2722,7 +2782,7 @@ function chooseLookZone(zone) {
     return;
   }
   const lr = G.lookResult;
-  const zoneLabels = { zone1:'Zone 1', zone2:'Zone 2', zone3:'Zone 3', zone4:'Zone 4', back:'Back Court' };
+  const zoneLabels = { zone1:'Zone 1', zone2:'Zone 2', zone3:'Zone 3', zone4:'Zone 4', zone5:'Zone 5 (Under Basket)', back:'Back Court' };
   // Second OFF vs DEF contest to place in specific zone
   const rOff2 = d(30), rDef2 = d(30);
   const srOff2 = lr.srOff - rOff2, srDef2 = (lr.defPlayer ? derive(lr.defPlayer).DEF : 15) - rDef2;
@@ -2834,6 +2894,57 @@ function rollActiveDefense(team) {
   }
   if(_radDefId) G.lastActiveDefender[_radOT]={defId:_radDefId,defTeam:team};
   // Double team check — if handler is double teamed, use double team contest
+  // ── Head Fake resolution ─────────────────────────────────────────────
+  if(G.hfakePending && G.hfakePending.defTeam === team) {
+    var hfp = G.hfakePending; G.hfakePending = null;
+    var hfDefPs = G.teams[team].players.filter(function(px){return px.onCourt;});
+    var hfDefP = hfp.defPlayer || hfDefPs[0];
+    var hfDefDV = hfDefP ? derive(hfDefP) : {DEF:15};
+    var rDHF = d(30), srDHF = hfDefDV.DEF - rDHF;
+    setLastAction(team,'DEF',rDHF);
+    var hfResult = '🎭 HEAD FAKE ('+hfp.player.name+'): OFF d30→'+hfp.rOff+'(SR'+hfp.srOff+') vs '+(hfDefP?hfDefP.name:'Def')+' DEF d30→'+rDHF+'(SR'+srDHF+') — ';
+    if(rDHF===1) {
+      // DEF nat1: AUTO-CHARGE — immediate turnover, no foul check
+      var _hfChargeOpp = hfp.offTeam==='a'?'b':'a';
+      G.possession = _hfChargeOpp;
+      if(hfp.player) { G.fouls[hfp.offTeam].team++; statTO(hfp.player.id); }
+      addLog(hfResult+'⭐ DEF NAT 1 — AUTO-CHARGE! '+hfp.player.name+' — offensive foul · TURNOVER · '+G.teams[_hfChargeOpp].name+' inbounds','l-fo');
+      notify('AUTO-CHARGE — Turnover! '+G.teams[_hfChargeOpp].name+' ball','foul');
+      showContinueButton(_hfChargeOpp==='a'?'b':'a');
+    } else if(rDHF===30) {
+      // DEF nat30: reaching in, offense to FT
+      hfDefP && (G.pendingFoulOn={playerId:hfDefP.id,playerName:hfDefP.name,team:team,_foulerPid:hfDefP.id,_foulerTeam:team},G.foulCheckPending=true);
+      addLog(hfResult+'DEF NAT 30 — REACHING IN! '+(hfDefP?hfDefP.name:'Defender')+' foul · '+hfp.player.name+' to FT line','l-fo');
+      notify('Reaching In — '+hfp.player.name+' to FT line!','foul');
+    } else if(hfp.srOff >= srDHF) {
+      // SUCCESS
+      if(hfp.zone==='zone2') {
+        if(!G.zone1Gate) G.zone1Gate={a:false,b:false};
+        G.zone1Gate[hfp.offTeam]=true;
+        G._hfakeOffTeam = hfp.offTeam;
+        addLog(hfResult+'<b style="color:var(--green)">HEAD FAKE SUCCESS</b> · Zone 1 gate OPEN — handle immediately to enter Zone 1','l-ev');
+        notify('Head fake! Zone 1 gate open — handle NOW','score');
+      } else {
+        G._hfakeSemiOpen = true;
+        G._hfakeOffTeam = hfp.offTeam; // store for hfakeChooseZ2
+        var _hfBtns2 = '<button onclick="hfakeChoose3pt()" style="padding:1px 7px;font-size:10px;border-radius:3px;cursor:pointer;border:1px solid rgba(100,180,255,0.4);background:rgba(100,180,255,0.12);color:#6ab4ff">SEMI-OPEN 3PT (-5 BLK)</button> <button onclick="hfakeChooseZ2()" style="padding:1px 7px;font-size:10px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--text2)">FREE MOVE → Z2</button>';
+        addLog(hfResult+'<b style="color:var(--green)">HEAD FAKE SUCCESS</b> · Choose: '+_hfBtns2,'l-ev');
+        notify('Head fake success — choose your option','score');
+      }
+    } else {
+      // FAILURE — DEF wins
+      if(hfp.zone==='zone2') {
+        if(!G.zone1Gate) G.zone1Gate={a:false,b:false};
+        G.zone1Gate[hfp.offTeam]=false;
+        addLog(hfResult+'FAILED — Zone 1 blocked · handle out/around or pass to reset','l-ro');
+        notify('Head fake failed — Zone 1 blocked','foul');
+      } else {
+        addLog(hfResult+'FAILED — no effect','l-ro');
+        notify('Head fake failed','foul');
+      }
+    }
+    return;
+  }
   if(G.doubleTeam && G.doubleTeam.defTeam===team) {
     var _dtOffTeam=team==='a'?'b':'a';
     var _dtHandler=G.ballTok?G.teams[_dtOffTeam].players.filter(function(p){return p.onCourt;})[G.ballTok.idx]:null;
@@ -2886,10 +2997,17 @@ function rollActiveDefense(team) {
       // pendingFoulOn.team = defTeam (defender's team, blocked)
       // roller = offTeamRAD2 (handler's team)
       // playerId = handler (fouled player who goes to FT line)
-      var radHandler = G.handlePlayer || (G.teams[offTeamRAD2].players.filter(function(px){return px.onCourt;})[G.ballTok?G.ballTok.idx:0]);
-      G.pendingFoulOn={playerId:radHandler?radHandler.id:p.id,
-        playerName:radHandler?radHandler.name:p.name,
-        team:team,_foulerPid:p.id,_foulerTeam:team,_shootingFoul:false,_ftCount:1};
+      // radHandler: use ballTok (most reliable) then handlePlayer then AP index fallback
+      var _radBallPs = G.teams[offTeamRAD2].players.filter(function(px){return px.onCourt;});
+      var _radBallTokHandler = (G.ballTok && G.ballTok.team===offTeamRAD2)
+        ? _radBallPs.find(function(px,i){return i===G.ballTok.idx;}) : null;
+      var radHandler = _radBallTokHandler || G.handlePlayer || _radBallPs[G.ballTok?G.ballTok.idx:0];
+      G.pendingFoulOn={playerId:p.id,
+        playerName:p.name,
+        team:team,_foulerPid:p.id,_foulerTeam:team,
+        _ftShooter:radHandler?radHandler.id:null,
+        _ftShooterName:radHandler?radHandler.name:null,
+        _shootingFoul:true,_ftCount:1};
       G.foulCheckPending=true;
     } else {
       // Handler has lower SR = HANDLER is fouler
@@ -2982,6 +3100,34 @@ function rollTeamDEF(team) {
   G.pendingShot = null;
   G.reboundPending = null;
   G.stateHistory = [];
+    // TeamDEF crits
+    if(r === 1) {
+      // DEF nat1: instant foul on offense, turnover
+      var tdNat1Opp = lp.offTeam==='a'?'b':'a';
+      var tdNat1Handler = G.ballTok ? G.teams[lp.offTeam].players.filter(function(px){return px.onCourt;})[G.ballTok.idx] : null;
+      var tdNat1Def = getPairedDefender(lp.offTeam);
+      var tdNat1DefName = tdNat1Def ? tdNat1Def.name : 'Defender';
+      addLog('🛡 TEAM DEF NAT 1 — <b style="color:var(--red)">FOUL on '+tdNat1DefName+'</b> (defensive foul) — TURNOVER · '+G.teams[tdNat1Opp].name+' inbounds','l-fo');
+      notify('DEF nat1 — Foul on '+tdNat1DefName+'! Turnover','foul');
+      if(tdNat1Handler) statTO(tdNat1Handler.id);
+      if(tdNat1Def) commitFoul(lp.defTeam, tdNat1Def.id);
+      G.possession = tdNat1Opp; showContinueButton(tdNat1Opp==='a'?'b':'a'); return;
+    }
+    if(r === 30) {
+      // DEF nat30: intentional foul check — pick a random open player for FTs
+      var tdNat30FoulTeam = lp.offTeam==='a'?'b':'a';
+      var tdFtPlayer = lp.offPs[Math.floor(Math.random()*lp.offPs.length)];
+      var tdFtIdx = G.teams[lp.offTeam].players.filter(function(p){return p.onCourt;}).findIndex(function(p){return p.id===tdFtPlayer.id;});
+      G.pendingFoulOn = {
+        playerId: tdFtPlayer.id, playerName: tdFtPlayer.name, team: tdNat30FoulTeam,
+        _foulerPid: null, _foulerTeam: tdNat30FoulTeam,
+        _intentionalFoul: true, _ftCount: 2, _ftTeam: lp.offTeam, _ftPlayer: tdFtPlayer,
+        _noFoulOpenShot: true, _noFoulTarget: tdFtPlayer, _noFoulTargetIdx: tdFtIdx, _noFoulTargetTeam: lp.offTeam
+      };
+      G.foulCheckPending = true;
+      addLog('🛡 TEAM DEF NAT 30 — <b style="color:var(--red)">INTENTIONAL FOUL CHECK</b> · foul=2 FTs for '+tdFtPlayer.name+' + '+G.teams[lp.offTeam].name+' inbounds / no foul=open shot','l-fo');
+      notify('DEF nat30 — intentional foul check!','foul'); return;
+    }
     const offWins = lp.srOff >= sr; // tie = success for offense
     addLog(`🛡 TEAM DEF (${G.teams[team].name}): avg DEF ${avg}, d30→${r} → SR <b>${sr}</b> — OFF SR ${lp.srOff} vs DEF SR ${sr}`, 'l-ro');
     if (offWins) {
@@ -3139,7 +3285,7 @@ function renderLogEntry(e) {
 
 function addLog(msg, cls='') {
   snapshotState();
-  setTimeout(function(){if(typeof syncMobileLog==='function')syncMobileLog();},50);
+  setTimeout(syncMobileLog, 50);
   const ts = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
   G.log.unshift({ msg, cls, ts });
   const logHTML = G.log.slice(0,120).map(renderLogEntry).join('');
@@ -3220,6 +3366,84 @@ function rollFoulTeam(team) {
       pfo._shootingFoul = true;
       pfo._ftCount = (sa.type==='3pt') ? 3 : 2;
       if(G.shotJustScored){ pfo._ftCount = 1; pfo._andOne = true; }
+      else if(pfo._ftMissCount) { pfo._ftCount = pfo._ftMissCount; } // nat30 block miss: 2 or 3 FTs
+    }
+    // 5-second violation — turnover, no personal foul
+    if(pfo._5secViolation) {
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      statTO(pfo._foulerPid);
+      addLog('⏱ 5-SECOND VIOLATION — '+G.teams[pfo._foulerTeam||team].name+' loses ball · no personal foul','l-fo');
+      notify('5-second violation — turnover!','foul');
+      fiveSecondViolation(pfo._foulerTeam||team);
+      return;
+    }
+    // Off-ball foul — 2 FTs + fouled team keeps/retains possession
+    if(pfo._offBallFoul) {
+      var obFouledTeam = pfo._fouledTeam || (pfo.team==='a'?'b':'a');
+      var obFouledPid = pfo._fouledPid;
+      var obFouledPl = obFouledPid ? (G.teams[obFouledTeam].players.find(function(px){return px.id===obFouledPid;}) ) : null;
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      G._lookFoulPending = null;
+      addLog('🚨 OFF-BALL FOUL (intentional) — '+G.teams[obFouledTeam].name+' shoots 2 free throws · '+G.teams[obFouledTeam].name+' retains possession after','l-fo');
+      notify('Off-ball foul — 2 FTs + possession!','foul');
+      // Initiate FTs: find the fouled player and move them to FT line
+      var obFtPs = G.teams[obFouledTeam].players.filter(function(px){return px.onCourt;});
+      var obFtPl = obFouledPid ? obFtPs.find(function(px){return px.id===obFouledPid;}) : null;
+      if(!obFtPl) obFtPl = obFtPs[0];
+      var obFtIdx = obFtPs.findIndex(function(px){return px.id===(obFtPl?obFtPl.id:null);});
+      if(obFtPl) {
+        setActiveAndBall(obFouledTeam, obFtIdx, obFtPl.id);
+        var obFtX = obFouledTeam==='a' ? 703 : 197;
+        var obFtTid = 'T-'+obFouledTeam+'-'+obFtIdx;
+        var obFtEl = document.getElementById(obFtTid);
+        if(obFtEl && G.tokPos[obFtTid]) {
+          var obFtNov = offsetIfOverlap(obFtX, 260, obFtTid);
+          obFtEl.setAttribute('transform','translate('+obFtNov.x+','+obFtNov.y+')');
+          G.tokPos[obFtTid].x=obFtNov.x; G.tokPos[obFtTid].y=obFtNov.y;
+        }
+        G.pendingFT = {player:obFtPl, team:obFouledTeam, mode:'shooting', shotsLeft:2, shotsMade:0, keepPossession:true};
+        addLog('🎯 '+obFtPl.name+' to the free throw line — 2 shots · '+G.teams[obFouledTeam].name+' retains possession','l-ev');
+        notify(obFtPl.name+' shoots 2 FTs','score');
+      }
+      return;
+    }
+    // Intentional foul — 2 FTs for fouled team + inbound
+    if(pfo._intentionalFoul) {
+      var ifFtTeam = pfo._ftTeam;
+      var ifFtPlayer = pfo._ftPlayer;
+      var ifFtCount = pfo._ftCount || 2;
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      addLog('🚨 INTENTIONAL FOUL — '+G.teams[ifFtTeam].name+' shoots '+ifFtCount+' free throws · '+G.teams[ifFtTeam].name+' inbounds after','l-fo');
+      notify('INTENTIONAL FOUL — '+ifFtCount+' FTs!','foul');
+      // Set up FT sequence
+      if(ifFtPlayer) {
+        var ifFtPs = G.teams[ifFtTeam].players.filter(function(px){return px.onCourt;});
+        var ifFtIdx = ifFtPs.findIndex(function(px){return px.id===ifFtPlayer.id;});
+        setActiveAndBall(ifFtTeam, ifFtIdx, ifFtPlayer.id);
+        var ifFtX = ifFtTeam==='a' ? 703 : 197;
+        var ifFtTid = 'T-'+ifFtTeam+'-'+ifFtIdx;
+        var ifFtEl = document.getElementById(ifFtTid);
+        if(ifFtEl && G.tokPos[ifFtTid]) {
+          var ifFtNov = offsetIfOverlap(ifFtX, 260, ifFtTid);
+          ifFtEl.setAttribute('transform','translate('+ifFtNov.x+','+ifFtNov.y+')');
+          G.tokPos[ifFtTid].x=ifFtNov.x; G.tokPos[ifFtTid].y=ifFtNov.y;
+        }
+        G.pendingFT = {player:ifFtPlayer, team:ifFtTeam, mode:'shooting', shotsLeft:ifFtCount, shotsMade:0};
+        addLog('🎯 '+ifFtPlayer.name+' to the free throw line — '+ifFtCount+' shots','l-ev');
+        notify(ifFtPlayer.name+' shoots '+ifFtCount+' FTs','score');
+      }
+      return;
+    }
+    // Double dribble foul — turnover
+    if(pfo._doubleDribbleFoul) {
+      var ddOpp = pfo.team==='a'?'b':'a';
+      G.possession = ddOpp;
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      G.holdDribble=false; G.freshDribble=false; G.dribbleLive=false;
+      statTO(pfo.playerId||pfo._foulerPid);
+      addLog('🚫 DOUBLE DRIBBLE — '+G.teams[pfo.team].name+' ball lost · '+G.teams[ddOpp].name+' inbounds','l-fo');
+      notify('Double Dribble — Turnover!','foul');
+      showContinueButton(ddOpp==='a'?'b':'a'); return;
     }
     // Travel violation: no personal foul, just turnover at spot
     if(pfo._travelViolation) {
@@ -3253,6 +3477,7 @@ function rollFoulTeam(team) {
     commitFoul(foulTeam, foulPid);
   } else {
     addLog(`⚖️ Foul check d12 (${G.teams[team].name}) → ${r} → no foul`, 'l-ro');
+    syncFastBreak(); // re-show fast break bar now foul check resolved
     // Defender nat1 steal foul check — no foul = play on, ball already with defender
     if(pfo && pfo._defNat1Steal) {
       addLog('🎯 No foul — clean steal — play continues','l-ev');
@@ -3267,6 +3492,13 @@ function rollFoulTeam(team) {
       addLog('📨 No foul — force pass completes — '+fpr.player.name+' receives','l-ev');
       G.lookBothFailed=false; G.lastAction=null;
       resolvePassReceive(fpr.team, fpr.idx, fpr.player, {from:fprFrom, sr:30});
+      return;
+    }
+    // Travel/head-fake nat30 no-foul — no effect, play on
+    if(pfo && pfo._travelViolation) {
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      addLog('🎭 No foul — no travel called · '+G.teams[pfo._foulerTeam||pfo.team].name+': perform a different action','l-ro');
+      notify('No travel — play on, choose a different action','score');
       return;
     }
     // Block within-3 charge check resolved no foul — now show BD prompt
@@ -3288,6 +3520,22 @@ function rollFoulTeam(team) {
       notify(G.teams[G.pendingShot.defTeam].name+': press BLOCK','foul');
       return;
     }
+    // 5-second violation foul check — no foul = play on
+    if(G.pendingFoulOn && G.pendingFoulOn._5secViolation) {
+      var fivePfo = G.pendingFoulOn;
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      addLog('⚖️ No foul — defender boxed out cleanly · play continues','l-ro');
+      notify('No foul — play on','score');
+      return;
+    }
+    // Live-ball steal foul check resolved — no foul = play on, notify
+    if(G.pendingFoulOn && G.pendingFoulOn._stealFoulCheck) {
+      var sfp = G.pendingFoulOn;
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      addLog('⚖️ No foul on steal — play continues · '+G.teams[sfp._handlerTeam].name+' retains ball','l-ro');
+      notify('No foul — play on','score');
+      return;
+    }
     // STLD foul check resolved — now resolve handle contest
     if(G._stldPendingContest) {
       G._stldPendingContest = false;
@@ -3306,6 +3554,34 @@ function rollFoulTeam(team) {
       G.shotJustScored = false;
       var andOneScorer = G.shotActive ? G.shotActive.team : (team==='a'?'b':'a');
       showDeadBallSubPrompt(andOneScorer);
+    }
+    // Intentional foul check — no foul = open shot for target
+    if(G.pendingFoulOn && G.pendingFoulOn._noFoulOpenShot) {
+      var nfTarget = G.pendingFoulOn._noFoulTarget;
+      var nfIdx = G.pendingFoulOn._noFoulTargetIdx;
+      var nfTeam = G.pendingFoulOn._noFoulTargetTeam;
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      G.openShot = true;
+      if(nfIdx >= 0 && nfTeam) {
+        var nfBtns = _critZoneBtns('noFoulOpenShotZone', JSON.stringify(nfTeam)+','+nfIdx);
+        addLog('⚖️ NO FOUL — <b style="color:var(--green)">OPEN SHOT</b> for '+(nfTarget?nfTarget.name:'receiver')+' · place in any zone: '+nfBtns,'l-ev');
+        notify('No foul — open shot! Choose zone','score');
+      }
+      return;
+    }
+    // Double dribble crit — no foul called = random hustle
+    else if(G.pendingFoulOn && G.pendingFoulOn._doubleDribbleFoul) {
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      addLog('🔄 No foul on hold dribble crit — LOOSE BALL · Random Hustle!','l-fo');
+      notify('No foul — Random Hustle!','foul');
+      startRandomHustle(inBackCourt(G.myTeam));
+    }
+    // Double dribble crit — no foul = random hustle
+    else if(G.pendingFoulOn && G.pendingFoulOn._doubleDribbleFoul) {
+      G.pendingFoulOn = null; G.foulCheckPending = false;
+      addLog('🔄 No foul on hold dribble crit — LOOSE BALL · Random Hustle!','l-fo');
+      notify('No foul — Random Hustle!','foul');
+      startRandomHustle(inBackCourt(G.myTeam));
     }
     // Missed-shot foul check resolved no foul — rebound
     else if(G._missedShotFoulPending) {
@@ -3357,11 +3633,11 @@ function rollFoulTeam(team) {
       notify(G.teams[pos.offTeam].name+': roll BD ('+pos.bd+')','foul');
     }
   }
-  // Pending swat — resolve after foul check (charge = no swat flow)
+  // Pending swat — resolve after foul check (foul = charge = no swat flow)
   if(G.pendingSwat){
     const psw=G.pendingSwat; G.pendingSwat=null;
-    if(r<=3){
-      // Foul = charge — play dead, no swat hustle
+    if(is){
+      // Foul called = charge — play dead, no swat hustle
       addLog('🛡️ CHARGE — swat waved off, '+G.teams[psw.shotTeam==='a'?'b':'a'].name+' ball','l-fo');
       notify('CHARGE — no swat!','foul');
       G.possession=psw.shotTeam==='a'?'b':'a';
@@ -3492,18 +3768,26 @@ function rollBDTeam(team) {
   // SR-adjusted BD per rules:
   // Base: 20 defended, 15 uncontested
   // Shooter wins by N → BD -= N; Defender wins by N → BD += N
-  var bdBase = (G.pendingShot&&G.pendingShot._bdTarget) ? G.pendingShot._bdTarget
+  // Reveal hidden shot SR if this was a rolled-over-stat shot
+  if(G.pendingShot && G.pendingShot._rolledOverStat) {
+    addLog('📊 Shot SR revealed: <b>'+G.pendingShot.sr+'</b> — shot rolled over stat, off the mark','l-ro');
+    G.pendingShot._rolledOverStat = false; // only reveal once
+  }
+  var _hasBdTarget = (G.pendingShot && G.pendingShot._bdTarget);
+  var bdBase = _hasBdTarget ? G.pendingShot._bdTarget
     : (parseInt(document.getElementById(pfx+'bd-t').value)||20);
-  // Apply SR difference if we have both shot SR and block SR
+  // Apply SR difference if we have both shot SR and block SR (skip if _bdTarget set — already final)
   var shotSR_bd = (G.pendingShot && G.pendingShot.sr !== undefined) ? G.pendingShot.sr : G.lastShotSR;
   var blkSR_bd  = (G.pendingShot && G.pendingShot._blockSR !== undefined) ? G.pendingShot._blockSR : null;
+  if(_hasBdTarget) { shotSR_bd = null; blkSR_bd = null; } // bypass SR adjustment when target is fixed
   // SR < 0 means shot already failed — no BD needed
   if(shotSR_bd !== null && shotSR_bd !== undefined && shotSR_bd < 0) {
-    addLog('🎯 Shot MISSED (SR '+shotSR_bd+' — rolled over stat) — no basket','l-ro');
-    notify('Shot missed — rolled over stat','foul');
     var _bdOffTeam = G.pendingShot?(G.pendingShot.defTeam?(G.pendingShot.defTeam==='a'?'b':'a'):(team==='a'?'b':'a')):(team==='a'?'b':'a');
+    addLog('🎯 Shot MISSED (SR '+shotSR_bd+' — shot off the mark) — <span style="color:var(--accent)">REBOUND — both teams press REBOUND</span>','l-ro');
+    notify('Shot missed — REBOUND!','foul');
     G.pendingShot=null; G.lastShotSR=null; G._pendingBDFoul=null;
-    showContinueButton(_bdOffTeam==='a'?'b':'a');
+    G.reboundPending={a:null,b:null};
+    (function(){var ballEl=document.getElementById('ball-g');G.ballTok=null;if(ballEl){var bx=200+Math.random()*500,by=210+Math.random()*100;ballEl.setAttribute('transform','translate('+(bx-450)+','+(by-260)+')');}})();
     return;
   }
   if(shotSR_bd !== null && shotSR_bd !== undefined) {
@@ -3515,6 +3799,15 @@ function rollBDTeam(team) {
       // Uncontested: shooter SR reduces BD (open shot)
       bdBase = Math.round(bdBase - Math.max(0, shotSR_bd));
     }
+  }
+  // Heat check bonus — applied like specialty to bdBase
+  var _hcTeam2 = (G.pendingShot && G.pendingShot.defTeam) ? (G.pendingShot.defTeam==='a'?'b':'a') : (team==='a'?'b':'a');
+  var _hcEntry = G.heatCheck && G.heatCheck[_hcTeam2];
+  var _hcShooter = G.pendingShot ? G.pendingShot.player : null;
+  var _hcBonus = (_hcEntry && _hcShooter && _hcEntry.playerId===_hcShooter.id) ? _hcEntry.bonus : 0;
+  if(_hcBonus > 0) {
+    bdBase = Math.max(2, bdBase - _hcBonus);
+    addLog('🔥 HEAT CHECK bonus -'+_hcBonus+' to BD for '+_hcShooter.name,'l-ev');
   }
   var t = Math.max(2, Math.min(30, bdBase));
   const r = d(30), in_ = r > t;
@@ -3547,10 +3840,42 @@ function rollBDTeam(team) {
     }
     G.shotJustScored = true;
     G.shotActive = G.pendingShot ? {type: bdPts===3?'3pt':'mid', team:bdOffTeam, player:bdShooter} : G.shotActive;
+    // Heat check tracking — MID and 3PT only
+    if(bdShooter) {
+      if(!G.heatCheck) G.heatCheck={a:null,b:null};
+      var hcEntry = G.heatCheck[bdOffTeam];
+      if(hcEntry && hcEntry.playerId===bdShooter.id) {
+        // Same player — extend streak
+        hcEntry.streak++;
+        if(hcEntry.streak>=2 && hcEntry.bonus===0) {
+          hcEntry.bonus=1;
+          addLog('🔥 HEAT CHECK! '+bdShooter.name+' — +1 to next shot','l-sc');
+          notify(bdShooter.name+' is HEATING UP! 🔥','score');
+        } else if(hcEntry.streak>=3 && hcEntry.bonus===1) {
+          hcEntry.bonus=2;
+          addLog('🔥🔥 ON FIRE! '+bdShooter.name+' — +2 to all shots until a miss','l-sc');
+          notify(bdShooter.name+' is ON FIRE! 🔥🔥','score');
+        }
+      } else {
+        // New player takes over (or first make)
+        G.heatCheck[bdOffTeam]={playerId:bdShooter.id,streak:1,bonus:0};
+      }
+    }
     G.pendingShot = null;
     // _pendingBDFoul already set by block case — pressScoreBtn will consume it
     setPendingScore(bdOffTeam, bdPts, bdPts===3?'3-pointer':'field goal');
   } else {
+    // Reset heat check for this shooter on a miss
+    if(G.pendingShot && G.pendingShot.player && G.heatCheck) {
+      var _missShooter = G.pendingShot.player;
+      var _missTeam = (G.pendingShot.defTeam==='a'?'b':'a');
+      if(G.heatCheck[_missTeam] && G.heatCheck[_missTeam].playerId===_missShooter.id) {
+        if(G.heatCheck[_missTeam].bonus > 0) {
+          addLog('❄️ '+_missShooter.name+' — heat check ended','l-ro');
+        }
+        G.heatCheck[_missTeam]=null;
+      }
+    }
     // If foul was detected during the block contest (block fails within 3),
     // missed basket + foul = 1 FT for shooter
     var missedBDFoul = G._pendingBDFoul; G._pendingBDFoul = null;
@@ -3701,6 +4026,11 @@ function startRandomHustle(inBack) {
   G._deadBallSubTeam=undefined; G.pendingScore=null; G.modalRequired=null;
   closeModal();
   G.ballTok=null;
+  G.holdDribble=false; G.freshDribble=false; G.dribbleLive=false;
+  G.zone1Gate={a:false,b:false};
+  G.openShot=false;
+  G.heatCheck={a:null,b:null};
+  if(!G.fatigue) G.fatigue={enabled:false}; // {playerId,streak,bonus}
   const ballEl=document.getElementById('ball-g');
   if(ballEl){const bx=200+Math.random()*500,by=210+Math.random()*100;ballEl.setAttribute('transform','translate('+(bx-450)+','+(by-260)+')');}
   G.reboundPending={a:null,b:null};
@@ -3750,7 +4080,7 @@ function randYear() { return YEARS[Math.floor(Math.random()*4)]; }
 
 function mkPlayer() {
   return { id:uid(), name:'Player', height:"6'6\"", position:'SF', year:randYear(), ftPct:genFTPct(), specialty:null, specialty2:null,
-    stats:{SHT:15,HND:15,BLK:15,PAS:15,RBD:15,STL:15,HUS:15}, onCourt:false };
+    stats:{SHT:15,HND:15,BLK:15,PAS:15,RBD:15,STL:15,HUS:15}, onCourt:false, fat:0, fatPips:0 };
 }
 
 // Large unique name pools — Team A draws from first half, Team B from second
@@ -3761,13 +4091,40 @@ const BBALL_FIRST_NAMES = [
     "Aaliyah","Brianna","Ciara","Deja","Erica","Fantasia","Gabrielle","Halley","Imani","Jasmine","Kiara","Latasha","Monique","Nadia","Octavia","Portia","Quanisha","Renee","Simone","Tiffany","Unique","Veronica","Whitney","Xavia","Yolanda","Zaria","Aliyah","Breanna","Chloe","Danielle","Essence","Fallon","Gia","Hadiya","Ivory","Janelle","Kezia","Lashonda","Monet","Nia","Precious","Raven","Shaniqua","Tierra","Tamara","Shayla","Keandra","Lakeisha","Destinee","Chanelle","Ayanna","Brielle","Shanique",
     // Sci-fi & Fantasy
     "Galadriel","Aragorn","Legolas","Gandalf","Theron","Kaelen","Zephyr","Oryn","Tavian","Eryndor","Sylvara","Aelindra","Caelum","Draven","Erevan","Faolan","Gideon","Hadrius","Isadora","Jareth","Kaelthas","Lyraniel","Malachar","Naeris","Orvyn","Perindel","Quellan","Rhaegos","Sable","Talindra","Umbral","Vesper","Wraithborn","Xandrel","Ysolde","Zandris","Zephon","Kael","Ryker","Jaxen","Vance","Orion","Zaren","Calix","Daxon","Triton","Nexus","Quasar","Blazar","Pulsar","Halcyon","Vega","Altair","Sirius","Rigel","Lyra","Phaser","Proton","Axiom","Vector","Cipher","Flux","Nova","Zenith","Apex","Ion","Thrax","Gorvin","Krix","Zoth","Yorn","Draxar","Vexor","Korrigan","Tyzan","Grom","Skrel","Vael","Xuri","Qarl","Thrynn","Zelkor","Brix","Dravon","Ganthor","Helix","Vesperus","Calderon","Morrigan","Seraphon","Valdris","Nightshade","Asheron","Crestfall","Darkwind","Emberveil","Frostmourne","Grimoire","Hexen","Inkara","Jadewing","Kovalyn","Lorekeeper","Mysticor","Nocturn","Obsidian",
+    // Historical & world religion figures
+    "Hannibal","Kublai","Methuselah","Saladin","Genghis","Attila","Ramesses","Leonidas","Achilles","Odysseus",
+    "Gilgamesh","Nebuchadnezzar","Ptolemy","Hadrian","Scipio","Vercingetorix","Alaric","Boudicca",
+    "Cleopatra","Zenobia","Nefertiti","Hatshepsut","Meritaten","Isadora","Theodora","Roxana",
+    "Charlemagne","Tamerlane","Suleiman","Aurangzeb","Akbar","Ashoka","Chandragupta","Skanderbeg",
+    "Vlad","Sigurd","Ragnar","Bjorn","Leif","Ivar","Harald","Rollo","Ulfric","Gunnar","Sigrid",
+    "Kali","Durga","Indra","Varuna","Shiva","Arjuna","Bhima","Drona","Karna","Yudhisthira",
+    "Ezekiel","Obadiah","Hezekiah","Jehoshaphat","Zachariah","Bartholomew","Thaddeus","Matthias",
+    "Cassander","Perdiccas","Antigonus","Seleucus","Pyrrhus","Eumenes","Lysimachus",
+    "Spartacus","Crassus","Verres","Catiline","Jugurtha","Viriathus","Arminius","Caractacus",
+    "Epaminondas","Themistocles","Alcibiades","Pausanias","Lysander","Brasidas","Xenophon",
+    // Historical last-name-as-first (d'Arc style)
+    "Joan","Jeanne","Blanche","Eleanor","Isabeau","Marguerite","Alienor",
+    "Salome","Magdalene","Miriam","Deborah","Judith","Esther","Bathsheba",
     // Female fantasy names
     "Seraphina","Thessaly","Vyndara","Aelith","Calindra","Eirene","Morwenna","Zephyrine","Lyranith","Noctura","Solenne","Vaelith","Astraea","Bryndis","Caladwen","Dawnveil","Elyndra","Feyara","Greymourn","Hollowstar","Illyria","Jasanthis","Korinna","Lunara","Maelindra","Nyxara","Ophyris","Phantara","Quelindra","Rivenmoor","Solvara","Thornveil"
   ];
 const BBALL_LAST_NAMES = [
     "Washington","Jefferson","Hamilton","Madison","Harrington","Pennington","Worthington","Coleman","Holloway","Calloway","Galloway","Stringer","Springer","Hayward","Finney","Paxton","Fulton","Bowman","Morrow","Worthy","Drummond","Birch","Diallo","Mosely","Randle","Portis","Garland","Mobley","Sexton","Maxey","Cunningham","Holman","Briggs","Griggs","Carrington","Barrington","Kensington","Booker","Tatum","Waiters","Exum","Clarkson","Hardaway","Nwaba","Vonleh","Quickley","Okoro","Suggs","Kuminga","Clayton","Dalton","Walton","Bolton","Colton","Holton","Milton","Tilton","Burks","Perks","Quirks","Crowder","Payne","Wayne","Lane","Crane","Bane","Cane","Vane","Gordon","Monroe","Tillman","Dillman","Millman","Willman","Spencer","Freeman","Reynolds","Barrett","Garrett","Jarrett","Harden","Garden","Warden","Porter","Bridges","Crawford","Wheeler","Forbes","Collins","Whitfield","Blackwood","Ashford","Bradford","Clifford","Stafford","Stanford","Stratford","Oxford","Wexford","Pemberton","Atherton","Henderson","Robertson","Patterson","Richardson","Williamson","Dupont","Laforge","Beaumont","Delacroix","Fontaine","Leblanc","Moreau","Rousseau","Okafor","Afolabi","Adeyemi","Olawale","Babatunde","Okonkwo","Nwosu","Emeka","Chukwu","Gillespie","Mackenzie","Fitzpatrick","O'Brien","Gallagher","Donnelly","McCarthy","Flanagan",
     // Sci-fi & Fantasy
-    "Brightblade","Darkhollow","Stormwind","Ironveil","Shadowmere","Dawnbringer","Frostweaver","Goldmantle","Hawkridge","Ironsong","Jadehaven","Kingsbane","Lightbringer","Moonsorrow","Nightwhisper","Oakenshield","Pyreforge","Quicksilver","Ravenmoor","Silversong","Thornwood","Umbermist","Voidwalker","Wildbourne","Xendral","Yaelborne","Zephyrholt","Phaser","Blaster","Pulsar","Quasar","Nexus","Axiom","Vector","Cipher","Vortex","Zenith","Starhaven","Voidborn","Nebula","Comet","Warpfield","Hyperion","Gravitas","Photon","Neutron","Proton","Andromedan","Galaxian","Solarian","Celestian","Astralborn","Cosmyc","Starfall","Moonrise","Sunstrike","Dawnfall","Thraxian","Gorvenian","Zothian","Vexorian","Krixian","Dravonian","Ganthorian","Helixian","Brixian","Skrelian","Xandrel","Zandrian","Talindran","Naerisean","Eryndoran","Aelindran","Caeluman","Dravenic","Umbralian","Vesperan","O'Phaser","O'Starborn","O'Voidwalk","O'Nexus","O'Galaxian","MacStorm","MacVoid","MacNova","MacQuasar","MacBlazar","von Darkhollow","von Stormveil","von Ironborn","van Voidmere","van Nexuston","della Starra","della Frostmere"
+    "Brightblade","Darkhollow","Stormwind","Ironveil","Shadowmere","Dawnbringer","Frostweaver","Goldmantle","Hawkridge","Ironsong","Jadehaven","Kingsbane","Lightbringer","Moonsorrow","Nightwhisper","Oakenshield","Pyreforge","Quicksilver","Ravenmoor","Silversong","Thornwood","Umbermist","Voidwalker","Wildbourne","Xendral","Yaelborne","Zephyrholt","Phaser","Blaster","Pulsar","Quasar","Nexus","Axiom","Vector","Cipher","Vortex","Zenith","Starhaven","Voidborn","Nebula","Comet","Warpfield","Hyperion","Gravitas","Photon","Neutron","Proton","Andromedan","Galaxian","Solarian","Celestian","Astralborn","Cosmyc","Starfall","Moonrise","Sunstrike","Dawnfall","Thraxian","Gorvenian","Zothian","Vexorian","Krixian","Dravonian","Ganthorian","Helixian","Brixian","Skrelian","Xandrel","Zandrian","Talindran","Naerisean","Eryndoran","Aelindran","Caeluman","Dravenic","Umbralian","Vesperan","O'Phaser","O'Starborn","O'Voidwalk","O'Nexus","O'Galaxian","MacStorm","MacVoid","MacNova","MacQuasar","MacBlazar","von Darkhollow","von Stormveil","von Ironborn","van Voidmere","van Nexuston","della Starra","della Frostmere",
+    "d'Arc","Churchill","Bonaparte","Cromwell","Marlborough","Wellington",
+    "Barbarossa","Plantagenet","Hapsburg","Romanov","Medici","Borgia","Sforza","Visconti",
+    "Saladin","Tamerlane","Suleiman","Mehmed","Murad","Bayezid","Selim","Ibrahim",
+    "Priam","Agamemnon","Achilles","Hector","Odysseus","Diomedes","Patroclus",
+    "Ironside","Longsword","Strongbow","Redbeard","Blackbeard","Whitecloak","Goldspear",
+    "Peacemaker","Warborn","Oathkeeper","Lionheart","Dragonborn","Firebrand","Stormborn",
+    "Barca","Scipio","Fabius","Metellus","Cassius","Brutus","Crassus","Pompey",
+    "Khalid","Tariq","Uqba","Baibars","Zengi","Timur","Nur ad-Din",
+    "Montfort","Godfrey","Tancred","Templar","Hospitaller",
+    "MacAlpin","MacDuff","MacBeth","MacDonald","O'Neill","O'Brien","O'Connell",
+    "von Clausewitz","von Moltke","von Bismarck","von Blucher",
+    "de Gaulle","de Montfort","de Bohun","de Clare","de Burgh","de Vere",
+    "ibn Battuta","ibn Rushd","ibn Sina","ibn Khaldun","al-Rashid","al-Mansur"
   ];
 
 function genPlayerName(usedNames) {
@@ -3798,6 +4155,7 @@ function autoFill() {
     p.name = genPlayerName(usedAutoNames); usedAutoNames.add(p.name); p.position = pos[i]; p.height = genHeight(pos[i]);
     STATS.forEach(k => p.stats[k] = best2d30());
     assignSpecialty(p); p.ftPct=genFTPct();
+    p.fat = 10 + d(10); p.fatPips = 0;
     p.onCourt = false;
     team.players.push(p);
   }
@@ -3923,7 +4281,136 @@ function onTname() { G.teams[G.editTeam].name = document.getElementById('tname-i
 function show(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+id).classList.add('active');
+  // Show/hide mobile game UI
+  if(id === 'game') document.body.classList.add('game-active');
+  else document.body.classList.remove('game-active');
+  if(id==='game') setTimeout(enforceMobileLayout, 300);
 }
+
+function hfakeChoose3pt() {
+  G._hfakeSemiOpen = true;
+  addLog('🎭 SEMI-OPEN 3PT — defender at -5 BLK on next shot · press 3PT to shoot','l-ev');
+  notify('Semi-open 3PT — shoot now!','score');
+}
+
+function hfakeChooseZ2() {
+  G._hfakeSemiOpen = false;
+  if(!G.ballTok) return;
+  var _hfTeam = G._hfakeOffTeam || G.ballTok.team;
+  G._hfakeOffTeam = null;
+  moveTokenToZone(_hfTeam, G.ballTok.idx, 'zone2');
+  moveBallToToken(_hfTeam, G.ballTok.idx);
+  addLog('🎭 FREE MOVE → Zone 2 · Head Fake again from Zone 2 to enter Zone 1','l-ev');
+  notify('Moved to Zone 2','score');
+  useMv(1);
+}
+
+
+function chooseCritOpenZone(zone) {
+  var cp = G._critOpenPending;
+  if(!cp) return;
+  G._critOpenPending = null;
+  // Place target in chosen zone
+  var actualZone = zone === 'zone3_or_4' ? 'zone3' : zone;
+  moveTokenToZone(cp.targetTeam, cp.targetIdx, actualZone);
+  // PAS(30) vs target's defender HUS contest
+  var pasHUS = cp.defPlayer ? (cp.defDV.HUS || cp.defPlayer.stats.HUS || 10) : 10;
+  var rPas = d(30), srPas = 30 - rPas;
+  var rHus = d(30), srHus = pasHUS - rHus;
+  var zoneLabel = {zone1:'Zone 1',zone2:'Zone 2',zone3:'Zone 3',zone4:'Zone 4',back:'Back Court'}[actualZone]||actualZone;
+  if(srPas >= srHus) {
+    // Passer wins: open shot, skip block, go to BD
+    G.openShot = true;
+    G.ballTok = {team: cp.targetTeam, idx: cp.targetIdx};
+    G.freshDribble = true; G.holdDribble = false;
+    addLog('🎯 CRITICALLY OPEN PASS ('+cp.passer.name+' → '+cp.target.name+'): PAS(30) d30→'+rPas+'(SR'+srPas+') vs '+(cp.defPlayer?cp.defPlayer.name:'Def')+' HUS d30→'+rHus+'(SR'+srHus+') — <b style="color:var(--green)">PASSER WINS</b> · '+cp.target.name+' OPEN in '+zoneLabel+' · shoot for OPEN SHOT (no block — goes straight to BD)','l-ev');
+    notify(cp.target.name+' OPEN SHOT in '+zoneLabel+'!','score');
+  } else {
+    // Defender catches up: placed in zone, no open shot
+    G.ballTok = {team: cp.targetTeam, idx: cp.targetIdx};
+    G.freshDribble = true; G.holdDribble = false;
+    addLog('🎯 CRITICALLY OPEN PASS ('+cp.passer.name+' → '+cp.target.name+'): PAS(30) d30→'+rPas+'(SR'+srPas+') vs '+(cp.defPlayer?cp.defPlayer.name:'Def')+' HUS d30→'+rHus+'(SR'+srHus+') — <b>DEFENDER CATCHES UP</b> · '+cp.target.name+' placed in '+zoneLabel+' · no open shot','l-ro');
+    notify('Defender catches up — no open shot','foul');
+  }
+}
+
+
+function noFoulOpenShotZone(zone, team, idx) {
+  moveTokenToZone(team, idx, zone);
+  G.openShot = true;
+  G.ballTok = {team: team, idx: idx};
+  G.freshDribble = true;
+  var zoneLabel = {zone1:'Zone 1',zone2:'Zone 2',zone3:'Zone 3',zone4:'Zone 4',back:'Back Court'}[zone]||zone;
+  var pl = G.teams[team].players.filter(function(p){return p.onCourt;})[idx];
+  addLog('📍 '+(pl?pl.name:'Player')+' placed in '+zoneLabel+' — OPEN SHOT · no block possible · shoot straight to BD','l-ev');
+  notify('Open shot in '+zoneLabel+' — shoot now!','score');
+}
+
+
+function _critZoneBtns(fnName, extraArgs) {
+  var zones = ['zone1','zone2','zone3','zone4','back'];
+  var labels = {zone1:'Zone 1',zone2:'Zone 2',zone3:'Zone 3',zone4:'Zone 4',back:'Back Court'};
+  return zones.map(function(z) {
+    // Use single-quoted args in onclick to avoid double-quote collision with HTML attribute
+    var args = extraArgs ? ("'"+z+"',"+extraArgs) : ("'"+z+"'");
+    return '<button onclick="'+fnName+'('+args+')" style="padding:2px 9px;font-size:10px;border-radius:3px;cursor:pointer;border:1px solid rgba(62,200,122,0.4);background:rgba(62,200,122,0.12);color:var(--green);margin:0 2px">'+labels[z]+'</button>';
+  }).join(' ');
+}
+
+
+function applyFatiguePips(pts) {
+  if(!G.fatigue || !G.fatigue.enabled) return;
+  ['a','b'].forEach(function(team) {
+    G.teams[team].players.forEach(function(p) {
+      if(!p.fat) p.fat = 10 + d(10);
+      if(p.fatPips === undefined) p.fatPips = 0;
+      if(p.onCourt) {
+        // On court: gain pips
+        p.fatPips = Math.min(p.fat, p.fatPips + pts);
+      } else if(p.fatPips > 0) {
+        // Benched with pips: drain pips
+        p.fatPips = Math.max(0, p.fatPips - pts);
+      }
+    });
+  });
+  refreshFatiguePips();
+}
+
+function refreshFatiguePips() {
+  // Update pip displays in sidebar and team panels
+  ['a','b'].forEach(function(team) {
+    G.teams[team].players.forEach(function(p) {
+      var el = document.getElementById('fat-pips-'+p.id);
+      if(el) el.innerHTML = renderFatPips(p);
+    });
+  });
+}
+
+function renderFatPips(p) {
+  if(!p.fat) return '';
+  var fat = p.fat, pips = p.fatPips || 0;
+  var full = pips >= fat;
+  var html = '<span class="fat-pips" title="Fatigue: '+pips+'/'+fat+'">';
+  for(var i=0; i<fat; i++) {
+    html += '<span class="fat-pip'+(i<pips?' fat-pip-full':'')+(full?' fat-pip-maxed':'')+'">●</span>';
+  }
+  html += '</span>';
+  return html;
+}
+
+function checkFatigueForced() {
+  // Returns list of teams with on-court players at full fatigue
+  if(!G.fatigue || !G.fatigue.enabled) return [];
+  var forced = [];
+  ['a','b'].forEach(function(team) {
+    var fatigued = G.teams[team].players.filter(function(p) {
+      return p.onCourt && p.fat && p.fatPips >= p.fat;
+    });
+    if(fatigued.length > 0) forced.push({team:team, players:fatigued});
+  });
+  return forced;
+}
+
 
 function goBuilder() {
   G.editTeam = G.role==='guest' ? 'b' : 'a';
@@ -4096,7 +4583,6 @@ function startGame() {
 
 function quickStart() {
   G.role = 'host'; G.myTeam = 'a'; G.roomCode = 'LOCAL';
-  // Only auto-fill slots that haven't had a team uploaded
   var hasA = G.teams.a.players && G.teams.a.players.some(function(p){return p.onCourt;});
   var hasB = G.teams.b.players && G.teams.b.players.some(function(p){return p.onCourt;});
   G.editTeam = 'a';
@@ -4104,7 +4590,20 @@ function quickStart() {
   G.editTeam = 'b';
   if(!hasB){ G.teams.b.name = 'VISITORS'; autoFill(); }
   G.editTeam = 'a';
-  startLocal();
+  // Fatigue mode prompt
+  document.getElementById('modal-body').innerHTML = `
+    <h2 style="text-align:center;margin-bottom:12px">🔥 FATIGUE RULES</h2>
+    <p style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:18px">
+      Players accumulate fatigue pips as points are scored.<br>
+      Full track = forced substitution.<br>
+      Sub out early for a pip drain bonus.
+    </p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-primary" onclick="G.fatigue={enabled:true};closeModal();startLocal();">✅ PLAY WITH FATIGUE</button>
+      <button class="btn btn-ghost" onclick="G.fatigue={enabled:false};closeModal();startLocal();">❌ NO FATIGUE</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('on');
+  G.modalRequired = 'fatigue_choice';
 }
 
 function startLocal() {
@@ -4119,6 +4618,7 @@ function startLocal() {
   renderPips();
   // Start with tipoff chooser overlay
   showTipoffChooser();
+  setTimeout(enforceMobileLayout, 600);
   addLog('🏀 Game ready — choose tip-off players', 'l-ev');
 }
 
@@ -4173,8 +4673,10 @@ function launchTipoff() {
   closeModal();
   notify('GAME ON! 🏀', 'score');
   addLog('🏀 Game started!', 'l-ev');
+  setTimeout(syncMobileLog, 200);
   // Auto-run tipoff with chosen players
   actTeam('a', 'tipoff');
+  setTimeout(enforceMobileLayout, 200);
 }
 
 // ════════════════════════════════════════════
@@ -4184,8 +4686,8 @@ const ZONE_POS = {
   // A attacks RIGHT (right basket), B attacks LEFT (left basket)
   // Zone 3 = just outside 3pt arc (perimeter side, not touching arc)
   // Arc wings at ~x=607 (A side) and ~x=293 (B side)
-  a: { back:{x:260,y:260}, zone4:{x:480,y:260}, zone3:{x:590,y:200}, zone2:{x:645,y:210}, zone1:{x:770,y:260} },
-  b: { back:{x:640,y:260}, zone4:{x:420,y:260}, zone3:{x:310,y:200}, zone2:{x:255,y:210}, zone1:{x:130,y:260} }
+  a: { back:{x:260,y:260}, zone4:{x:480,y:260}, zone3:{x:590,y:200}, zone2:{x:645,y:210}, zone1:{x:770,y:260}, zone5:{x:703,y:260} },
+  b: { back:{x:640,y:260}, zone4:{x:420,y:260}, zone3:{x:310,y:200}, zone2:{x:255,y:210}, zone1:{x:130,y:260}, zone5:{x:197,y:260} }
 };
 function offsetIfOverlap(x, y, excludeTid) {
   const RADIUS = 32; // increased for better separation
@@ -4556,8 +5058,63 @@ function mkTok(player, team, idx, pos) {
       }
       const rOff = d(30), rDef = d(30);
       const srOff = lp.dv.OFF - rOff, srDef = defDV.DEF - rDef;
-      const offWins = srOff >= 0 && srOff >= srDef; // offense must succeed AND beat defender; tie = offense wins
       const diff = Math.abs(srOff - srDef);
+
+      // ── CRIT RESULTS ──────────────────────────────────────────────────
+      if(rDef === 1) {
+        // DEF nat1: instant foul on offense, turnover
+        var defNat1OppTeam = offTeam==='a'?'b':'a';
+        // DEF nat1: foul committed BY look target (player)
+        var dn1FoulName = player ? player.name : 'Look target';
+        addLog('👁 LOOK ('+lp.player.name+'): DEF ⭐ NAT 1 — <b style="color:var(--red)">FOUL by '+dn1FoulName+'</b> (look target charges) — TURNOVER · '+G.teams[defNat1OppTeam].name+' inbounds','l-fo');
+        notify('DEF nat1 — Foul by '+dn1FoulName+'! Turnover','foul');
+        G.possession = defNat1OppTeam;
+        if(lp.player) statTO(lp.player.id);
+        if(player) commitFoul(offTeam, player.id);
+        showContinueButton(defNat1OppTeam==='a'?'b':'a');
+        return;
+      }
+      if(rOff === 30) {
+        // OFF nat30: foul on offense, turnover
+        var offNat30OppTeam = offTeam==='a'?'b':'a';
+        // OFF nat30: foul committed BY look target (player), turnover
+        var off30FoulName = player ? player.name : 'Look target';
+        addLog('👁 LOOK ('+lp.player.name+'): OFF 💀 NAT 30 — <b style="color:var(--red)">FOUL by '+off30FoulName+'</b> (look target charges) — TURNOVER · '+G.teams[offNat30OppTeam].name+' inbounds','l-fo');
+        notify('OFF nat30 — Foul by '+off30FoulName+'! Turnover','foul');
+        G.possession = offNat30OppTeam;
+        if(lp.player) statTO(lp.player.id);
+        if(player) commitFoul(offTeam, player.id);
+        showContinueButton(offNat30OppTeam==='a'?'b':'a');
+        return;
+      }
+      if(rDef === 30) {
+        // DEF nat30: foul check → foul = intentional foul (2 FTs + inbound for look target)
+        var defNat30FoulTeam = offTeam==='a'?'b':'a';
+        G.pendingFoulOn = {
+          playerId: player.id, playerName: player.name, team: defNat30FoulTeam,
+          _foulerPid: defPlayer ? defPlayer.id : null, _foulerTeam: defNat30FoulTeam,
+          _intentionalFoul: true, _ftCount: 2, _ftTeam: offTeam, _ftPlayer: player,
+          _noFoulOpenShot: true, _noFoulTarget: player, _noFoulTargetIdx: idx, _noFoulTargetTeam: team
+        };
+        G.foulCheckPending = true;
+        addLog('👁 LOOK ('+lp.player.name+'): DEF 💀 NAT 30 — <b style="color:var(--red)">INTENTIONAL FOUL CHECK</b> on '+(defPlayer?defPlayer.name:'defender')+' · foul=2 FTs for '+player.name+' + '+G.teams[offTeam].name+' inbounds / no foul=open shot','l-fo');
+        notify('DEF nat30 — intentional foul check!','foul');
+        return;
+      }
+      if(rOff === 1) {
+        // OFF nat1: choose any zone, then PAS(30) vs target defender HUS
+        // Store pending state for zone choice
+        G._critOpenPending = {
+          passer: lp.player, passerDV: lp.dv, target: player, targetIdx: idx, targetTeam: team,
+          defPlayer: defPlayer, defDV: defDV, offTeam: offTeam
+        };
+        var critZoneBtns = _critZoneBtns('chooseCritOpenZone');
+        addLog('👁 LOOK ('+lp.player.name+'): OFF ⭐ NAT 1 — <b style="color:var(--green)">CRITICALLY OPEN!</b> '+player.name+' found open · Choose zone: '+critZoneBtns,'l-ev');
+        notify('CRITICALLY OPEN — choose zone for '+player.name,'score');
+        return;
+      }
+
+      const offWins = srOff >= 0 && srOff >= srDef; // offense must succeed AND beat defender; tie = offense wins
       if (offWins) {
         // Determine allowed zones based on passer location
         const passerPos = G.ballTok ? G.tokPos['T-'+G.ballTok.team+'-'+G.ballTok.idx] : null;
@@ -4587,11 +5144,14 @@ function mkTok(player, team, idx, pos) {
             // Foul is between the TARGET (player) and TARGET's DEFENDER (defPlayer)
             // Passer is not involved
             if(srOff < srDef){
-              // Target lower SR — target (cutter) fouled defender (illegal cut/push)
-              // Offensive foul — turnover, no FT, not a charge (no ball handler)
-              // Fouler = target (team), defTeam rolls foul check
-              G.pendingFoulOn={playerId:player.id,playerName:player.name,
-                team:team,_offensiveFoul:true,_foulerPid:player.id,_foulerTeam:team};
+              // Target lower SR — target (cutter) fouled defender (off-ball offensive foul)
+              // Defender's team gets 2 FTs + possession
+              G.pendingFoulOn={playerId:defPlayer?defPlayer.id:null,playerName:defPlayer?defPlayer.name:'Defender',
+                team:team,_foulerPid:player.id,_foulerTeam:team,
+                _offBallFoul:true,_ftCount:2,_keepPossession:true,
+                _fouledTeam:defTeam,_fouledPid:defPlayer?defPlayer.id:null};
+              G._lookFoulPending={foulerPid:player.id,foulerName:player.name,foulerTeam:team,
+                fouledPid:defPlayer?defPlayer.id:null,fouledName:defPlayer?defPlayer.name:'Defender',fouledTeam:defTeam};
               G.foulCheckPending=true;
             } else {
               // Defender lower SR — defender fouled the cutter (holding/grabbing off-ball)
@@ -4600,7 +5160,8 @@ function mkTok(player, team, idx, pos) {
               // fouled player = target (player) who gets the FT
               G.pendingFoulOn={playerId:player.id,playerName:player.name,
                 team:defTeam,_foulerPid:defPlayer.id,_foulerTeam:defTeam,
-                _offBallFoul:true,_ftCount:1};
+                _offBallFoul:true,_ftCount:2,_keepPossession:true,
+                _fouledTeam:team,_fouledPid:player.id};
               G._lookFoulPending={foulerPid:defPlayer.id,foulerName:defPlayer.name,foulerTeam:defTeam,
                 fouledPid:player.id,fouledName:player.name,fouledTeam:team};
               G.foulCheckPending=true;
@@ -4618,10 +5179,15 @@ function mkTok(player, team, idx, pos) {
         let foulOn2 = '';
         if(diff<=3 && defPlayer) {
           if(srOff < srDef) {
-            // Cutter lower SR — cutter fouled defender (offensive foul)
+            // Cutter lower SR — cutter fouled defender (off-ball offensive foul)
+            // Defender's team gets 2 FTs + possession
             foulOn2 = ` · Possible foul <b>by ${player.name}</b> (cutter)`;
-            G.pendingFoulOn={playerId:player.id,playerName:player.name,
-              team:team,_offensiveFoul:true,_foulerPid:player.id,_foulerTeam:team};
+            G.pendingFoulOn={playerId:defPlayer?defPlayer.id:null,playerName:defPlayer?defPlayer.name:'Defender',
+              team:team,_foulerPid:player.id,_foulerTeam:team,
+              _offBallFoul:true,_ftCount:2,_keepPossession:true,
+              _fouledTeam:defTeam,_fouledPid:defPlayer?defPlayer.id:null};
+            G._lookFoulPending={foulerPid:player.id,foulerName:player.name,foulerTeam:team,
+              fouledPid:defPlayer?defPlayer.id:null,fouledName:defPlayer?defPlayer.name:'Defender',fouledTeam:defTeam};
             G.foulCheckPending=true;
             G.lookPending=null; G.lookAllPending=null;
             document.querySelectorAll('.look-locked,.look-target,.look-origin').forEach(function(el){el.classList.remove('look-locked','look-target','look-origin');});
@@ -4630,7 +5196,8 @@ function mkTok(player, team, idx, pos) {
             foulOn2 = ` · Possible foul <b>by ${defPlayer.name}</b> (defender)`;
             G.pendingFoulOn={playerId:player.id,playerName:player.name,
               team:defTeam,_foulerPid:defPlayer.id,_foulerTeam:defTeam,
-              _offBallFoul:true,_ftCount:1};
+              _offBallFoul:true,_ftCount:2,_keepPossession:true,
+              _fouledTeam:team,_fouledPid:player.id};
             G._lookFoulPending={foulerPid:defPlayer.id,foulerName:defPlayer.name,foulerTeam:defTeam,
               fouledPid:player.id,fouledName:player.name,fouledTeam:team};
             G.foulCheckPending=true;
@@ -4771,8 +5338,36 @@ function makeDraggable(el, id, team) {
     var _moved = _dragStartX !== null && tp && (Math.abs(tp.x - _dragStartX) > 3 || Math.abs(tp.y - _dragStartY) > 3);
     if (G.ballTok && G.ballTok.team === _upTeam && G.ballTok.idx === _upIdx) {
       moveBallToToken(_upTeam, _upIdx);
-      if(_moved) checkHalfCourtCrossing(true); // only check crossing if token actually moved
+      if(_moved) checkHalfCourtCrossing(true);
       checkZoneRepair();
+      // Zone1 gate: snap back if handler drags INTO THE PAINT without head fake
+      // Only fire if token started OUTSIDE paint (prevents offsetIfOverlap false positives)
+      if(_moved) {
+        var _dropPos = G.tokPos['T-'+_upTeam+'-'+_upIdx];
+        // Use nearest-zone detection (immune to offsetIfOverlap pushing tokens across boundary)
+        var _dropZone = getShooterZone(_upTeam);
+        var _inPaintRect = (_dropZone === 'zone1' || _dropZone === 'zone5');
+        // Check if drag started in paint (existing paint token being repositioned — skip gate)
+        var _startZone = _dragStartX !== null ? _zoneFromXY(_upTeam, _dragStartX, _dragStartY||260) : 'back';
+        if(_startZone === 'zone1' || _startZone === 'zone5') _inPaintRect = false; // already in paint
+        if(_inPaintRect) {
+          if(!G.zone1Gate || !G.zone1Gate[_upTeam]) {
+            var _snapPos = ZONE_POS[_upTeam]['zone2'];
+            var _snapTid = 'T-'+_upTeam+'-'+_upIdx;
+            var _snapEl = document.getElementById(_snapTid);
+            if(_snapEl && G.tokPos[_snapTid] && _snapPos) {
+              var _snapOv = offsetIfOverlap(_snapPos.x, _snapPos.y, _snapTid);
+              _snapEl.setAttribute('transform','translate('+_snapOv.x+','+_snapOv.y+')');
+              G.tokPos[_snapTid].x=_snapOv.x; G.tokPos[_snapTid].y=_snapOv.y;
+              moveBallToToken(_upTeam, _upIdx);
+            }
+            addLog('🚫 Zone 1 entry blocked — HEAD FAKE required from Zone 2 first · pass or handle out/around to reset','l-ro');
+            notify('Head Fake required to enter Zone 1!','foul');
+          } else {
+            G.zone1Gate[_upTeam]=false; // gate consumed
+          }
+        }
+      }
     }
     // Nudge opponent tokens that are too close (cross-team overlap prevention)
     const NUDGE_R = 18; // pixels — minimum separation
@@ -5020,6 +5615,7 @@ function act(a) {
         }
         addLog(`🏀 d4→${tipRoll}: ${winJumper.name} tips to <b>${receiver.name}</b> (${receiver.position}) · d10→${locRoll}: <b>${loc}</b>`, 'l-ev');
         notify(receiver.name + ' receives tip — ' + loc, 'score');
+        G.freshDribble=true; G.holdDribble=false; G.dribbleLive=false;
       }
       G.possession = winTeam;
       resetClk();
@@ -5050,9 +5646,12 @@ function act(a) {
         addLog(`👁 LOOK (1) blocked — already looked once and failed · must press LOOK ALL`,'l-ro');
         break;
       }
-      // Look(1) costs 1 BC move when in back court
+      // Look(1) costs 1 BC move when in back court, but NOT a paint move alone
+      G._lookOnlyMove = true;
       useMv(1);
+      G._lookOnlyMove = false;
       G.lastAction='look1';
+      if(G.zone1Gate) G.zone1Gate[G.myTeam]=false;
       G.lookPending = { player: p, dv, team: G.myTeam };
       const oppTeamL = G.myTeam==='a'?'b':'a';
       document.querySelectorAll(`[id^="T-${oppTeamL}-"]`).forEach(el=>el.classList.add('look-locked'));
@@ -5078,6 +5677,7 @@ function act(a) {
         addLog(`👥 LOOK ALL: following Look(1) — 1 move used`, 'l-ev');
       }
       G.lastAction='lookall';
+      if(G.zone1Gate) G.zone1Gate[G.myTeam]=false;
       const offTeam = G.myTeam;
       const defTeam = G.myTeam === 'a' ? 'b' : 'a';
       const offPs = G.teams[offTeam].players.filter(p=>p.onCourt).slice(0,5);
@@ -5086,6 +5686,28 @@ function act(a) {
       const teamOFFavg = Math.round(offPs.reduce((s,p)=>s+derive(p).OFF,0)/offPs.length);
       const rOff = d(30), srOff = teamOFFavg - rOff;
       setLastAction(offTeam,'LOOK ALL',rOff);
+      // LookAll OFF crits
+      if(rOff === 30) {
+        var laOff30Opp = offTeam==='a'?'b':'a';
+        addLog('👥 LOOK ALL ('+G.teams[offTeam].name+'): OFF 💀 NAT 30 — <b style="color:var(--red)">FOUL on offense</b> — TURNOVER · '+G.teams[laOff30Opp].name+' inbounds','l-fo');
+        notify('OFF nat30 — Offensive foul! Turnover','foul');
+        if(laOff30Handler) statTO(laOff30Handler.id);
+        var laOff30Def = getPairedDefender(offTeam);
+        if(laOff30Def) commitFoul(laOff30Opp, laOff30Def.id);
+        G.possession = laOff30Opp; showContinueButton(laOff30Opp==='a'?'b':'a'); break;
+      }
+      if(rOff === 1) {
+        // OFF nat1 on lookall: open shot for a random teammate, choose zone
+        var laOff1Ps = offPs.filter(function(p){return !G.ballTok || p.id !== G.tokPos['T-'+offTeam+'-'+G.ballTok.idx]?.pid;});
+        var laTarget = laOff1Ps[Math.floor(Math.random()*laOff1Ps.length)] || offPs[0];
+        var laTargetIdx = G.teams[offTeam].players.filter(function(p){return p.onCourt;}).findIndex(function(p){return p.id===laTarget.id;});
+        var laDefIdx = laTargetIdx; // matched defender
+        var laDefP = G.teams[defTeam].players.filter(function(p){return p.onCourt;})[laDefIdx] || G.teams[defTeam].players.filter(function(p){return p.onCourt;})[0];
+        G._critOpenPending = {passer:G.teams[offTeam].players.filter(function(p){return p.onCourt;})[G.ballTok?.idx??0]||offPs[0], passerDV:{OFF:teamOFFavg}, target:laTarget, targetIdx:laTargetIdx, targetTeam:offTeam, defPlayer:laDefP, defDV:laDefP?derive(laDefP):{HUS:10}, offTeam:offTeam};
+        var laCritBtns = _critZoneBtns('chooseCritOpenZone');
+        addLog('👥 LOOK ALL: OFF ⭐ NAT 1 — <b style="color:var(--green)">CRITICALLY OPEN!</b> '+laTarget.name+' found open · Choose zone: '+laCritBtns,'l-ev');
+        notify('CRITICALLY OPEN — choose zone!','score'); break;
+      }
       addLog(`👥 LOOK ALL (${G.teams[offTeam].name}): Team OFF ${teamOFFavg}, d30→${rOff} → SR <b>${srOff}</b> — <span style="color:var(--accent)">Roll Team Defense (${G.teams[defTeam].name})</span>`, 'l-ev');
       // Store pending lookAll state for when defender rolls their team DEF
       G.lookAllPending = { srOff, offTeam, defTeam, offPs, defPs };
@@ -5214,6 +5836,16 @@ function act(a) {
       if(!needAP())return;
       if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
 
+      // Double dribble: handle after look without holdDribble or freshDribble = turnover
+      var _prevAct = G.lastAction;
+      if((_prevAct==='look1'||_prevAct==='look1_failed'||_prevAct==='lookall'||_prevAct==='lookall_failed') && !G.holdDribble && !G.freshDribble && G.dribbleLive) {
+        var _ddDef = G.myTeam==='a'?'b':'a';
+        addLog('🚫 DOUBLE DRIBBLE ('+p.name+') — handle after look without Hold Dribble → TURNOVER · '+G.teams[_ddDef].name+' inbounds','l-fo');
+        notify('DOUBLE DRIBBLE — Turnover!','foul');
+        G.holdDribble=false; G.freshDribble=false; G.dribbleLive=false;
+        useMv(1); showContinueButton(_ddDef==='a'?'b':'a'); break;
+      }
+
       if(G.handleFailed && !G.handleFailed.critFail) { act('handle_recover'); break; }
       G.lastAction=null;
       var handleBonus=(p.specialty==='HANDLE'?4:p.specialty2==='HANDLE'?2:0);
@@ -5266,6 +5898,7 @@ function act(a) {
         const wouldViolateBC = G.clocks.bc <= 1 && inBackCourt(G.myTeam);
         const pairedDefHF = getPairedDefender(G.myTeam);
         G.handleFailed = { player: p, defPlayer: pairedDefHF, defTeam: defTeamHF, critFail: false, pendingBCViolation: wouldViolateBC };
+        G.holdDribble=false; G.freshDribble=false; G.dribbleLive=true;
         const hfBtnStyle='padding:2px 8px;font-size:10px;font-family:\'Oswald\',sans-serif;border-radius:3px;cursor:pointer;border:1px solid ';
         const defLinkHF = pairedDefHF ? ' — '+(pairedDefHF.name) : '';
         const hfHtml='<span style="color:var(--accent)">🏃 HANDLE FAILED ('+p.name+')</span>'+(wouldViolateBC?' · ⚠️ Back court!':'')+
@@ -5288,9 +5921,13 @@ function act(a) {
           pairedDefH = defPs2[ballCarrierIdx] || defPs2[0];
         }
         const defBackOffBtn=' <button onclick="handleAdvanceBackOff()" style="margin-left:6px;padding:1px 7px;font-size:10px;font-family:\'Oswald\',sans-serif;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:var(--text2)">BACK OFF</button>';
-        addLog(`🏃 HANDLE (${p.name}): d30→${r} vs HND ${p.stats.HND} → SR <b>${sr}</b> — advanced · <span style="color:var(--accent)">${G.teams[defTeam2].name}${pairedDefH?' — '+cardLink(pairedDefH,defTeam2):''}: roll ACTIVE DEF to stop</span>${defBackOffBtn}`, 'l-ro');
+        var _hintZ5 = '';
+        var _handlerZone = getShooterZone(G.myTeam);
+        if(_handlerZone === 'zone1') _hintZ5 = ' · <span style="color:var(--text3);font-size:9px">(Zone 5 / under basket available as destination)</span>';
+        addLog(`🏃 HANDLE (${p.name}): d30→${r} vs HND ${p.stats.HND} → SR <b>${sr}</b> — advanced · <span style="color:var(--accent)">${G.teams[defTeam2].name}${pairedDefH?' — '+cardLink(pairedDefH,defTeam2):''}: roll ACTIVE DEF to stop</span>${defBackOffBtn}`+_hintZ5, 'l-ro');
         G.handleSR = sr;
-        G.handlePlayer = p; // store handler for foul check naming
+        G.handlePlayer = p;
+        G.holdDribble=false; G.freshDribble=false; G.dribbleLive=true;
         useMv(1);
       }
       break;
@@ -5328,44 +5965,41 @@ function act(a) {
       break;
     }
     case 'hold': {
-      if(!needAP())return;
-      if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
-
-      // Zone check: hold dribble only available at Zone 3 or further (outside 3pt line)
-      const holdTok = G.ballTok ? G.tokPos['T-'+G.myTeam+'-'+G.ballTok.idx] : null;
-      const holdX = holdTok?.x ?? 450;
-      // A attacks right: Zone 3+ = x < 650; B attacks left: Zone 3+ = x > 250
-      const inZone3orFurther = G.myTeam==='a' ? holdX < 650 : holdX > 250;
-      if(!inZone3orFurther){
-        addLog(`🔄 HOLD DRB blocked: only available at Zone 3 or further (outside 3pt line)`,'l-ro');
-        notify('Hold dribble: must be Zone 3+','foul'); break;
+      if(!needAP()) return;
+      // Zone 3/4 only
+      var holdZone = getShooterZone(G.myTeam);
+      if(holdZone !== 'zone3_or_4') {
+        addLog('🔄 HOLD DRB blocked: Zone 3 or 4 only (currently: '+holdZone+')','l-ro');
+        notify('Hold Dribble: Zone 3 or 4 only','foul');
+        if(G.lookBothFailed) { var _sc=document.getElementById('subcourt-log'); if(_sc&&_sc.innerHTML.trim()==='') showBothLooksFailedPrompt(G.myTeam); }
+        break;
       }
-      const defTeamH=G.myTeam==='a'?'b':'a';
-      const defPs2=G.teams[defTeamH].players.filter(px=>px.onCourt);
-      const defP2=defPs2[G.ap?.idx??0]||defPs2[0];
-      const defDEF2=defP2?derive(defP2).DEF:15;
-      const r=d(30), sr=p.stats.HND-r;
-      const rDef=d(30), srDef=defDEF2-rDef;
-      setLastAction(G.myTeam,'HOLD DRB',r);
-      if(r===30 || rDef===1){
-        // Nat30 handler OR nat1 defender = foul check
-        var hldFouler = r===30 ? p : defP2; // nat30 handler fouled, nat1 defender fouled
-        var hldFoulerTeam = r===30 ? G.myTeam : (G.myTeam==='a'?'b':'a');
-        if(hldFouler){ G.pendingFoulOn={playerId:hldFouler.id,playerName:hldFouler.name,team:hldFoulerTeam,_foulerPid:hldFouler.id,_foulerTeam:hldFoulerTeam}; G.foulCheckPending=true; }
-        addLog(`🔄 HOLD DRB (${p.name}): BH d30→${r}(SR${sr}) vs ${defP2?.name||'Def'} DEF d30→${rDef}(SR${srDef}) — 💀 CRIT — foul check on ${hldFouler?.name||'fouler'}`,'l-fo');
-        notify('Crit on hold dribble — foul check!','foul');
-      } else if(sr>=srDef){
-        // Success — look chain reset, costs 0 moves
-        G.lastAction=null; G.lookBothFailed=false;
-        addLog(`🔄 HOLD DRB (${p.name}): BH d30→${r}(SR${sr}) vs ${defP2?.name||'Def'} DEF d30→${rDef}(SR${srDef}) — <b style="color:var(--green)">DRIBBLE HELD</b> · look chain reset · 0 moves used`,'l-ev');
-        notify('Dribble held — look chain reset','score');
+      var defTeamHLD = G.myTeam==='a'?'b':'a';
+      var defPsHLD = G.teams[defTeamHLD].players.filter(function(px){return px.onCourt;});
+      var defPHLD = defPsHLD[G.ap?.idx??0]||defPsHLD[0];
+      var defDEFhld = defPHLD ? derive(defPHLD).DEF : 15;
+      var rHld=d(30), srHld=p.stats.HND-rHld;
+      var rDefHld=d(30), srDefHld=defDEFhld-rDefHld;
+      setLastAction(G.myTeam,'HOLD DRB',rHld);
+      if(rHld===30) {
+        // Crit fail: foul check → foul=double dribble+turnover, no foul=random hustle
+        G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam,_doubleDribbleFoul:true,_foulerPid:p.id,_foulerTeam:G.myTeam};
+        G.foulCheckPending=true;
+        G.holdDribble=false; G.freshDribble=false; G.dribbleLive=false;
+        addLog('🔄 HOLD DRB ('+p.name+'): d30→30 — 💀 CRIT FAIL · foul check: foul=DOUBLE DRIBBLE+turnover / no foul=Random Hustle','l-fo');
+        notify('Crit fail! Foul check — double dribble if called','foul');
+      } else if(srHld >= srDefHld) {
+        // Success: holdDribble=true, look chain resets, 0 moves
+        G.holdDribble=true;
+        G.lookBothFailed=false; G.lastAction=null;
+        addLog('🔄 HOLD DRB ('+p.name+'): HND d30→'+rHld+'(SR'+srHld+') vs '+(defPHLD?.name||'Def')+' DEF d30→'+rDefHld+'(SR'+srDefHld+') — <b style="color:var(--green)">HELD</b> · handle after look enabled · 0 moves','l-ev');
+        notify('Dribble held — look then handle freely','score');
       } else {
-        // Failed hold — loose ball, random hustle
-        addLog(`🔄 HOLD DRB (${p.name}): BH d30→${r}(SR${sr}) vs ${defP2?.name||'Def'} DEF d30→${rDef}(SR${srDef}) — <b style="color:var(--red)">FAILED</b> · LOOSE BALL!`,'l-fo');
-        G._prHustleBC = {team:G.myTeam, bc:G.clocks.bc}; // preserve BC clock if same team wins
-        startRandomHustle(inBackCourt(G.myTeam));
+        // Failure: dribble picked up
+        G.holdDribble=false; G.freshDribble=false; G.dribbleLive=false;
+        addLog('🔄 HOLD DRB ('+p.name+'): HND d30→'+rHld+'(SR'+srHld+') vs '+(defPHLD?.name||'Def')+' DEF d30→'+rDefHld+'(SR'+srDefHld+') — <b style="color:var(--red)">PICKED UP</b> · dribble discontinued · further handle = DOUBLE DRIBBLE','l-fo');
+        notify('Dribble picked up — no more handles!','foul');
       }
-      // Note: hold dribble costs 0 moves — do NOT call useMv
       break;
     }
     case 'handleout': {
@@ -5385,6 +6019,8 @@ function act(a) {
       } else if(sr>=0){
         addLog(`🔙 HANDLE OUT (${p.name}): BH=30, d30→${r} → SR <b>${sr}</b> — <b style="color:var(--green)">HANDLED OUT</b> · no steal if fail · move token to adjacent zone`,'l-ev');
         notify('Handled out — drag token to new zone','score');
+        G.holdDribble=false; G.freshDribble=false; G.dribbleLive=true;
+        if(G.zone1Gate) G.zone1Gate[G.myTeam]=false;
         useMv(1);
         // In zone defense, snap paired defender to follow ball carrier
         if(G.defenseStrat==='zone' && G.ballTok){
@@ -5414,6 +6050,17 @@ function act(a) {
       if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
       // Handle Around: stay in same zone, BH=30, but defender CAN steal on fail
       if(!needAP())return;
+      // Zone 1/5: Handle Around is instant 3-second violation
+      var _haZone = getShooterZone(G.myTeam);
+      if(inPaint(_haZone)) {
+        addLog('⏱ HANDLE AROUND in the paint — instant 3-SECOND VIOLATION! ' + G.teams[G.myTeam].name + ' turnover!', 'l-fo');
+        notify('3-SECOND VIOLATION! Handle Around in paint', 'foul');
+        resetPaintMoves(G.myTeam);
+        var _haDefTeam = G.myTeam==='a'?'b':'a';
+        useMv(1);
+        showContinueButton(_haDefTeam==='a'?'b':'a');
+        break;
+      }
       const defTeamHA=G.myTeam==='a'?'b':'a';
       const defPsHA=G.teams[defTeamHA].players.filter(px=>px.onCourt);
       const defPHA=defPsHA[G.ap?.idx??0]||defPsHA[0];
@@ -5429,6 +6076,8 @@ function act(a) {
       } else if(sr>=0){
         addLog(`🔄 HANDLE AROUND (${p.name}): BH=30, d30→${r} → SR <b>${sr}</b> — <b style="color:var(--green)">HANDLED AROUND</b> · still in same zone`,'l-ev');
         notify('Handled around — look chain reset','score');
+        G.holdDribble=false; G.freshDribble=false; G.dribbleLive=true;
+        if(G.zone1Gate) G.zone1Gate[G.myTeam]=false;
         useMv(1);
         // In zone defense, snap paired defender to follow ball carrier
         if(G.defenseStrat==='zone' && G.ballTok){
@@ -5455,16 +6104,36 @@ function act(a) {
       break;
     }
     case 'hfake': {
-      if(!needAP())return; const r=d(30),sr=dv.OFF-r;
-      if(r===1){
-        const defTeamHF1=G.myTeam==='a'?'b':'a', defHF1=getShotContester(defTeamHF1,G.myTeam,G.ap?.idx||0);
-        if(defHF1){G.pendingFoulOn={playerId:defHF1.id,playerName:defHF1.name,team:defTeamHF1,_foulerPid:defHF1.id,_foulerTeam:defTeamHF1};G.foulCheckPending=true;}
-        addLog(`🎭 HEAD FAKE (${p.name}): ⭐ CRITICAL — defender buys it! Foul check on defender.`, 'l-ev');
-      } else if(r===30){
-        G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam,_foulerPid:p.id,_foulerTeam:G.myTeam};G.foulCheckPending=true;
-        addLog(`🎭 HEAD FAKE (${p.name}): 💀 CRIT FAIL — travel risk! Foul check on ${p.name}.`, 'l-fo');
+      if(!needAP()) return;
+      var hfZone = getShooterZone(G.myTeam);
+      if(hfZone !== 'zone2' && hfZone !== 'zone3_or_4') {
+        addLog('🎭 HEAD FAKE blocked: Zone 2 or Zone 3/4 only (currently: '+hfZone+')','l-ro');
+        notify('Head Fake: Zone 2 or Zone 3/4 only','foul'); break;
       }
-      else addLog(`🎭 HEAD FAKE (${p.name}): d30→${r} vs OFF ${dv.OFF} → SR <b>${sr}</b>`, 'l-ro');
+      var defTeamHFK = G.myTeam==='a'?'b':'a';
+      var defPsHFK = G.teams[defTeamHFK].players.filter(function(px){return px.onCourt;});
+      var defPHFK = defPsHFK[G.ap?.idx??0]||defPsHFK[0];
+      var rOHF=d(30), srOHF=dv.OFF-rOHF;
+      setLastAction(G.myTeam,'HEAD FAKE',rOHF);
+      // Crit on OFF roll resolves immediately; otherwise store pending for DEF to respond
+      if(rOHF===1) {
+        // OFF nat1: fast break + foul check on DEF (Zone 3 only)
+        if(hfZone==='zone3_or_4'){var fbHFK=d(4);G.fastBreak={team:G.myTeam,movesLeft:fbHFK,joiners:[]};resolveHustleJoinFastBreak(G.myTeam);G._pendingFastBreak={team:G.myTeam,moves:fbHFK};syncFastBreak();}
+        if(defPHFK){G.pendingFoulOn={playerId:defPHFK.id,playerName:defPHFK.name,team:defTeamHFK,_foulerPid:defPHFK.id,_foulerTeam:defTeamHFK};G.foulCheckPending=true;}
+        addLog('🎭 HEAD FAKE ('+p.name+'): ⭐ OFF NAT 1 — 🔥 ANKLE BREAKER!'+(hfZone==='zone3_or_4'?' FAST BREAK d4→'+(G.fastBreak?.movesLeft||0):'')+' · foul check on '+(defPHFK?.name||'defender'),'l-ev');
+        notify('NAT 1!'+(hfZone==='zone3_or_4'?' Fast break!':''),'score');
+      } else if(rOHF===30) {
+        // OFF nat30: travel risk
+        G.pendingFoulOn={playerId:p.id,playerName:p.name,team:G.myTeam,_travelViolation:true,_foulerPid:p.id,_foulerTeam:G.myTeam};G.foulCheckPending=true;
+        addLog('🎭 HEAD FAKE ('+p.name+'): 💀 OFF NAT 30 — foul check on '+p.name+' (travel)','l-fo');
+        notify('Nat 30 — foul check!','foul');
+      } else {
+        // Store pending — DEF must press ACTIVE DEF to respond
+        G.hfakePending = {player:p, dv:dv, srOff:srOHF, rOff:rOHF, offTeam:G.myTeam, defTeam:defTeamHFK, defPlayer:defPHFK, zone:hfZone};
+        addLog('🎭 HEAD FAKE ('+p.name+'): OFF d30→'+rOHF+' (SR '+srOHF+') — <span style="color:var(--accent)">'+(defPHFK?defPHFK.name+' ('+G.teams[defTeamHFK].name+')':G.teams[defTeamHFK].name)+': press ACTIVE DEF to respond</span>','l-ev');
+        notify((defPHFK?defPHFK.name:G.teams[defTeamHFK].name)+': press ACTIVE DEF','foul');
+      }
+      // 0 moves — no useMv
       break;
     }
     case 's3': {
@@ -5483,9 +6152,10 @@ function act(a) {
       if(tptPen<-10) addLog('⚠️ '+( tptZone==='zone4'?'Zone 4 deep 3PT — −15 SHT':'Back court 3PT — −20 SHT')+' penalty','l-fo');
       const adj=p.stats.SHT+tptPen+specBonus3, r=d(30), sr=adj-r;
       if(sr < 0) {
-        addLog('🎯 3-PTR MISSED ('+p.name+'): adj '+adj+' d30→'+r+' SR <b>'+sr+'</b> — rolled over stat — no basket','l-ro');
-        notify('Shot missed','foul'); useMv(1);
-        showContinueButton(G.myTeam==='a'?'b':'a'); break;
+        addLog('🎯 3-PTR ATTEMPTED ('+p.name+') · <span style="color:var(--accent)">'+G.teams[G.myTeam==='a'?'b':'a'].name+': roll BLOCK or BD</span>','l-ro');
+        notify('Shot off the mark — DEF: BLOCK or BD?','foul');
+        G.pendingShot = {player:p, shotType:'3-PTR', defTeam:G.myTeam==='a'?'b':'a', sr:sr, _rolledOverStat:true};
+        useMv(1); break;
       }
       const defTeam3=G.myTeam==='a'?'b':'a';
       const def3=getShotContester(defTeam3, G.myTeam, G.ap?.idx??0);
@@ -5512,7 +6182,10 @@ function act(a) {
         const bpfxFB3=defTeam3==='a'?'l':'r';
         const bdElFB3=document.getElementById(bpfxFB3+'bd-t');
         if(bdElFB3) bdElFB3.value=fbAdjBD3;
-        addLog(`🎯 FAST BREAK 3-PTR (${p.name}): SR <b>${sr}</b> — OPEN SHOT · <span style="color:var(--accent)">${G.teams[defTeam3].name}: roll BD (<b>${fbAdjBD3}</b>)</span>`,'l-ev');
+        G.pendingShot={player:p,shotType:'3-PTR',r,sr,adj,base:fbAdjBD3,defTeam:defTeam3,defName:def3?.name||'',_bdTarget:fbAdjBD3};
+        G.openShot=true; // fast break open 3 — no block allowed
+        G.lastShotSR=null;
+        addLog(`🎯 FAST BREAK 3-PTR (${p.name}): SR <b>${sr}</b> — OPEN SHOT · no block · <span style="color:var(--accent)">${G.teams[defTeam3].name}: roll BD (<b>${fbAdjBD3}</b>)</span>`,'l-ev');
         notify(G.teams[defTeam3].name+': roll BD '+fbAdjBD3,'foul');
       } else {
         setLastAction(G.myTeam,'3-PTR','?');
@@ -5542,9 +6215,10 @@ function act(a) {
       }
       const adj=p.stats.SHT-5+specBonusM, r=d(30), sr=adj-r;
       if(sr < 0) {
-        addLog('🎯 MID MISSED ('+p.name+'): adj '+adj+' d30→'+r+' SR <b>'+sr+'</b> — rolled over stat — no basket','l-ro');
-        notify('Shot missed','foul'); useMv(1);
-        showContinueButton(G.myTeam==='a'?'b':'a'); break;
+        addLog('🎯 MID ATTEMPTED ('+p.name+') · <span style="color:var(--accent)">'+G.teams[G.myTeam==='a'?'b':'a'].name+': roll BLOCK or BD</span>','l-ro');
+        notify('Shot off the mark — DEF: BLOCK or BD?','foul');
+        G.pendingShot = {player:p, shotType:'MID', defTeam:G.myTeam==='a'?'b':'a', sr:sr, _rolledOverStat:true};
+        useMv(1); break;
       }
       const defTeamM=G.myTeam==='a'?'b':'a';
       const defM=getShotContester(defTeamM, G.myTeam, G.ap?.idx??0);
@@ -5587,14 +6261,21 @@ function act(a) {
 
       resetClk(); // shot attempt resets shot clock
       G.shotActive = { type: '2pt', team: G.myTeam, player: p };
-      // Check zone: must be Zone 1 (paint) or Zone 2
+      // Check zone: Specialty slammers Zone 1/2/5; non-specialty must be Zone 5 only
       const tokPosSl = G.ballTok ? G.tokPos['T-'+G.myTeam+'-'+G.ballTok.idx] : null;
       const slX = tokPosSl?.x ?? 450;
-      const inZone1 = G.myTeam==='a' ? slX > 700 : slX < 200; // A attacks right
+      const slY = tokPosSl?.y ?? 260;
+      const inZone5 = G.myTeam==='a' ? (slX >= 690 && Math.abs(slY-260) < 30) : (slX <= 210 && Math.abs(slY-260) < 30);
+      const inZone1 = G.myTeam==='a' ? (slX > 700 && !inZone5) : (slX < 200 && !inZone5);
       const inZone2 = G.myTeam==='a' ? (slX > 635 && slX <= 700) : (slX >= 200 && slX < 265);
-      if(!inZone1 && !inZone2){
-        addLog(`💥 SLAM blocked: must be in Zone 1 (paint) or Zone 2 to dunk`,'l-ro');
-        notify('Must be in Zone 1 or 2 to slam!','foul'); break;
+      const hasSlamSpec = (p.specialty==='SLAM' || p.specialty2==='SLAM');
+      if(!hasSlamSpec && !inZone5) {
+        addLog('💥 SLAM blocked: without Slam specialty, must be in Zone 5 (under basket) to dunk','l-ro');
+        notify('Need Slam specialty for Z1/Z2 — or drive to Zone 5!','foul'); break;
+      }
+      if(hasSlamSpec && !inZone1 && !inZone2 && !inZone5) {
+        addLog('💥 SLAM blocked: must be in Zone 1, 2, or 5','l-ro');
+        notify('Must be in Zone 1, 2, or 5 to slam!','foul'); break;
       }
       // Height modifier
       const b=slamBonus(p.height);
@@ -5691,17 +6372,18 @@ function act(a) {
       if(G.lookBothFailed) { G.lookBothFailed=false; G.lastAction=null; }
       // Zone 1 only
       var shortZone = getShooterZone(G.myTeam);
-      if(shortZone !== 'zone1') {
-        addLog('❌ SHORT — Zone 1 only (currently: '+shortZone+')','l-ro');
-        notify('SHORT only from Zone 1','foul'); break;
+      if(shortZone !== 'zone1' && shortZone !== 'zone5') {
+        addLog('❌ SHORT — Zone 1 or 5 only (currently: '+shortZone+')','l-ro');
+        notify('SHORT only from Zone 1 or Zone 5','foul'); break;
       }
       // SR < 0 = auto miss
       const shortAdj = p.stats.SHT; // no specialty bonus, no zone penalty
       const shortR = d(30), shortSR = shortAdj - shortR;
       if(shortSR < 0) {
-        addLog('🎯 SHORT MISSED ('+p.name+'): SHT '+shortAdj+' d30→'+shortR+' SR <b>'+shortSR+'</b> — rolled over stat','l-ro');
-        notify('Shot missed','foul'); useMv(1);
-        showContinueButton(G.myTeam==='a'?'b':'a'); break;
+        addLog('🎯 SHORT ATTEMPTED ('+p.name+') · <span style="color:var(--accent)">'+G.teams[G.myTeam==='a'?'b':'a'].name+': roll BLOCK or BD</span>','l-ro');
+        notify('Shot off the mark — DEF: BLOCK or BD?','foul');
+        G.pendingShot = {player:p, shotType:'SHORT', defTeam:G.myTeam==='a'?'b':'a', sr:shortSR, _rolledOverStat:true};
+        useMv(1); break;
       }
       var shortDefTeam = G.myTeam==='a'?'b':'a';
       var shortDefPs = G.teams[shortDefTeam].players.filter(function(p){return p.onCourt;});
@@ -5971,11 +6653,20 @@ function act(a) {
           syncFastBreak(); resolveHustleJoinFastBreak(G.myTeam); buildAPSel();
         } else {
           addLog('🖐️ STEAL DRB ('+p.name+'): ½STL='+adj+', d30→'+r+' → SR <b>'+sr+'</b>'+foulNote, 'l-ro');
-          // Auto foul already committed above — no foul check prompt needed
           if(r>p.stats.STL){
-            // foul already committed — no additional foul check
+            // auto foul already committed above — no additional foul check
           } else if(stldMayFoul){
-            addLog('⚠️ <span style="color:var(--accent)">'+G.teams[G.myTeam==='a'?'b':'a'].name+': roll Foul Check</span>', 'l-fo');
+            // Set up proper foul check with pending state so resolution works
+            var stldLiveHandler = G.ballTok ? G.teams[stldOffTeam].players.filter(function(px){return px.onCourt;})[G.ballTok.idx] : null;
+            if(!stldLiveHandler) stldLiveHandler = G.teams[stldOffTeam].players.filter(function(px){return px.onCourt;})[0];
+            G.pendingFoulOn = {playerId: stldLiveHandler?stldLiveHandler.id:null,
+              playerName: stldLiveHandler?stldLiveHandler.name:'Handler',
+              team: G.myTeam, _foulerPid: p.id, _foulerTeam: G.myTeam,
+              _stealFoulCheck: true, _stealSR: sr, _stealPlayer: p, _stealTeam: G.myTeam,
+              _handlerTeam: stldOffTeam};
+            G.foulCheckPending = true;
+            addLog('⚠️ May foul on steal attempt — roll Foul Check','l-fo');
+            notify(G.teams[stldOffTeam].name+': roll Foul Check','foul');
           }
         }
       }
@@ -6105,6 +6796,7 @@ function act(a) {
     }
     case 'block': {
       if(!needAP())return;
+      if(G.openShot){G.openShot=false;addLog('🚫 BLOCK not allowed — OPEN SHOT · roll BD instead','l-ro');notify('Open shot — no block! Roll BD','foul');break;}
       if(G._swingNoBlock){ notify('🏀 No block — open shot after swing!','foul'); break; }
       // Block if foul check pending
       if(G.foulCheckPending){ notify('⚖️ Resolve foul check first — DICE tab → ROLL FOUL CHECK','foul'); break; }
@@ -6115,7 +6807,8 @@ function act(a) {
           var _dtDF=getDoubleTeamDefs(_dtS.id,G.myTeam);
           if(_dtDF) {
             var _d1=_dtDF.primary,_d2=_dtDF.help;
-            var _r1=_d1?d(30):30,_b1=_d1?(_d1.stats.BLK||10):10,_s1=_d1?_b1-_r1:-99;
+            var _hfPenalty = G._hfakeSemiOpen ? -5 : 0; G._hfakeSemiOpen = false; // consume semi-open flag
+        var _r1=_d1?d(30):30,_b1=_d1?Math.max(1,(_d1.stats.BLK||10)+_hfPenalty):10,_s1=_d1?_b1-_r1:-99;
             var _r2=_d2?d(30):30,_b2=_d2?(_d2.stats.BLK||10):10,_s2=_d2?_b2-_r2:-99;
             var _bSR=Math.max(_s1,_s2);
             addLog('🤜 DOUBLE TEAM BLOCK: '+(_d1?_d1.name+' BLK '+_b1+' d30→'+_r1+' SR <b>'+_s1+'</b>':'')+(_d2?' | '+_d2.name+' BLK '+_b2+' d30→'+_r2+' SR <b>'+_s2+'</b>':'')+' — best SR: <b>'+_bSR+'</b>','l-ev');
@@ -6144,7 +6837,9 @@ function act(a) {
       const blkP = blockPlayer;
       const htBonusBLK = typeof slamBonus==='function' ? (slamBonus(blkP.height)||0) : 0;
       const pnrPen=G._pnrBlockPenalty||0; if(pnrPen){G._pnrBlockPenalty=null;addLog('🏀 Pick & Roll: '+pnrPen+' to defender BLK','l-fo');}
-      const adjBLK = blkP.stats.BLK + htBonusBLK + pnrPen;
+      var _hfSemiPen = G._hfakeSemiOpen ? -5 : 0; G._hfakeSemiOpen = false;
+      const adjBLK = blkP.stats.BLK + htBonusBLK + pnrPen + _hfSemiPen;
+      if(_hfSemiPen) addLog('🎭 Semi-open head fake — blocker BLK -5','l-ev');
       const r=d(30), sr=adjBLK-r;
       setLastAction(G.myTeam,'BLOCK',r);
       if(G.pendingShot){
@@ -6203,7 +6898,7 @@ function act(a) {
           const base2 = G.pendingShot.base;
           const diff4 = sr - shotSR;
           const adjBD2 = base2 + diff4;
-          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> vs shot SR ${shotSR} — block wins by ${diff4}${foulNote}`, 'l-ev');
+          addLog(`🛡 BLOCK (${p.name}): BLK ${adjBLK}${_hfSemiPen?' ('+_hfSemiPen+' hf)':''}, d30→${r} → SR <b>${sr}</b> vs shot SR ${shotSR} — block wins by ${diff4}${foulNote}`, 'l-ev');
           // Skip BD prompt for SLAM/alley-oop
           if(G.pendingShot && G.pendingShot._nosBD) {
             var isAO = G.pendingShot._alleyOop;
@@ -6245,8 +6940,9 @@ function act(a) {
                 _foulerPid:blkWinShooter.id, _foulerTeam:blkWinOffTeam};
               G.pendingFoulOn = G._pendingBDFoul;
               G.foulCheckPending = true;
-              addLog('⚠️ Within 3 — shooter may have charged blocker — <span style="color:var(--accent)">'+(G.myTeam==='a'?G.teams.b.name:G.teams.a.name)+': roll Foul Check (charge = no basket, turnover)</span>','l-fo');
-              notify((G.myTeam==='a'?G.teams.b.name:G.teams.a.name)+': roll Foul Check — charge?','foul');
+              var _chargeDefTeam = blkWinOffTeam==='a'?'b':'a';
+              addLog('⚠️ Within 3 — shooter may have charged blocker — <span style="color:var(--accent)">'+G.teams[_chargeDefTeam].name+': roll Foul Check (charge = no basket, turnover)</span>','l-fo');
+              notify(G.teams[_chargeDefTeam].name+': roll Foul Check — charge?','foul');
               // BD prompt deferred to rollFoulTeam no-foul path
               G._pendingBDAfterFoul = {defTeamBD2, baseBD2};
             } else {
@@ -6274,10 +6970,12 @@ function act(a) {
                 _ftCount: G.shotJustScored ? 1 : (G.pendingShot && G.pendingShot.shotType==='3pt' ? 3 : 2),
                 _andOne: !!G.shotJustScored,
                 _foulerPid:p.id, _foulerTeam:blockerTeamBN30};
-              var bpfxBN30 = blockerTeamBN30==='a'?'r':'l';
+              // Set BD=5 on shooter's team input and store as _bdTarget to bypass SR adj
+              var bpfxBN30 = offTeamBN30==='a'?'l':'r';
               var bdElBN30 = document.getElementById(bpfxBN30+'bd-t');
               if(bdElBN30) bdElBN30.value = 5;
-              addLog('🏀 Shot still live — BD=5 (open, blocker crit failed). BASKET = And-1 (shooter gets 1 FT). MISS = 1 FT for shooter.','l-ev');
+              if(G.pendingShot) G.pendingShot._bdTarget = 5; // skip SR adjustment — open shot
+              addLog('🏀 Shot still live — BD=5 (open, blocker crit failed) · BASKET = And-1 (1 FT) · MISS = 1 FT for shooter · <span style="color:var(--accent)">'+G.teams[offTeamBN30].name+': roll BD (5)</span>','l-ev');
               notify(G.teams[offTeamBN30].name+': roll BD (5)','foul');
             } else {
               G.pendingShot = null;
@@ -6289,7 +6987,7 @@ function act(a) {
                 } else if(shotMissed){
           // Shot missed, block irrelevant — go to rebound
           if(G.pendingShot) G.pendingShot._blockSR = sr; // prevent rollBDTeam re-triggering
-          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> (shot was d30→${G.pendingShot?.r||'?'} SR ${G.pendingShot?.sr||'?'}) — shot already missed — REBOUND`, 'l-ro');
+          addLog(`🛡 BLOCK (${p.name}): BLK ${adjBLK}${_hfSemiPen?' ('+_hfSemiPen+' hf)':''}, d30→${r} → SR <b>${sr}</b> (shot was d30→${G.pendingShot?.r||'?'} SR ${G.pendingShot?.sr||'?'}) — shot already missed — REBOUND`, 'l-ro');
           G.pendingShot = null;
           G.pendingSlamScore = null; // slam missed — clear any pending slam score
           G.pendingFoulOn = null; G.foulCheckPending = false; // clear stale foul state
@@ -6299,7 +6997,7 @@ function act(a) {
         } else if(false) {// dead branch
         } else {
           const base = G.pendingShot.base;
-          addLog(`🛡 BLOCK (${p.name}): BLK ${p.stats.BLK}, d30→${r} → SR <b>${sr}</b> vs shot SR ${shotSR} — block fails${foulNote}`, 'l-ro');
+          addLog(`🛡 BLOCK (${p.name}): BLK ${adjBLK}${_hfSemiPen?' ('+_hfSemiPen+' hf)':''}, d30→${r} → SR <b>${sr}</b> vs shot SR ${shotSR} — block fails${foulNote}`, 'l-ro');
           G.lastShotSR = shotSR;
           // Alley-oop: block fails = scores (no BD)
           if(G.pendingShot._alleyOop) {
@@ -6460,6 +7158,19 @@ function act(a) {
     case 'to_f': {
       const t=G.timeouts[G.myTeam]; if(t.full<=0){notify('No full T/Os left!');return;}
       t.full--; syncTimeouts(); addLog(`⏱ FULL T/O — ${G.teams[G.myTeam].name}`, 'l-ev'); notify('FULL TIMEOUT','score');
+      // Fatigue: full timeout removes 2 pips from all players with pips > 0
+      if(G.fatigue && G.fatigue.enabled) {
+        var toFatLog = [];
+        ['a','b'].forEach(function(team) {
+          G.teams[team].players.forEach(function(p) {
+            if(p.fatPips > 0) {
+              p.fatPips = Math.max(0, p.fatPips - 2);
+              toFatLog.push(p.name);
+            }
+          });
+        });
+        if(toFatLog.length) { addLog('💨 Full T/O fatigue drain: -2 pips for '+toFatLog.join(', '),'l-ev'); refreshFatiguePips(); }
+      }
       setTimeout(()=>showTimeoutSubPrompt(G.myTeam), 300);
       break;
     }
@@ -6469,6 +7180,11 @@ function act(a) {
       setTimeout(()=>showTimeoutSubPrompt(G.myTeam), 300);
       break;
     }
+  }
+  // Restore BOTH LOOKS FAILED prompt if a blocked action cleared the log
+  if(G.lookBothFailed && G.myTeam) {
+    var _scR = document.getElementById('subcourt-log');
+    if(_scR && _scR.innerHTML.trim() === '') showBothLooksFailedPrompt(G.myTeam);
   }
 }
 
@@ -6510,6 +7226,10 @@ function doInbound(team,pid,x,y,doDisperseAfterFT){
   clearZonePairings();
   clearDoubleTeam();
   G._critTipPending = null;
+  G.paintMoves = {a:0, b:0};
+  G.holdDribble=false; G.freshDribble=true; G.dribbleLive=false;
+  if(!G.zone1Gate) G.zone1Gate={a:false,b:false}; G.zone1Gate[team]=false;
+  G.openShot=false;
   const ps=G.teams[team].players.filter(p=>p.onCourt);
   const idx=ps.findIndex(p=>p.id===pid), pl=ps[idx]; if(!pl) return;
   const tid='T-'+team+'-'+idx, el=document.getElementById(tid);
@@ -6642,7 +7362,14 @@ function checkHalfCourtCrossing(fromDrag) {
 }
 
 function useMv(n) {
-  if(n > 0) G.lastAction = null; // reset look chain on any costed move
+  if(n > 0) {
+    G.lastAction = null;
+    if(G.myTeam && G.ballTok) {
+      var _mvZone = getShooterZone(G.myTeam);
+      if(inPaint(_mvZone)) { incrementPaintMoves(G.myTeam); }
+      else { resetPaintMoves(G.myTeam); }
+    }
+  }
   // Only decrement bc if the possessing team is actually in their back court
   // Tick back court clock (violation check happens on drag-drop in checkHalfCourtCrossing)
   const skipAllClocks = G._inboundPass; // inbound pass costs 0 moves on any clock
@@ -7209,8 +7936,10 @@ function runBaseline(team) {
       G.pendingFoulOn={playerId:pairedDef?pairedDef.id:'',playerName:pairedDef?pairedDef.name:'Defender',team:defTeam,_shootingFoul:true,_ftCount:1};
       G.foulCheckPending=true;
     } else {
-      addLog('⚠️ Within 3 — possible foul on '+inbounder.name+' — turnover if foul','l-fo');
-      G.pendingFoulOn={playerId:inbounder.id,playerName:inbounder.name,team:team,_chargeCandidate:true};
+      // Defender wins within 3 — foul check: foul=5-sec violation, no foul=play on
+      addLog('⚠️ Within 3 — possible foul on '+inbounder.name+' — 5-second violation if foul','l-fo');
+      G.pendingFoulOn={playerId:inbounder.id,playerName:inbounder.name,team:team,
+        _5secViolation:true,_foulerPid:inbounder.id,_foulerTeam:team};
       G.foulCheckPending=true;
       G._runBaselineFoulDefender={defTeam:defTeam,defPlayer:pairedDef};
     }
@@ -7320,7 +8049,7 @@ function syncFastBreak() {
   const fb = G.fastBreak;
   const el = document.getElementById('fast-break-bar');
   if (!el) return;
-  if (fb && fb.movesLeft > 0) {
+  if (fb && fb.movesLeft > 0 && !G.foulCheckPending) {
     const col = fb.team==='a' ? '#2a6ee8' : '#e83030';
     const pips = Array.from({length:4},(_,i)=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 2px;background:${i<fb.movesLeft?col:'rgba(255,255,255,0.15)'}"></span>`).join('');
     el.style.display='flex';
@@ -7439,6 +8168,7 @@ function pressScoreBtn(team, pts) {
     scoringTeam = team; scoringPts = pts;
   }
   score(scoringTeam, scoringPts);
+  if(G.fatigue && G.fatigue.enabled) applyFatiguePips(scoringPts);
   // BUCKET! flash then dead ball flow
   var hasFoul = !!G._pendingBDFoul;
   if(hasFoul) {
@@ -7479,12 +8209,23 @@ function showInboundFromTO(team) {
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
       <button class="btn btn-ghost btn-sm" style="color:${aCol};border-color:${aCol}55" onclick="closeModal();openSubModal('a')">&#8644; ${G.teams.a.name}</button>
       <button class="btn btn-ghost btn-sm" style="color:${bCol};border-color:${bCol}55" onclick="closeModal();openSubModal('b')">&#8644; ${G.teams.b.name}</button>
-      <button class="btn btn-ghost btn-sm" onclick="closeModal();actTeam('${team}','inbound')">INBOUND &#9654;</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal();showInboundFromDeadBall('${team}')">INBOUND &#9654;</button>
     </div>`;
   document.getElementById('modal-bg').classList.add('on');
 }
 
 function showDeadBallSubPrompt(scoringTeam) {
+  // Check for forced fatigue subs
+  if(G.fatigue && G.fatigue.enabled) {
+    var forced = checkFatigueForced();
+    if(forced.length > 0) {
+      forced.forEach(function(f) {
+        var names = f.players.map(function(p){return p.name;}).join(', ');
+        addLog('🔴 FATIGUE FORCED SUB: '+names+' ('+G.teams[f.team].name+') must come out!','l-fo');
+        notify('FATIGUE: '+names+' must be subbed out!','foul');
+      });
+    }
+  }
   if(G.gameOver) return;
   clearZonePairings();
   clearDoubleTeam();
@@ -7513,8 +8254,28 @@ function showInboundFromDeadBall(inboundTeam) {
   // i.e. opponent of scoring team inbounds from scoring team's baseline
   // A scores → inbound from A's basket side (left baseline x≈28, y=260)
   // B scores → inbound from B's basket side (right baseline x≈872, y=260)
-  const ibX = inboundTeam==='a' ? 28 : 872; // A inbounds from left baseline (after B scored on left), B from right baseline (after A scored on right)
-  const ibY = 260;
+  // For scored baskets: inbound from the scored basket's baseline (opposite end from inbounder's attack)
+  // For turnovers/fouls: inbound from nearest sideline to where foul occurred (ball position)
+  // Determine if this is after a score (G.shotJustScored was set) or a turnover
+  var ibX, ibY = 260;
+  var ballPos = G.ballTok ? G.tokPos['T-'+G.ballTok.team+'-'+G.ballTok.idx] : null;
+  var ballX = ballPos ? ballPos.x : null;
+  // After a score: inbound from the END the scoring team attacked
+  // (A attacks right → scored at right basket → B inbounds from right baseline x=872)
+  // After turnover: inbound from nearest baseline to ball position
+  if(ballX !== null) {
+    // Place inbounder at nearest baseline (x<450 = left side, x>=450 = right side)
+    if(ballX < 450) {
+      ibX = 28; // left baseline
+    } else {
+      ibX = 872; // right baseline
+    }
+  } else {
+    // Fallback: use attacking direction
+    // Team A attacks right → inbounds from right end after turnovers (defending left)
+    // Actually just use half court as safe fallback
+    ibX = inboundTeam==='a' ? 872 : 28;
+  }
   const ps = G.teams[inboundTeam].players.filter(p=>p.onCourt);
   const col = inboundTeam==='a'?'var(--blue)':'var(--red)';
   document.getElementById('modal-body').innerHTML=`
@@ -7618,18 +8379,40 @@ function getShooterZone(team) {
   var tid = 'T-'+team+'-'+G.ballTok.idx;
   var pos = G.tokPos[tid];
   if(!pos) return 'unknown';
-  var x = pos.x;
-  if(team==='a') {
-    if(x > 700) return 'zone1';
-    if(x > 635) return 'zone2';
-    if(x > 450) return 'zone3_or_4'; // both 3pt zones
-    return 'back';
-  } else {
-    if(x < 200) return 'zone1';
-    if(x < 265) return 'zone2';
-    if(x < 450) return 'zone3_or_4';
-    return 'back';
-  }
+  var x = pos.x, y = pos.y || 260;
+  return _zoneFromXY(team, x, y);
+}
+
+function _zoneFromXY(team, x, y) {
+  // Paint rectangle
+  var paintLeft = 702.9, paintTop = 201.9, paintBottom = 318.1;
+  var inPaint = team==='a'
+    ? (x >= paintLeft && y >= paintTop && y <= paintBottom)
+    : (x <= (900 - paintLeft) && y >= paintTop && y <= paintBottom);
+
+  // Zone 5: within 35px of basket center
+  var basketX = team==='a' ? 824.9 : 75.1;
+  var bDx = x - basketX, bDy = y - 260;
+  if(Math.sqrt(bDx*bDx + bDy*bDy) < 35) return 'zone5';
+
+  // Zone 1: inside paint (not zone5)
+  if(inPaint) return 'zone1';
+
+  // Back court: opposite half from attacking basket
+  var pastHalf = team==='a' ? x < 450 : x > 450;
+  if(pastHalf) return 'back';
+
+  // Use zone3-border arc to separate zone2 from zone3/4
+  // zone3-border-a: center=(368.1, 260), rx=263.8, ry=279.4
+  // zone3-border-b: center=(531.9, 260), same radii
+  // INSIDE arc = zone3/4, OUTSIDE arc (front court, not paint) = zone2
+  var arcCX = team==='a' ? 368.1 : 531.9;
+  var arcRX = 263.8, arcRY = 279.4;
+  var aDx = (x - arcCX) / arcRX, aDy = (y - 260) / arcRY;
+  var insideZ3Border = (aDx*aDx + aDy*aDy) <= 1.08; // small tolerance for drag imprecision
+
+  if(insideZ3Border) return 'zone3_or_4';
+  return 'zone2';
 }
 
 function getShooterZoneDetail(team) {
@@ -7936,6 +8719,53 @@ function rollDoubleTeamContest(offPlayer, offStat, defTeam, statKey) {
     offWins: offSR >= defWinnerSR && offSR >= 0
   };
 }
+
+// ── 3-SECOND CLOCK ─────────────────────────────────────────────────────────
+function inPaint(zone) {
+  return zone === 'zone1' || zone === 'zone5';
+}
+
+function getHandlerZone(team) {
+  return getShooterZone(team);
+}
+
+function incrementPaintMoves(team) {
+  // look1 alone does NOT count as a paint move — only look1+lookall combined counts
+  if(G._lookOnlyMove) return false;
+  if(!G.paintMoves) G.paintMoves = {a:0, b:0};
+  G.paintMoves[team] = (G.paintMoves[team] || 0) + 1;
+  if(G.paintMoves[team] >= 3) {
+    triggerThreeSecond(team);
+    return true; // violation
+  }
+  addLog('⏱ Paint move ' + G.paintMoves[team] + '/2 — 3-second clock (Zone 1/5)', 'l-fo');
+  return false;
+}
+
+function resetPaintMoves(team) {
+  if(!G.paintMoves) G.paintMoves = {a:0, b:0};
+  G.paintMoves[team] = 0;
+}
+
+function triggerThreeSecond(team) {
+  G.paintMoves[team] = 0;
+  addLog('⏱ 3-SECOND VIOLATION — ' + G.teams[team].name + ' turnover!', 'l-fo');
+  notify('3-SECOND VIOLATION! Turnover', 'foul');
+  var defTeam = team === 'a' ? 'b' : 'a';
+  showContinueButton(defTeam==='a'?'b':'a');
+}
+
+function checkPaintMove(team) {
+  // Call after any move that counts toward 3-second clock
+  // Returns true if violation occurred
+  var zone = getHandlerZone(team);
+  if(inPaint(zone)) {
+    return incrementPaintMoves(team);
+  } else {
+    resetPaintMoves(team);
+    return false;
+  }
+}
 function checkGame() {
   if(G.gameOver) return;
   if (G.half===1 && (G.score.a>=10||G.score.b>=10)) {
@@ -7987,7 +8817,7 @@ function commitFoul(team, pid) {
             || (G.pendingFoulOn ? {name:G.pendingFoulOn.playerName||'Unknown'} : {name:'Unknown'});
     const f = G.fouls[team].pp[pid];
     if(isCharge){
-      var isOffBallOff = pfo && pfo._offensiveFoul && !pfo._chargeCandidate;
+      var isOffBallOff = G.pendingFoulOn && G.pendingFoulOn._offensiveFoul && !G.pendingFoulOn._chargeCandidate;
       var foulLabel = isOffBallOff ? 'Personal Foul (offensive)' : 'CHARGE';
       addLog(`⚠️ ${foulLabel} on <b>${pl?.name}</b> (${G.teams[team].name}) — ${f}/3 personal · Ball to ${G.teams[team==='a'?'b':'a'].name}`, 'l-fo');
       notify('CHARGE — '+G.teams[team==='a'?'b':'a'].name+' ball!','foul');
@@ -8001,8 +8831,19 @@ function commitFoul(team, pid) {
       return;
     }
     statFoulG(pid);
-    addLog(`⚠️ FOUL on <b>${pl?.name}</b> (${G.teams[team].name}) — ${f}/3 personal`, 'l-fo');
-    if (f>=3) { addLog(`❌ <b>${pl?.name}</b> FOULED OUT!`, 'l-fo'); notify(pl?.name+' FOULED OUT!','foul'); }
+    // Build fouled-player name for the log
+    var _fouledTeamLog = team==='a'?'b':'a';
+    var _fouledPlLog = null;
+    if(G.pendingFoulOn && G.pendingFoulOn._ftShooter) {
+      _fouledPlLog = G.teams[_fouledTeamLog].players.find(function(px){return px.id===G.pendingFoulOn._ftShooter;});
+    } else if(G.pendingFoulOn && G.pendingFoulOn._fouledPid) {
+      _fouledPlLog = G.teams[G.pendingFoulOn._fouledTeam||_fouledTeamLog].players.find(function(px){return px.id===G.pendingFoulOn._fouledPid;});
+    } else if(G.pendingFoulOn && G.pendingFoulOn.playerId && G.pendingFoulOn.playerId !== pid) {
+      _fouledPlLog = G.teams[_fouledTeamLog].players.find(function(px){return px.id===G.pendingFoulOn.playerId;});
+    }
+    var _fouledStr = _fouledPlLog ? ' FOULS <b>'+_fouledPlLog.name+'</b> ('+G.teams[_fouledTeamLog].name+')' : '';
+    addLog('⚠️ FOUL: <b>'+(pl?.name||'Unknown')+'</b> ('+G.teams[team].name+')'+_fouledStr+' — '+(pl?.name||'Unknown')+': '+f+'/3 personal', 'l-fo');
+    if (f>=3) { addLog('❌ <b>'+(pl?.name||'Unknown')+'</b> FOULED OUT!', 'l-fo'); notify((pl?.name||'Unknown')+' FOULED OUT!','foul'); }
   } else {
     addLog(`⚠️ Team foul (${G.teams[team].name}) — ${G.fouls[team].team} total`, 'l-fo');
   }
@@ -8025,6 +8866,11 @@ function commitFoul(team, pid) {
     // Explicit fouled player stored (e.g. DEF nat30 — handler is fouled)
     pfoPlayer = G.teams[G.pendingFoulOn._fouledTeam||fouledTeam].players.find(function(px){return px.id===G.pendingFoulOn._fouledPid;})
              || G.teams[fouledTeam].players.find(function(px){return px.id===G.pendingFoulOn._fouledPid;});
+  } else if(G.pendingFoulOn && G.pendingFoulOn._ftShooter) {
+    // Explicit FT shooter stored (e.g. handle foul — handler shoots, defender is fouler)
+    var ftShooterTeam = fouledTeam; // handler is on the non-fouling team
+    pfoPlayer = G.teams[ftShooterTeam].players.find(function(px){return px.id===G.pendingFoulOn._ftShooter;})
+             || G.teams[team==='a'?'b':'a'].players.find(function(px){return px.id===G.pendingFoulOn._ftShooter;});
   } else if(G.pendingFoulOn && G.pendingFoulOn.playerId) {
     // Default: playerId is fouled player
     pfoPlayer = G.teams[fouledTeam].players.find(function(px){return px.id===G.pendingFoulOn.playerId;})
@@ -8111,7 +8957,7 @@ function snapToFTLane(shootingTeam, foulingTeam, shooterIdx) {
 }
 
 function closeModal() { document.getElementById('modal-bg').classList.remove('on'); }
-document.getElementById('modal-bg').addEventListener('click', e => {
+var _mbg=document.getElementById('modal-bg'); if(_mbg) _mbg.addEventListener('click', e => {
   if (e.target === document.getElementById('modal-bg')) {
     if(G.modalRequired){ notify('Make a selection to continue','foul'); return; }
     closeModal();
@@ -8156,6 +9002,7 @@ function teamSectionHTML(t) {
         <div>
           <div class="rrow-name" style="color:${onc?col:'var(--text2)'}" data-player-id="${p.id}" data-team="${t}" style="cursor:pointer">${onc?'&#9679; ':''}${p.name}</div>
           <div style="font-size:8px;color:var(--text3)">${p.position} · ${p.height} · OFF:${dv.OFF} DEF:${dv.DEF} HUS:${p.stats.HUS}</div>
+          ${(G.fatigue&&G.fatigue.enabled&&p.fat)?`<div id="fat-pips-${p.id}" style="margin-top:2px">${renderFatPips(p)}</div>`:''}
         </div>
         <div style="text-align:right">
           ${out?'<span style="font-size:8px;color:var(--red)">OUT</span>':'<div class="fpips">'+[1,2,3].map(n=>'<div class="fpip'+(f>=n?' on':'')+'"></div>').join('')+'</div>'}
@@ -8188,11 +9035,11 @@ function openSubModal(team) {
       </div>
       <div>
         <div style="font-size:9px;letter-spacing:3px;color:var(--text3);margin-bottom:8px">BENCH</div>
-        ${bench.length ? bench.map(p=>`<div class="sub-row" id="sub-in-${p.id}" onclick="toggleSubSel('in','${p.id}','${team}')" data-hover-pid="${p.id}" data-hover-team="${team}">${p.name} (${p.position})</div>`).join('') : '<div style="font-size:11px;color:var(--text3)">No bench players</div>'}
+        ${bench.length ? bench.map(p=>{var fatFull=G.fatigue&&G.fatigue.enabled&&p.fat&&p.fatPips>=p.fat;return `<div class="sub-row${fatFull?' sub-row-fatigued':''}" id="sub-in-${p.id}" onclick="toggleSubSel('in','${p.id}','${team}')" data-hover-pid="${p.id}" data-hover-team="${team}">${p.name} (${p.position})${fatFull?' 🔴 FAT':''}</div>`;}).join('') : '<div style="font-size:11px;color:var(--text3)">No bench players</div>'}
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost btn-sm" onclick="G.modalRequired=null;closeModal();if(G._deadBallSubTeam!==undefined){showContinueButton(G._deadBallSubTeam);}">NO SUB</button>
+      <button class="btn btn-ghost btn-sm" id="no-sub-btn" onclick="if(G.fatigue&&G.fatigue.enabled&&checkFatigueForced().some(function(f){return f.team==='${team}';})){notify('Must sub out fatigued player first!','foul');return;}G.modalRequired=null;closeModal();if(G._deadBallSubTeam!==undefined){showContinueButton(G._deadBallSubTeam);}">NO SUB</button>
       <button class="btn btn-primary btn-sm" id="sub-confirm" onclick="confirmSub('${team}')" disabled>CONFIRM SUB</button>
     </div>`;
   G._subOut = null; G._subIn = null;
@@ -8217,7 +9064,22 @@ function confirmSub(team) {
   const outP = tm.players.find(p=>p.id===_subState.out);
   const inP  = tm.players.find(p=>p.id===_subState.in);
   if(!outP||!inP) return;
+  // Fatigue: block sub-in if player is fully fatigued
+  if(G.fatigue && G.fatigue.enabled && inP.fat && inP.fatPips >= inP.fat) {
+    notify(inP.name+' is fully fatigued — cannot sub in!','foul');
+    addLog('🔴 FATIGUE: '+inP.name+' track full — cannot return to court','l-fo');
+    return;
+  }
   outP.onCourt = false; inP.onCourt = true;
+  // Fatigue: apply bonus drain on early sub-out (0 < pips < fat = not full)
+  if(G.fatigue && G.fatigue.enabled && outP.fat) {
+    var outPips = outP.fatPips || 0;
+    if(outPips > 0 && outPips < outP.fat) {
+      var bonus = Math.min(2, outPips - 1); // can't go below 1
+      outP.fatPips = outPips - bonus;
+      if(bonus > 0) addLog('💨 '+outP.name+' subbed out early — -'+bonus+' fatigue pip bonus ('+outP.fatPips+'/'+outP.fat+')','l-ev');
+    }
+  }
   _subState = {out:null,in:null};
   // Remember ball carrier before initTokens wipes G.ballTok
   const prevBallTeam = G.ballTok ? G.ballTok.team : null;
@@ -8397,6 +9259,7 @@ function showMiniCard(player, team) {
       </div>
       <div style="padding:3px 8px 5px;border-top:1px solid rgba(255,255,255,0.07);margin-top:3px">
         <button onclick="giveBallTo('${player.id}','${team}')" style="width:100%;padding:3px 0;font-size:9px;font-family:'Oswald',sans-serif;letter-spacing:2px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:var(--text3);border-radius:3px;cursor:pointer">GIVE BALL</button>
+        ${(G.fatigue&&G.fatigue.enabled&&player.fat)?`<div style="margin-top:4px;font-size:9px;color:var(--text3)">FAT ${player.fatPips}/${player.fat} ${renderFatPips(player)}</div>`:''}
       </div>
     </div>`;
   container.style.display = 'block';
@@ -9516,6 +10379,7 @@ function showSubHoverCard(pid, team, el) {
   var card = document.getElementById('sub-hover-card');
   if(!card){ card=document.createElement('div'); card.id='sub-hover-card'; document.body.appendChild(card); }
   card.setAttribute('style','position:fixed;z-index:9999;background:#1a1a1e;border:1px solid #444;border-radius:6px;padding:8px 10px;min-width:130px;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,0.6)');
+  var fatBar = (G.fatigue&&G.fatigue.enabled&&p.fat) ? '<div style="margin-top:4px;font-size:9px;color:#888">FAT: '+renderFatPips(p)+'</div>' : '';
   card.innerHTML =
     '<div style="font-size:11px;font-weight:700;color:#ccc;margin-bottom:6px;border-bottom:1px solid #333;padding-bottom:4px">'+p.name+' <span style="font-size:9px;color:#888">('+p.position+')</span></div>' +
     '<div style="font-size:10px;color:#aaa;margin-bottom:4px">OFF: <b style="color:#ccc">'+dv.OFF+'</b> &nbsp; DEF: <b style="color:#ccc">'+dv.DEF+'</b></div>' +
@@ -9526,7 +10390,7 @@ function showSubHoverCard(pid, team, el) {
       '<div style="flex:1;background:#2a2a30;border-radius:2px;height:5px">' +
       '<div style="width:'+Math.round(p.stats[k]/30*100)+'%;height:5px;background:#666;border-radius:2px"></div></div>' +
       '<span style="font-size:9px;color:#bbb;width:18px;text-align:right">'+p.stats[k]+'</span></div>'
-    ); }).join('');
+    ); }).join('') + fatBar;
   var rect = el.getBoundingClientRect();
   var cx = rect.right + 8;
   card.style.left = (cx + 140 > window.innerWidth ? rect.left - 148 : cx) + 'px';
@@ -10523,6 +11387,113 @@ function rollBackCourtTeam(team) {
 
 
 
+
+// ── MOBILE LAYOUT ENFORCER ───────────────────────────────────────────────
+function setStyle(el, prop, val) {
+  if(el) el.style.setProperty(prop, val, 'important');
+}
+
+function enforceMobileLayout() {
+  var vw = window.innerWidth;
+  var vh = window.innerHeight;
+  var hudH = 48;
+  var tbEl = document.querySelector('.topbar');
+  var tbH = tbEl ? Math.round(tbEl.getBoundingClientRect().height) : 78;
+  var slH = 72; // taller log box for better readability
+  // Shrink court 5% to give more room
+  var scale = 0.95;
+  var availH = Math.round((vh - hudH - tbH - slH) * scale);
+  var availW = vw;
+
+  var svgCssW = availH;
+  var svgCssH = Math.round(availH * 900 / 520);
+  var offset = Math.round((svgCssH - svgCssW) / 2);
+  var cwTop = -offset;
+  var cwLeft = Math.round((availW - svgCssW) / 2);
+
+  var courtTop = tbH;
+  var slTop = courtTop + availH;
+
+  var cc = document.querySelector('.court-col');
+  var cw = document.querySelector('.court-wrap');
+  var svg = document.getElementById('court-svg');
+  var sl = document.getElementById('subcourt-log');
+
+  if(vw > 600) return;
+
+  // Remove debug bar if present
+  var dbg = document.getElementById('mobile-debug');
+  if(dbg) dbg.remove();
+
+  if(cc) {
+    cc.style.setProperty('position','fixed','important');
+    cc.style.setProperty('top',courtTop+'px','important');
+    cc.style.setProperty('left','0','important');
+    cc.style.setProperty('width',availW+'px','important');
+    cc.style.setProperty('height',availH+'px','important');
+    cc.style.setProperty('overflow','hidden','important');
+    cc.style.setProperty('display','block','important');
+    cc.style.setProperty('z-index','1','important');
+  }
+  if(cw) {
+    cw.style.setProperty('position','absolute','important');
+    cw.style.setProperty('top',cwTop+'px','important');
+    cw.style.setProperty('left',cwLeft+'px','important');
+    cw.style.setProperty('width',svgCssW+'px','important');
+    cw.style.setProperty('height',svgCssH+'px','important');
+    cw.style.setProperty('overflow','visible','important');
+    cw.style.setProperty('display','block','important');
+  }
+  if(svg) {
+    svg.style.setProperty('transform','rotate(90deg)','important');
+    svg.style.setProperty('transform-origin','center center','important');
+    svg.style.setProperty('width',svgCssW+'px','important');
+    svg.style.setProperty('height',svgCssH+'px','important');
+    svg.style.setProperty('max-width','none','important');
+    svg.style.setProperty('max-height','none','important');
+    svg.style.setProperty('overflow','visible','important');
+    svg.style.setProperty('display','block','important');
+  }
+  if(sl) {
+    sl.style.setProperty('position','fixed','important');
+    sl.style.setProperty('top',slTop+'px','important');
+    sl.style.setProperty('left','0','important');
+    sl.style.setProperty('width',availW+'px','important');
+    sl.style.setProperty('height',slH+'px','important');
+    sl.style.setProperty('min-height',slH+'px','important');
+    sl.style.setProperty('max-height',slH+'px','important');
+    sl.style.setProperty('overflow-y','auto','important');
+    sl.style.setProperty('overflow-x','hidden','important');
+    sl.style.setProperty('font-size','10px','important');
+    sl.style.setProperty('display','block','important');
+    sl.style.setProperty('box-sizing','border-box','important');
+    sl.style.setProperty('z-index','1','important');
+    sl.style.setProperty('background','rgba(9,10,12,0.97)','important');
+    sl.style.setProperty('padding','4px 8px','important');
+  }
+  // Text wrap in log entries
+  setTimeout(function() {
+    if(sl) sl.querySelectorAll('div,.lentry').forEach(function(e) {
+      e.style.setProperty('white-space','normal','important');
+      e.style.setProperty('word-break','break-word','important');
+      e.style.setProperty('overflow-wrap','break-word','important');
+      e.style.setProperty('max-width','100%','important');
+      e.style.setProperty('overflow','hidden','important');
+    });
+  }, 200);
+}
 </script>
+<div class="mobile-hud">
+  <div class="mobile-bottom-bar">
+    <button class="mobile-team-btn mobile-team-btn-home" onclick="openMobileSidebar('a')">HOME</button>
+    <button class="mobile-team-btn mobile-team-btn-away" onclick="openMobileSidebar('b')">AWAY</button>
+  </div>
+</div>
+<div class="mobile-sidebar-modal" id="mobile-modal-a" onclick="closeMobileSidebar(event,'a')">
+  <div class="mobile-sidebar-inner" id="mobile-modal-inner-a"></div>
+</div>
+<div class="mobile-sidebar-modal" id="mobile-modal-b" onclick="closeMobileSidebar(event,'b')">
+  <div class="mobile-sidebar-inner" id="mobile-modal-inner-b"></div>
+</div>
 </body>
 </html>
