@@ -610,7 +610,30 @@ input::placeholder{color:var(--text3);}
 }
 .modal-card{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:24px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;}
 </style>
-<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
+<script>
+// Load Ably with fallback CDNs
+(function() {
+  var ABLY_CDNS = [
+    'https://cdn.ably.com/lib/ably.min-2.js',
+    'https://cdn.jsdelivr.net/npm/ably@2/ably.min.js',
+    'https://unpkg.com/ably@latest/ably.min.js'
+  ];
+  var idx = 0;
+  function tryLoad() {
+    if(idx >= ABLY_CDNS.length) {
+      console.error('All Ably CDNs failed');
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = ABLY_CDNS[idx];
+    s.onload = function() { console.log('Ably loaded from:', ABLY_CDNS[idx-1] || ABLY_CDNS[0]); };
+    s.onerror = function() { console.warn('Ably CDN failed:', ABLY_CDNS[idx]); idx++; tryLoad(); };
+    idx++;
+    document.head.appendChild(s);
+  }
+  tryLoad();
+})();
+</script>
 </head>
 <body>
 <!-- LOBBY -->
@@ -4857,8 +4880,16 @@ function handlePeerMessage(m) {
 function hostGame() {
   console.log('hostGame called. Ably:', typeof Ably);
   if(typeof Ably === 'undefined'){
-    notify('Ably not loaded — check network connection','foul');
-    document.getElementById('wait-status').textContent='Ably failed to load. Try refreshing.';
+    // Try loading Ably dynamically one more time
+    notify('Loading Ably...','score');
+    var s = document.createElement('script');
+    s.src = 'https://cdn.ably.com/lib/ably.min-2.js';
+    s.onload = function() { notify('Ably loaded — trying again...','score'); setTimeout(hostGame, 500); };
+    s.onerror = function() {
+      notify('Ably not loaded — check network connection','foul');
+      document.getElementById('wait-status').textContent='Ably failed to load. Try refreshing.';
+    };
+    document.head.appendChild(s);
     return;
   }
   G.role = 'host'; G.myTeam = 'a';
@@ -4894,7 +4925,11 @@ function hostGame() {
 
 function joinGame() {
   if(typeof Ably === 'undefined'){
-    notify('Ably not loaded — check network connection','foul');
+    var s2 = document.createElement('script');
+    s2.src = 'https://cdn.ably.com/lib/ably.min-2.js';
+    s2.onload = function(){ setTimeout(joinGame, 500); };
+    s2.onerror = function(){ notify('Ably not loaded — check network connection','foul'); };
+    document.head.appendChild(s2);
     return;
   }
   var code = (document.getElementById('join-code').value||'').trim().toUpperCase();
