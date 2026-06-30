@@ -3673,10 +3673,10 @@ function renderLogEntry(e) {
   return `<div class="lentry ${e.cls}"><span class="l-ts">${e.ts}</span>${e.msg}<button class="undo-entry-btn" onclick="undoLastAction()" title="Undo this">&#8617;</button></div>`;
 }
 
-function addLog(msg, cls='') {
+function addLog(msg, cls='', remoteTs) {
   snapshotState();
   setTimeout(syncMobileLog, 50);
-  const ts = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const ts = remoteTs || new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
   G.log.unshift({ msg, cls, ts });
   const logHTML = G.log.slice(0,120).map(renderLogEntry).join('');
   ['lglog-full','rglog-full'].forEach(id => {
@@ -3696,7 +3696,7 @@ function addLog(msg, cls='') {
   });
   // Broadcast log entry to remote player
   if(!G._suppressLogBcast && (ablyChannel || bc_chan)) {
-    const logMsg = { type:'log_entry', msg, cls, _from:G._ablyMyId };
+    const logMsg = { type:'log_entry', msg, cls, ts, _from:G._ablyMyId };
     if(ablyChannel) ablyChannel.publish('msg', logMsg);
     else if(bc_chan) bc_chan.postMessage(logMsg);
   }
@@ -4885,15 +4885,29 @@ function handlePeerMessage(m) {
   if(m.type==='game_event') handleRemote(m.ev);
   if(m.type==='tok_move') applyTokMove(m);
   if(m.type==='log_entry'){
-    G._suppressLogBcast = true;
-    addLog(m.msg, m.cls||'');
-    G._suppressLogBcast = false;
+    // Dedupe: skip if we already have this exact message+ts (avoid double-entry from echo)
+    var alreadyLogged = G.log.some(function(e){ return e.msg===m.msg && e.ts===m.ts; });
+    if(!alreadyLogged) {
+      G._suppressLogBcast = true;
+      addLog(m.msg, m.cls||'', m.ts);
+      G._suppressLogBcast = false;
+    }
   }
   if(m.type==='score_update'){
     G.score.a = m.scoreA; G.score.b = m.scoreB;
     syncScoreboard();
   }
   if(m.type==='state_sync') applyStateSync(m.state);
+  if(m.type==='modal_open') {
+    G._suppressModalBcast = true;
+    var fn = window[m.modalFn];
+    if(typeof fn === 'function') fn.apply(null, m.args||[]);
+    G._suppressModalBcast = false;
+  }
+  if(m.type==='modal_close') {
+    document.getElementById('modal-bg').classList.remove('on');
+    G.modalRequired = null;
+  }
 }
 
 function hostGame() {
@@ -8657,6 +8671,11 @@ function pressScoreBtn(team, pts) {
 }
 
 function showTimeoutSubPrompt(callingTeam) {
+  if(!G._suppressModalBcast && (ablyChannel||bc_chan)) {
+    var tm = {type:'modal_open', modalFn:'showTimeoutSubPrompt', args:[callingTeam], _from:G._ablyMyId};
+    if(ablyChannel) ablyChannel.publish('msg', tm);
+    else if(bc_chan) bc_chan.postMessage(tm);
+  }
   G.modalRequired = true;
   const aCol=G.teamColors?.a||'#2a6ee8', bCol=G.teamColors?.b||'#e83030';
   document.getElementById('modal-body').innerHTML=`
@@ -8701,6 +8720,12 @@ function showDeadBallSubPrompt(scoringTeam) {
   clearDoubleTeam();
   G.modalRequired = true;
   G._deadBallSubTeam = scoringTeam; // remember for confirmSub re-open
+  // Sync modal to remote player so both sides see the sub prompt
+  if(!G._suppressModalBcast && (ablyChannel||bc_chan)) {
+    var modalMsg = {type:'modal_open', modalFn:'showDeadBallSubPrompt', args:[scoringTeam], _from:G._ablyMyId};
+    if(ablyChannel) ablyChannel.publish('msg', modalMsg);
+    else if(bc_chan) bc_chan.postMessage(modalMsg);
+  }
   const aCol=G.teamColors?.a||'#2a6ee8', bCol=G.teamColors?.b||'#e83030';
   // Inbounding team is the opponent of the scoring team
   const inboundTeam = scoringTeam==='a'?'b':'a';
@@ -8716,6 +8741,11 @@ function showDeadBallSubPrompt(scoringTeam) {
 }
 
 function showInboundFromDeadBall(inboundTeam) {
+  if(!G._suppressModalBcast && (ablyChannel||bc_chan)) {
+    var im = {type:'modal_open', modalFn:'showInboundFromDeadBall', args:[inboundTeam], _from:G._ablyMyId};
+    if(ablyChannel) ablyChannel.publish('msg', im);
+    else if(bc_chan) bc_chan.postMessage(im);
+  }
   G.modalRequired = true;
   G._deadBallSubTeam = undefined; // leaving dead ball sub phase
   // Place inbounder on baseline out of bounds
@@ -9424,7 +9454,14 @@ function snapToFTLane(shootingTeam, foulingTeam, shooterIdx) {
   });
 }
 
-function closeModal() { document.getElementById('modal-bg').classList.remove('on'); }
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('on');
+  if(!G._suppressModalBcast && (ablyChannel||bc_chan)) {
+    var cm = {type:'modal_close', _from:G._ablyMyId};
+    if(ablyChannel) ablyChannel.publish('msg', cm);
+    else if(bc_chan) bc_chan.postMessage(cm);
+  }
+}
 var _mbg=document.getElementById('modal-bg'); if(_mbg) _mbg.addEventListener('click', e => {
   if (e.target === document.getElementById('modal-bg')) {
     if(G.modalRequired){ notify('Make a selection to continue','foul'); return; }
