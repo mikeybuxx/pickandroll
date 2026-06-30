@@ -3259,6 +3259,10 @@ function chooseLookZone(zone) {
 }
 
 function rollTeamOFF(team) {
+  if(G.isConnected && G.myTeam && team !== G.myTeam) {
+    notify('Wait for opponent — that\'s their team\'s roll','foul');
+    return;
+  }
   const ps = G.teams[team].players.filter(p=>p.onCourt).slice(0,5);
   if(!ps.length){notify('No players on court!');return;}
   const avg = Math.round(ps.reduce((s,p)=>s+derive(p).OFF,0)/ps.length);
@@ -3267,6 +3271,10 @@ function rollTeamOFF(team) {
   addLog(`👥 TEAM OFF (${G.teams[team].name}): avg OFF ${avg}, d30→${r} → SR <b>${sr}</b>`,'l-ro');
 }
 function rollActiveDefense(team) {
+  if(G.isConnected && G.myTeam && team !== G.myTeam) {
+    notify('Wait for opponent — that\'s their team\'s roll','foul');
+    return;
+  }
   // Store last active defender — use G.ap if on defTeam, else fall back to AP selector
   var _radOT=team==='a'?'b':'a';
   if(!G.lastActiveDefender) G.lastActiveDefender={a:null,b:null};
@@ -3462,6 +3470,10 @@ function rollActiveDefense(team) {
 }
 
 function rollTeamDEF(team) {
+  if(G.isConnected && G.myTeam && team !== G.myTeam) {
+    notify('Wait for opponent — that\'s their team\'s roll','foul');
+    return;
+  }
   const ps = G.teams[team].players.filter(p=>p.onCourt).slice(0,5);
   if(!ps.length){notify('No players on court!');return;}
   const avg = Math.round(ps.reduce((s,p)=>s+derive(p).DEF,0)/ps.length);
@@ -3730,6 +3742,10 @@ function qrTeam(team, n) {
 
 function rollFoul() { rollFoulTeam(G.myTeam); }
 function rollFoulTeam(team) {
+  if(G.isConnected && G.myTeam && team !== G.myTeam) {
+    notify('Wait for opponent — that\'s their team\'s roll','foul');
+    return;
+  }
   // Foul check is rolled by the OPPONENT of the fouled player
   // Block if pressing team IS the fouled player's team
   if(G.pendingFoulOn && G.pendingFoulOn.team === team){
@@ -4120,6 +4136,10 @@ function rollFoulTeam(team) {
 
 function rollContest() { rollContestTeam(G.myTeam); }
 function rollContestTeam(team) {
+  if(G.isConnected && G.myTeam && team !== G.myTeam) {
+    notify('Wait for opponent — that\'s their team\'s roll','foul');
+    return;
+  }
   const pfx = team==='a'?'l':'r';
   const os = parseInt(document.getElementById(pfx+'c-o').value)||20;
   const ds = parseInt(document.getElementById(pfx+'c-d').value)||20;
@@ -4137,6 +4157,10 @@ function rollContestTeam(team) {
 
 function rollBD() { rollBDTeam(G.myTeam); }
 function rollBDTeam(team) {
+  if(G.isConnected && G.myTeam && team !== G.myTeam) {
+    notify('Wait for opponent — that\'s their team\'s roll','foul');
+    return;
+  }
   // Block if foul check is pending
   if(G.foulCheckPending){
     notify('⚖️ Resolve foul check first — DICE tab → ROLL FOUL CHECK','foul');
@@ -6008,9 +6032,7 @@ function setLastAction(team, label, roll) {
 
 function act(a) {
   // Soft lock: foul check must be resolved before most actions
-  if(G.gameOver){ notify('Game over!','foul'); return; 
-  // Broadcast game state to remote after action
-  if(ablyChannel||bc_chan) setTimeout(broadcastGameState, 100);}
+  if(G.gameOver){ notify('Game over!','foul'); return; }
   const FC_EXEMPT = ['to_f','to_20','inbound','tipoff','free','stld','recoverhandle'];
   if(G.foulCheckPending && !FC_EXEMPT.includes(a)) {
     notify('⚖️ Resolve foul check first — DICE tab → ROLL FOUL CHECK', 'foul');
@@ -9644,6 +9666,11 @@ function setAPTeam(team, id) {
 }
 
 function actTeam(team, a) {
+  // Multiplayer gating: in a connected game, each player can only act for their own team
+  if(G.isConnected && G.myTeam && team !== G.myTeam) {
+    notify('Wait for opponent — that\'s their team\'s action','foul');
+    return;
+  }
   const selId = document.getElementById((team==='a'?'l':'r')+'ap-sel')?.value;
   const ps = G.teams[team].players.filter(p=>p.onCourt);
   if(selId) {
@@ -9659,6 +9686,7 @@ function actTeam(team, a) {
   G.myTeam = team;
   act(a);
   G.myTeam = saved;
+  if(typeof broadcastGameState === 'function') broadcastGameState();
 }
 
 // ════════════════════════════════════════════
