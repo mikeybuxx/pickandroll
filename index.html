@@ -3782,15 +3782,14 @@ function rollFoulTeam(team) {
       if(!obFtPl) obFtPl = obFtPs[0];
       var obFtIdx = obFtPs.findIndex(function(px){return px.id===(obFtPl?obFtPl.id:null);});
       if(obFtPl) {
-        setActiveAndBall(obFouledTeam, obFtIdx, obFtPl.id);
         var obFtX = obFouledTeam==='a' ? 703 : 197;
         var obFtTid = 'T-'+obFouledTeam+'-'+obFtIdx;
         var obFtEl = document.getElementById(obFtTid);
         if(obFtEl && G.tokPos[obFtTid]) {
-          var obFtNov = offsetIfOverlap(obFtX, 260, obFtTid);
-          obFtEl.setAttribute('transform','translate('+obFtNov.x+','+obFtNov.y+')');
-          G.tokPos[obFtTid].x=obFtNov.x; G.tokPos[obFtTid].y=obFtNov.y;
+          obFtEl.setAttribute('transform','translate('+obFtX+',260)');
+          G.tokPos[obFtTid].x=obFtX; G.tokPos[obFtTid].y=260;
         }
+        setActiveAndBall(obFouledTeam, obFtIdx, obFtPl.id);
         G.pendingFT = {player:obFtPl, team:obFouledTeam, mode:'shooting', shotsLeft:2, shotsMade:0, keepPossession:true};
         addLog('🎯 '+obFtPl.name+' to the free throw line — 2 shots · '+G.teams[obFouledTeam].name+' retains possession','l-ev');
         notify(obFtPl.name+' shoots 2 FTs','score');
@@ -3809,15 +3808,14 @@ function rollFoulTeam(team) {
       if(ifFtPlayer) {
         var ifFtPs = G.teams[ifFtTeam].players.filter(function(px){return px.onCourt;});
         var ifFtIdx = ifFtPs.findIndex(function(px){return px.id===ifFtPlayer.id;});
-        setActiveAndBall(ifFtTeam, ifFtIdx, ifFtPlayer.id);
         var ifFtX = ifFtTeam==='a' ? 703 : 197;
         var ifFtTid = 'T-'+ifFtTeam+'-'+ifFtIdx;
         var ifFtEl = document.getElementById(ifFtTid);
         if(ifFtEl && G.tokPos[ifFtTid]) {
-          var ifFtNov = offsetIfOverlap(ifFtX, 260, ifFtTid);
-          ifFtEl.setAttribute('transform','translate('+ifFtNov.x+','+ifFtNov.y+')');
-          G.tokPos[ifFtTid].x=ifFtNov.x; G.tokPos[ifFtTid].y=ifFtNov.y;
+          ifFtEl.setAttribute('transform','translate('+ifFtX+',260)');
+          G.tokPos[ifFtTid].x=ifFtX; G.tokPos[ifFtTid].y=260;
         }
+        setActiveAndBall(ifFtTeam, ifFtIdx, ifFtPlayer.id);
         G.pendingFT = {player:ifFtPlayer, team:ifFtTeam, mode:'shooting', shotsLeft:ifFtCount, shotsMade:0};
         addLog('🎯 '+ifFtPlayer.name+' to the free throw line — '+ifFtCount+' shots','l-ev');
         notify(ifFtPlayer.name+' shoots '+ifFtCount+' FTs','score');
@@ -5624,7 +5622,9 @@ function mkTok(player, team, idx, pos) {
             document.querySelectorAll('.look-locked,.look-target,.look-origin').forEach(function(el){el.classList.remove('look-locked','look-target','look-origin');});
           }
         }
-        addLog(`👁 LOOK (1): ${lp.player.name} OFF (SR ${srOff}) looking for ${player.name} vs ${defPlayer?defPlayer.name:'Defender'} DEF (SR ${srDef}) — <b>COVERED</b>${foulOn2}`, 'l-ro');
+        var foulRollTeam2 = G.foulCheckPending && G.pendingFoulOn ?
+        G.teams[G.pendingFoulOn.team==='a'?'b':'a'].name+': roll Foul Check' : '';
+      addLog(`👁 LOOK (1): ${lp.player.name} OFF (SR ${srOff}) looking for ${player.name} vs ${defPlayer?defPlayer.name:'Defender'} DEF (SR ${srDef}) — <b>COVERED</b>${foulOn2}${foulRollTeam2?' · <span style="color:var(--accent)">'+foulRollTeam2+'</span>':''}`, 'l-ro');
         notify('COVERED — use LOOK ALL next', '');
       }
       return;
@@ -5876,6 +5876,17 @@ function applyStateSync(state) {
     G.ap={team:state.ap.team, idx:state.ap.idx, id:state.ap.id};
     hilightAP();
   }
+  // Apply pending game state so opponent can respond to prompts
+  var pendingFields = ['pendingShot','passPending','foulCheckPending','pendingFoulOn',
+    'lookPending','lookAllPending','hfakePending','fastBreak','pendingFT','pendingScore',
+    'openShot','holdDribble','freshDribble','dribbleLive','zone1Gate','doubleTeam',
+    'reboundPending','lastShotSR','_hfakeSemiOpen','_hfakeOffTeam','_critOpenPending',
+    'fouls','heatCheck'];
+  pendingFields.forEach(function(k){
+    if(state[k] !== undefined) G[k] = state[k];
+  });
+  if(state.fatigue !== undefined) G.fatigue = state.fatigue;
+  syncFastBreak();
   buildAPSel();
   refreshTeamPanel();
 }
@@ -5890,9 +5901,34 @@ function broadcastGameState() {
     myTeam: G.myTeam,
     ballTok: G.ballTok,
     tokPos: G.tokPos,
-    log: G.log.slice(0,5), // last 5 log entries
-    modalClosed: true, // signal to remote to close their modal
-    ap: G.ap ? {team:G.ap.team, idx:G.ap.idx, id:G.ap.id} : null
+    log: G.log.slice(0,5),
+    modalClosed: true,
+    ap: G.ap ? {team:G.ap.team, idx:G.ap.idx, id:G.ap.id} : null,
+    // Pending action state — critical for opponent to respond correctly
+    pendingShot: G.pendingShot,
+    passPending: G.passPending,
+    foulCheckPending: G.foulCheckPending,
+    pendingFoulOn: G.pendingFoulOn,
+    lookPending: G.lookPending,
+    lookAllPending: G.lookAllPending,
+    hfakePending: G.hfakePending,
+    fastBreak: G.fastBreak,
+    pendingFT: G.pendingFT,
+    pendingScore: G.pendingScore,
+    openShot: G.openShot,
+    holdDribble: G.holdDribble,
+    freshDribble: G.freshDribble,
+    dribbleLive: G.dribbleLive,
+    zone1Gate: G.zone1Gate,
+    doubleTeam: G.doubleTeam,
+    reboundPending: G.reboundPending,
+    lastShotSR: G.lastShotSR,
+    _hfakeSemiOpen: G._hfakeSemiOpen,
+    _hfakeOffTeam: G._hfakeOffTeam,
+    _critOpenPending: G._critOpenPending,
+    fouls: G.fouls,
+    heatCheck: G.heatCheck,
+    fatigue: G.fatigue
   };
   var msg = {type:'state_sync', state:state, _from:G._ablyMyId};
   if(ablyChannel) ablyChannel.publish('msg', msg);
@@ -5905,7 +5941,20 @@ function broadcastStateSync() {
     clocks: G.clocks,
     tokPos: G.tokPos,
     ballTok: G.ballTok,
-    possession: G.possession
+    possession: G.possession,
+    pendingShot: G.pendingShot,
+    passPending: G.passPending,
+    foulCheckPending: G.foulCheckPending,
+    pendingFoulOn: G.pendingFoulOn,
+    lookPending: G.lookPending,
+    lookAllPending: G.lookAllPending,
+    hfakePending: G.hfakePending,
+    fastBreak: G.fastBreak,
+    pendingFT: G.pendingFT,
+    openShot: G.openShot,
+    reboundPending: G.reboundPending,
+    fouls: G.fouls,
+    heatCheck: G.heatCheck
   };
   var msg = {type:'state_sync', state, _from:G._ablyMyId};
   if(ablyChannel) ablyChannel.publish('msg', msg);
@@ -12824,7 +12873,11 @@ function openSimModal(home, away, game, weekNum) {
     homePoss:0, awayPoss:0,
     highlights:[], ticker:[],
     period:1, possession:Math.random()<0.5?'home':'away',
-    clock:20*60 // 20 min halves
+    clock:20*60, // 20 min halves
+    stats:{
+      home:{fga:0,fgm:0,fga3:0,fgm3:0,fta:0,ftm:0,fouls:0,to:0,reb:0,offReb:0,playerPts:{}},
+      away:{fga:0,fgm:0,fga3:0,fgm3:0,fta:0,ftm:0,fouls:0,to:0,reb:0,offReb:0,playerPts:{}}
+    }
   };
 
   var modal = document.getElementById('sim-modal');
@@ -13289,7 +13342,7 @@ function startNewCareer(slot) {
     '<div id="nc-make-area" style="display:none">' +
     '<input id="nc-team-name" placeholder="Team name..." maxlength="30" style="width:100%;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:Oswald,sans-serif;margin-bottom:6px">' +
     '<input id="nc-team-nick" placeholder="Nickname..." maxlength="20" style="width:100%;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:Oswald,sans-serif;margin-bottom:6px">' +
-    '<div style="display:flex;align-items:center;gap:8px"><label style="font-size:10px;color:var(--text3)">Team Color:</label><input type="color" id="nc-color" value="#2a6ee8" style="width:40px;height:30px;border:none;background:none;cursor:pointer"></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +'<label style="font-size:10px;color:var(--text3)">Team Color:</label>' +'<input type="color" id="nc-color" value="#2a6ee8" style="width:36px;height:30px;border:none;background:none;cursor:pointer" oninput="syncCareerColor(\'picker\')">' +'<input type="text" id="nc-color-hex" value="#2a6ee8" maxlength="7" placeholder="#hex" style="width:68px;padding:4px 6px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px" oninput="syncCareerColor(\'hex\')">' +'</div>' +
     '</div></div>' +
     '<div style="margin-top:20px;display:flex;gap:8px">' +
     '<button class="btn btn-ghost" onclick="renderCareerSlots(document.getElementById(\"career-body\"))">CANCEL</button>' +
@@ -13318,6 +13371,13 @@ function ncMode(mode) {
   document.getElementById('nc-make-btn').style.borderColor = mode==='make'?'var(--accent)':'';
 }
 
+function syncCareerColor(src) {
+  var hex = document.getElementById('nc-color-hex');
+  var picker = document.getElementById('nc-color');
+  if(src==='picker' && picker && hex) hex.value = picker.value;
+  if(src==='hex' && hex && picker && hex.value.match(/^#[0-9a-fA-F]{6}$/)) picker.value = hex.value;
+}
+
 function createCareer() {
   var coachName = document.getElementById('nc-coach').value.trim();
   if(!coachName) { alert('Enter a coach name'); return; }
@@ -13335,13 +13395,17 @@ function createCareer() {
     if(!teamName || !teamNick) { alert('Enter team name and nickname'); return; }
     teamId = 'custom_'+Date.now();
     teamTier = window._ncDiff==='high'?1:window._ncDiff==='mid'?2:3;
+    // Drop a Tier 4 team to keep conference at 14 (even schedule, no bye weeks)
+    var tier4teams = SGC_TEAMS.filter(function(t){ return t.tier===4; });
+    var dropped = tier4teams[Math.floor(Math.random()*tier4teams.length)];
+    var droppedId = dropped ? dropped.id : SGC_TEAMS[SGC_TEAMS.length-1].id;
+    notify('Dropped '+( dropped?dropped.name:'a team')+' from conference to make room','score');
   }
 
-  // Generate conference (14 teams total — your team replaces the picked SGC team or adds as 15th... keep at 14)
-  var confTeams = SGC_TEAMS.filter(function(t){ return t.id!==teamId; });
-  // Add your team
+  // Generate conference — custom team replaces a dropped Tier 4, picked team replaces itself (always 14)
+  var confTeams = SGC_TEAMS.filter(function(t){ return t.id!==teamId && t.id!==(typeof droppedId!=='undefined'?droppedId:teamId); });
   var myTeam = {id:teamId, name:teamName, nick:teamNick, tier:teamTier, primary:teamColor, secondary:'#ffffff', isPlayer:true};
-  var allTeams = [myTeam].concat(confTeams); // 14 total
+  var allTeams = [myTeam].concat(confTeams); // always 14
 
   // Generate rosters for all teams
   notify('Generating rosters...','score');
@@ -13596,8 +13660,15 @@ function simCareerGame(gameId, weekNum) {
 
   var homeTeam = CC.teams.find(function(t){return t.id===game.homeId;});
   var awayTeam = CC.teams.find(function(t){return t.id===game.awayId;});
-  var homeRoster = CC.rosters[game.homeId]||[];
-  var awayRoster = CC.rosters[game.awayId]||[];
+
+  if(!homeTeam || !awayTeam) {
+    notify('Team data missing — please start a new career slot (old save format)','foul');
+    console.error('simCareerGame: missing team', game.homeId, game.awayId, CC.teams.map(function(t){return t.id;}));
+    return;
+  }
+
+  var homeRoster = CC.rosters[game.homeId]||careerGenRoster(homeTeam);
+  var awayRoster = CC.rosters[game.awayId]||careerGenRoster(awayTeam);
 
   _simGame = {
     gameId: gameId, weekNum: weekNum,
@@ -13652,19 +13723,35 @@ function buildSimUI(home, away, week) {
 
 function buildSimCourt(home, away) {
   var hc = home.primary||'#3a8cf5', ac = away.primary||'#e83030';
-  return '<rect x="28" y="18" width="844" height="484" fill="#1a1a2a" stroke="#334" stroke-width="2"/>' +
-    '<line x1="450" y1="18" x2="450" y2="502" stroke="#334" stroke-width="1.5"/>' +
-    '<circle cx="450" cy="260" r="36" fill="none" stroke="#334" stroke-width="1.5"/>' +
-    '<rect x="28" y="201.9" width="169.1" height="116.2" fill="rgba('+hexToRgb(hc)+',0.15)" stroke="#334" stroke-width="1.5"/>' +
-    '<rect x="702.9" y="201.9" width="169.1" height="116.2" fill="rgba('+hexToRgb(ac)+',0.15)" stroke="#334" stroke-width="1.5"/>' +
-    '<circle cx="75.1" cy="260" r="10" fill="none" stroke="'+hc+'" stroke-width="2"/>' +
-    '<circle cx="824.9" cy="260" r="10" fill="none" stroke="'+ac+'" stroke-width="2"/>' +
-    '<path d="M 97.9 47 A 198.8 214.4 0 0 1 97.9 473" fill="none" stroke="#334" stroke-width="1.5"/>' +
-    '<path d="M 802.1 47 A 198.8 214.4 0 0 0 802.1 473" fill="none" stroke="#334" stroke-width="1.5"/>' +
-    // Team labels
-    '<text x="180" y="40" text-anchor="middle" font-family="Oswald,sans-serif" font-size="11" fill="'+hc+'" letter-spacing="1">'+home.nick.toUpperCase()+'</text>' +
-    '<text x="720" y="40" text-anchor="middle" font-family="Oswald,sans-serif" font-size="11" fill="'+ac+'" letter-spacing="1">'+away.nick.toUpperCase()+'</text>' +
-    '<defs><marker id="ball-arrow" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#ffd700"/></marker></defs>';
+  var hr = hexToRgb(hc), ar = hexToRgb(ac);
+  return [
+    '<rect x="28" y="18" width="844" height="484" fill="#151820" stroke="#2a3040" stroke-width="2"/>',
+    '<line x1="450" y1="18" x2="450" y2="502" stroke="#2a3040" stroke-width="1.5"/>',
+    '<circle cx="450" cy="260" r="36" fill="none" stroke="#2a3040" stroke-width="1.5"/>',
+    // Left paint (home defends right, attacks left — so home paint is LEFT)
+    '<rect x="28" y="201.9" width="169.1" height="116.2" fill="rgba('+hr+',0.15)" stroke="rgba('+hr+',0.4)" stroke-width="1.5"/>',
+    // Right paint (away)
+    '<rect x="702.9" y="201.9" width="169.1" height="116.2" fill="rgba('+ar+',0.15)" stroke="rgba('+ar+',0.4)" stroke-width="1.5"/>',
+    // FT arcs
+    '<path d="M 197.1 201.9 A 58.1 58.1 0 0 1 197.1 318.1" fill="none" stroke="#2a3040" stroke-width="1" stroke-dasharray="4,3"/>',
+    '<path d="M 702.9 201.9 A 58.1 58.1 0 0 0 702.9 318.1" fill="none" stroke="#2a3040" stroke-width="1" stroke-dasharray="4,3"/>',
+    // 3pt arcs + corners
+    '<path d="M 97.9 47 A 198.8 214.4 0 0 1 97.9 473" fill="none" stroke="#2a3040" stroke-width="1.5"/>',
+    '<line x1="28" y1="47" x2="97.9" y2="47" stroke="#2a3040" stroke-width="1.5"/>',
+    '<line x1="28" y1="473" x2="97.9" y2="473" stroke="#2a3040" stroke-width="1.5"/>',
+    '<path d="M 802.1 47 A 198.8 214.4 0 0 0 802.1 473" fill="none" stroke="#2a3040" stroke-width="1.5"/>',
+    '<line x1="872" y1="47" x2="802.1" y2="47" stroke="#2a3040" stroke-width="1.5"/>',
+    '<line x1="872" y1="473" x2="802.1" y2="473" stroke="#2a3040" stroke-width="1.5"/>',
+    // Baskets
+    '<circle cx="75.1" cy="260" r="9" fill="none" stroke="'+hc+'" stroke-width="2.5"/>',
+    '<line x1="28" y1="248" x2="28" y2="272" stroke="'+hc+'" stroke-width="3.5"/>',
+    '<circle cx="824.9" cy="260" r="9" fill="none" stroke="'+ac+'" stroke-width="2.5"/>',
+    '<line x1="872" y1="248" x2="872" y2="272" stroke="'+ac+'" stroke-width="3.5"/>',
+    // Nicks
+    '<text x="200" y="498" text-anchor="middle" font-family="Oswald,sans-serif" font-size="10" fill="rgba('+hr+',0.5)" letter-spacing="2">'+home.nick.toUpperCase()+'</text>',
+    '<text x="700" y="498" text-anchor="middle" font-family="Oswald,sans-serif" font-size="10" fill="rgba('+ar+',0.5)" letter-spacing="2">'+away.nick.toUpperCase()+'</text>',
+    '<defs><marker id="ball-arrow" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#ffd700"/></marker></defs>'
+  ].join('');
 }
 
 function hexToRgb(hex) {
@@ -13675,12 +13762,28 @@ function hexToRgb(hex) {
 // ── TOKEN POSITIONS (simplified zones on court) ───────────────────────────────
 var SIM_ZONES = {
   home: {
-    zone1: {x:770, y:260}, zone2: {x:645, y:210}, zone3: {x:590, y:200},
-    zone4: {x:480, y:260}, back: {x:260, y:260}, ft: {x:703, y:260}
+    zone1:      {x:770, y:260},
+    zone2:      {x:645, y:195},
+    zone3:      {x:580, y:195},
+    zone4:      {x:480, y:260},
+    back:       {x:260, y:260},
+    ft:         {x:703, y:260},
+    corner_near:{x:830, y:80},
+    corner_far: {x:830, y:440},
+    mid_left:   {x:690, y:170},
+    mid_right:  {x:690, y:350}
   },
   away: {
-    zone1: {x:130, y:260}, zone2: {x:255, y:210}, zone3: {x:310, y:200},
-    zone4: {x:420, y:260}, back: {x:640, y:260}, ft: {x:197, y:260}
+    zone1:      {x:130, y:260},
+    zone2:      {x:255, y:195},
+    zone3:      {x:320, y:195},
+    zone4:      {x:420, y:260},
+    back:       {x:640, y:260},
+    ft:         {x:197, y:260},
+    corner_near:{x:70, y:80},
+    corner_far: {x:70, y:440},
+    mid_left:   {x:210, y:170},
+    mid_right:  {x:210, y:350}
   }
 };
 
@@ -13698,12 +13801,14 @@ function setSimSpeed(ms) {
 function simTeamRating(roster) {
   var starters = roster.filter(function(p){return p.onCourt;});
   if(!starters.length) starters = roster.slice(0,5);
-  var offSum=0, defSum=0, husSum=0;
+  var offSum=0,defSum=0,husSum=0,shtSum=0,rbtSum=0;
   starters.forEach(function(p) {
     var dv = derive(p);
-    offSum += dv.OFF; defSum += dv.DEF; husSum += (p.stats.HUS||15);
+    offSum+=dv.OFF; defSum+=dv.DEF; husSum+=(p.stats.HUS||15);
+    shtSum+=(p.stats.SHT||15); rbtSum+=(p.stats.RBD||15);
   });
-  return {off: offSum/starters.length, def: defSum/starters.length, hus: husSum/starters.length};
+  var n=starters.length;
+  return {off:offSum/n, def:defSum/n, hus:husSum/n, sht:shtSum/n, rbt:rbtSum/n};
 }
 
 // ── SIM LOOP ──────────────────────────────────────────────────────────────────
@@ -13744,41 +13849,42 @@ function simStep() {
   var offRating = simTeamRating(offRoster);
   var defRating = simTeamRating(defRoster);
 
-  // Possession resolution
-  var offRoll = d(30) + offRating.off * 0.5;
-  var defRoll = d(30) + defRating.def * 0.5;
-  var husRoll = d(30) + offRating.hus * 0.3;
-  var outcome, pts=0, zone='zone3', highlight=false;
-
-  // Determine outcome
+  // Possession resolution — OFF/DEF for possession, SHT for actual shot
+  var offRoll = d(30) + offRating.off * 0.4;
+  var defRoll = d(30) + defRating.def * 0.4;
   var margin = offRoll - defRoll;
   var rand = Math.random();
+  var outcome, pts=0, zone='zone3', highlight=false;
 
-  if(margin > 8 && rand < 0.55) {
-    // Good shot
-    var is3 = Math.random() < 0.32;
-    pts = is3 ? 3 : 2;
-    zone = is3 ? (Math.random()<0.5?'zone3':'zone2') : (Math.random()<0.6?'zone2':'zone1');
-    outcome = 'score';
-    highlight = true;
-  } else if(margin > 0 && rand < 0.38) {
-    pts = 2;
-    zone = Math.random()<0.5?'zone2':'zone1';
-    outcome = 'score';
-    highlight = true;
-  } else if(margin < -6 && rand < 0.25) {
-    outcome = 'steal';
-    highlight = true;
-  } else if(margin < -3 && rand < 0.15) {
-    outcome = 'turnover';
-    highlight = true;
-  } else if(rand < 0.12) {
+  // Pick best shooter (weighted by SHT)
+  var offStarters2 = offRoster.filter(function(p){return p.onCourt;}).slice(0,5);
+  var shooter = offStarters2.reduce(function(best,p){return (!best||(p.stats.SHT||15)>(best.stats.SHT||15))?p:best;},null);
+  var shtBonus = (shooter&&(shooter.specialty==='SHOOTER'||shooter.specialty2==='SHOOTER'))?4:0;
+  var shotRoll = d(30) + (shooter?(shooter.stats.SHT||15):15)*0.35 + shtBonus;
+  var shotThreshold = 20 + defRating.def*0.12;
+
+  if(margin < -6 && rand < 0.25) {
+    outcome = 'steal'; highlight = true;
+  } else if(margin < -3 && rand < 0.14) {
+    outcome = 'turnover'; highlight = true;
+  } else if(rand < 0.11) {
     pts = Math.random()<0.7?2:1;
-    outcome = 'foul';
-    highlight = Math.random()<0.5;
+    outcome = 'foul'; highlight = Math.random()<0.5;
   } else {
-    outcome = 'miss';
-    highlight = Math.random()<0.25;
+    var is3 = Math.random()<0.30;
+    if(is3) {
+      // 3PT zones: corner, wing, top of key
+      var r3 = Math.random();
+      zone = r3<0.25?'corner_near':r3<0.50?'corner_far':r3<0.80?'zone2':'zone3';
+    } else {
+      var r2 = Math.random();
+      zone = r2<0.30?'zone1':r2<0.65?'mid_left':r2<0.85?'mid_right':'zone2';
+    }
+    if(shotRoll > shotThreshold && margin > -4) {
+      pts = is3?3:2; outcome = 'score'; highlight = true;
+    } else {
+      outcome = 'miss'; highlight = Math.random()<0.3;
+    }
   }
 
   // Pick players for highlight
@@ -13786,6 +13892,23 @@ function simStep() {
   var defStarters = defRoster.filter(function(p){return p.onCourt;}).slice(0,5);
   var scorer = offStarters[Math.floor(Math.random()*offStarters.length)];
   var defender = defStarters[Math.floor(Math.random()*defStarters.length)];
+
+  // Track stats
+  var sg = _simGame.stats[poss], dg = _simGame.stats[poss==='home'?'away':'home'];
+  var is3Shot = zone==='zone3'||zone==='zone2'||zone==='corner_near'||zone==='corner_far';
+  if(outcome==='score') {
+    sg.fga++; if(is3Shot){sg.fga3++;sg.fgm3++;} sg.fgm++;
+    if(scorer){sg.playerPts[scorer.id]=(sg.playerPts[scorer.id]||0)+pts;}
+  } else if(outcome==='miss') {
+    sg.fga++; if(is3Shot) sg.fga3++;
+  } else if(outcome==='steal') {
+    sg.to++; // steal is a TO for offense
+  } else if(outcome==='turnover') {
+    sg.to++;
+  } else if(outcome==='foul') {
+    dg.fouls++;
+    sg.fta+=2; sg.ftm+=pts; // pts = FTs made
+  }
 
   // Apply outcome
   if(outcome==='score') {
@@ -13811,13 +13934,19 @@ function simStep() {
     if(highlight) simHighlight(poss, 'ft', outcome, pts, scorer, defender);
     else simSweep(poss);
   } else {
-    // Miss — rebound — usually same team keeps, sometimes turns over
-    if(Math.random()<0.28) _simGame.possession = poss==='home'?'away':'home';
-    if(highlight) simHighlight(poss, zone, outcome, 0, scorer, defender);
+    // Miss → rebound contest using RBD
+    var offRbt = d(30) + offRating.rbt*0.4;
+    var defRbt = d(30) + defRating.rbt*0.4;
+    var rebSide = offRbt > defRbt ? poss : (poss==='home'?'away':'home');
+    _simGame.possession = rebSide;
+    var rebLabel = rebSide===poss ? 'OFF REB' : 'DEF REB';
+    if(rebSide===poss) { sg.offReb++; sg.reb++; } else { dg.reb++; }
+    if(highlight) simHighlight(poss, zone, 'miss', 0, scorer, defender, rebLabel);
     else simSweep(_simGame.possession);
+    _simGame.possCount++; _simGame.halfPossCount++;
+    updateSimScoreboard();
+    return;
   }
-
-  // Advance possession
   _simGame.possession = poss==='home'?'away':'home';
   _simGame.possCount++;
   _simGame.halfPossCount++;
@@ -13836,17 +13965,19 @@ function updateSimScoreboard() {
   if(period) period.textContent = _simGame.half===1?'1ST HALF':'2ND HALF';
   if(possEl) {
     var poss = _simGame.possession;
-    var col = poss==='home' ? (_simGame.home.primary||'#3a8cf5') : (_simGame.away.primary||'#e83030');
-    possEl.innerHTML = '<span style="color:'+col+'">●</span> '+(poss==='home'?_simGame.home.nick:_simGame.away.nick)+' ball';
+    var hTeam = _simGame.home||{}, aTeam = _simGame.away||{};
+    var col = poss==='home' ? (hTeam.primary||'#3a8cf5') : (aTeam.primary||'#e83030');
+    possEl.innerHTML = '<span style="color:'+col+'">●</span> '+(poss==='home'?(hTeam.nick||'HOME'):(aTeam.nick||'AWAY'))+' ball';
   }
 }
 
-function simHighlight(side, zone, outcome, pts, scorer, defender) {
+function simHighlight(side, zone, outcome, pts, scorer, defender, rebMsg) {
+  if(!_simGame) return;
   var pos = getSimZone(side, zone);
   var tokLayer = document.getElementById('sim-tokens');
   if(!tokLayer) return;
-  var teamObj = side==='home' ? _simGame.home : _simGame.away;
-  var oppObj = side==='home' ? _simGame.away : _simGame.home;
+  var teamObj = (side==='home' ? _simGame.home : _simGame.away)||{nick:'',primary:'#888'};
+  var oppObj = (side==='home' ? _simGame.away : _simGame.home)||{nick:'',primary:'#888'};
   var col = teamObj.primary||'#3a8cf5';
   var defCol = oppObj.primary||'#e83030';
 
@@ -13854,7 +13985,7 @@ function simHighlight(side, zone, outcome, pts, scorer, defender) {
   tokLayer.innerHTML = '';
 
   // Sweep tokens (offense cluster in their half, defense in theirs)
-  simDrawTeamTokens(side, col, '#444');
+  simDrawTeamTokens(side);
 
   // Highlight token at event position
   var g = document.createElementNS('http://www.w3.org/2000/svg','g');
@@ -13926,8 +14057,11 @@ function simHighlight(side, zone, outcome, pts, scorer, defender) {
   if(outcome==='score') msg = teamObj.nick+': '+scorerName+' scores '+pts+(pts===3?' (3PT)':'');
   else if(outcome==='steal') msg = oppObj.nick+': '+defName+' STEAL — turnover';
   else if(outcome==='turnover') msg = teamObj.nick+': '+scorerName+' TURNOVER';
-  else if(outcome==='foul') msg = (pts>0?teamObj.nick+': '+scorerName+' makes '+(pts===1?'FT':'2 FTs'):'FOUL — '+teamObj.nick);
-  else msg = teamObj.nick+': '+scorerName+' MISS — '+( Math.random()<0.5?'rebound':'loose ball');
+  else if(outcome==='foul') {
+    var foulDefName = defender?defender.name.split(' ').pop():'Defender';
+    msg = oppObj.nick+': '+foulDefName+' FOUL → '+scorerName+(pts>0?' makes '+(pts===1?'1 FT':'2 FTs'):'');
+  }
+  else msg = teamObj.nick+': '+scorerName+' MISS — '+(rebMsg||(Math.random()<0.5?'off rebound':'def rebound'));
   addTickerEntry(msg, cls);
   // Score update in ticker if score
   if(outcome==='score'||outcome==='foul') {
@@ -13935,40 +14069,37 @@ function simHighlight(side, zone, outcome, pts, scorer, defender) {
   }
 }
 
-function simDrawTeamTokens(possessingside, offCol, defCol) {
+function simDrawTeamTokens(possessingside) {
   var tokLayer = document.getElementById('sim-tokens');
-  if(!tokLayer) return;
-  // 5 small dots for each team in their zone
+  if(!tokLayer||!_simGame) return;
+  var homeCol = (_simGame.home&&_simGame.home.primary)||'#3a8cf5';
+  var awayCol = (_simGame.away&&_simGame.away.primary)||'#e83030';
+  var offColor = possessingside==='home'?homeCol:awayCol;
+  var defColor = possessingside==='home'?awayCol:homeCol;
+  var offSide = possessingside, defSide = possessingside==='home'?'away':'home';
   var offZones = ['zone4','zone3','zone2','zone2','back'];
   var defZones = ['zone3','zone4','zone2','back','zone1'];
-  var offSide = possessingside;
-  var defSide = possessingside==='home'?'away':'home';
-  offZones.forEach(function(z,i) {
-    var p = getSimZone(offSide, z);
-    var jitter = {x:(Math.random()-0.5)*30, y:(Math.random()-0.5)*40};
-    var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    c.setAttribute('cx',p.x+jitter.x); c.setAttribute('cy',p.y+jitter.y);
-    c.setAttribute('r','5'); c.setAttribute('fill',offCol); c.setAttribute('opacity','0.5');
-    tokLayer.appendChild(c);
-  });
-  defZones.forEach(function(z,i) {
-    var p = getSimZone(defSide, z);
-    var jitter = {x:(Math.random()-0.5)*30, y:(Math.random()-0.5)*40};
-    var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    c.setAttribute('cx',p.x+jitter.x); c.setAttribute('cy',p.y+jitter.y);
-    c.setAttribute('r','5'); c.setAttribute('fill',defCol); c.setAttribute('opacity','0.3');
-    tokLayer.appendChild(c);
-  });
+  function drawToks(side, zones, col, alpha) {
+    zones.forEach(function(z) {
+      var p = getSimZone(side,z);
+      var jx=(Math.random()-0.5)*28, jy=(Math.random()-0.5)*36;
+      var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', p.x+jx); c.setAttribute('cy', p.y+jy);
+      c.setAttribute('r','8'); c.setAttribute('fill',col); c.setAttribute('opacity',alpha);
+      tokLayer.appendChild(c);
+    });
+  }
+  drawToks(offSide, offZones, offColor, '0.75');
+  drawToks(defSide, defZones, defColor, '0.35');
 }
 
 function simSweep(newPossession) {
+  if(!_simGame) return;
   var tokLayer = document.getElementById('sim-tokens');
   var ballLayer = document.getElementById('sim-ball-layer');
   if(tokLayer) tokLayer.innerHTML = '';
   if(ballLayer) ballLayer.innerHTML = '';
-  var col = newPossession==='home'?(_simGame.home.primary||'#3a8cf5'):(_simGame.away.primary||'#e83030');
-  var defCol = '#444';
-  simDrawTeamTokens(newPossession, col, defCol);
+  simDrawTeamTokens(newPossession);
 }
 
 function addTickerEntry(msg, cls) {
@@ -13986,6 +14117,20 @@ function showHalftimeModal() {
   var bg = document.getElementById('ht-modal-bg');
   var body = document.getElementById('ht-modal-body');
   if(!bg||!body||!_simGame) return;
+  var hs = _simGame.stats.home, as2 = _simGame.stats.away;
+  function fgPct(m,a){ return a>0?Math.round(m/a*100)+'%':'—'; }
+  function statRow(label, hv, av) {
+    return '<tr><td style="color:var(--accent);font-weight:700">'+hv+'</td><td style="color:var(--text3);font-size:10px;letter-spacing:1px">'+label+'</td><td style="color:var(--text2)">'+av+'</td></tr>';
+  }
+  // Top scorers per team
+  function topScorers(side) {
+    var roster = side==='home'?_simGame.homeRoster:_simGame.awayRoster;
+    var ppts = _simGame.stats[side].playerPts;
+    return Object.keys(ppts).sort(function(a,b){return ppts[b]-ppts[a];}).slice(0,3).map(function(id){
+      var p = roster.find(function(x){return x.id===id;});
+      return (p?p.name.split(' ').pop():'?')+' '+ppts[id];
+    }).join(', ')||'—';
+  }
   body.innerHTML =
     '<div class="ht-title">HALFTIME</div>' +
     '<div class="ht-scores">' +
@@ -13993,8 +14138,22 @@ function showHalftimeModal() {
       '<div style="font-family:Oswald,sans-serif;font-size:28px;color:var(--text3);align-self:center">—</div>' +
       '<div class="ht-team"><div class="ht-team-name" style="color:'+(_simGame.away.primary||'#e83030')+'">'+_simGame.away.name+'</div><div class="ht-team-score">'+_simGame.awayScore+'</div></div>' +
     '</div>' +
-    '<div style="font-family:Share Tech Mono,monospace;font-size:10px;color:var(--text3);margin-bottom:16px">'+Math.round(_simGame.possCount/2)+' possessions played</div>' +
-    '<button class="btn btn-primary" onclick="resumeSecondHalf()">CONTINUE TO 2ND HALF →</button>';
+    '<table style="width:100%;border-collapse:collapse;font-family:Oswald,sans-serif;font-size:13px;margin-bottom:12px">' +
+      '<thead><tr>'+
+        '<th style="color:'+(_simGame.home.primary||'#3a8cf5')+';font-size:10px;letter-spacing:1px;text-align:right;padding-bottom:6px">'+_simGame.home.nick+'</th>'+
+        '<th style="color:var(--text3);font-size:9px;letter-spacing:2px;padding:0 12px"></th>'+
+        '<th style="color:'+(_simGame.away.primary||'#e83030')+';font-size:10px;letter-spacing:1px;text-align:left;padding-bottom:6px">'+_simGame.away.nick+'</th>'+
+      '</tr></thead><tbody>' +
+      statRow('FG', fgPct(hs.fgm,hs.fga), fgPct(as2.fgm,as2.fga)) +
+      statRow('3PT', fgPct(hs.fgm3,hs.fga3), fgPct(as2.fgm3,as2.fga3)) +
+      statRow('FT', hs.ftm+'/'+hs.fta, as2.ftm+'/'+as2.fta) +
+      statRow('FOULS', hs.fouls, as2.fouls) +
+      statRow('REB', hs.reb+' (o:'+hs.offReb+')', as2.reb+' (o:'+as2.offReb+')') +
+      statRow('TO', hs.to, as2.to) +
+    '</tbody></table>' +
+    '<div style="font-size:10px;color:var(--text3);font-family:Share Tech Mono,monospace;margin-bottom:4px">SCORING — HOME: '+topScorers('home')+'</div>' +
+    '<div style="font-size:10px;color:var(--text3);font-family:Share Tech Mono,monospace;margin-bottom:14px">SCORING — AWAY: '+topScorers('away')+'</div>' +
+    '<button class="btn btn-primary" onclick="resumeSecondHalf()">2ND HALF →</button>';
   bg.classList.add('on');
 }
 
