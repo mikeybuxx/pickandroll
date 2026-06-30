@@ -7654,6 +7654,8 @@ function act(a) {
     var _scR = document.getElementById('subcourt-log');
     if(_scR && _scR.innerHTML.trim() === '') showBothLooksFailedPrompt(G.myTeam);
   }
+  // Sync full game state to opponent after every action
+  if(typeof broadcastGameState === 'function') broadcastGameState();
 }
 
 // ════════════════════════════════════════════
@@ -14369,6 +14371,31 @@ function enforceMobileLayout() {
     });
   }, 200);
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  MULTIPLAYER STATE SYNC — auto-broadcast after every dice/contest action
+// ═══════════════════════════════════════════════════════════════════
+(function() {
+  var SYNC_FUNCS = [
+    'rollTeamOFF','rollActiveDefense','rollTeamDEF','rollFoulTeam','rollBDTeam',
+    'rollContestTeam','rollReb','resolveRandomHustle','resolvePnrScreener',
+    'resolveDoubleTeamTarget','resolveDoubleTeamHelp','rollDoubleTeamContest',
+    'rollDerivedForPlayer','rollStatForPlayer','resolveHandleContest',
+    'resolvePassReceive','chooseCritOpenZone','noFoulOpenShotZone','hfakeChooseZ2',
+    'hfakeChoose3pt','commitFoul','fiveSecondViolation'
+  ];
+  SYNC_FUNCS.forEach(function(name) {
+    if(typeof window[name] !== 'function') return;
+    var orig = window[name];
+    window[name] = function() {
+      var result = orig.apply(this, arguments);
+      if(typeof broadcastGameState === 'function') broadcastGameState();
+      return result;
+    };
+  });
+  console.log('Multiplayer sync wrappers installed:', SYNC_FUNCS.filter(function(n){return typeof window[n]==='function';}).length, '/', SYNC_FUNCS.length);
+})();
+
 </script>
 <div class="mobile-hud">
   <div class="mobile-bottom-bar">
